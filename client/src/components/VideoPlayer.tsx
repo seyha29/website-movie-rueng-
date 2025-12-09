@@ -37,7 +37,8 @@ function getEmbedUrl(url: string): string {
       const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/;
       const match = url.match(youtubeRegex);
       if (match && match[1]) {
-        processedUrl = `https://www.youtube.com/embed/${match[1]}?autoplay=1&rel=0`;
+        // Use nocookie domain for better privacy and compatibility
+        processedUrl = `https://www.youtube-nocookie.com/embed/${match[1]}?autoplay=1&rel=0&modestbranding=1&origin=${encodeURIComponent(window.location.origin)}`;
       }
     }
   }
