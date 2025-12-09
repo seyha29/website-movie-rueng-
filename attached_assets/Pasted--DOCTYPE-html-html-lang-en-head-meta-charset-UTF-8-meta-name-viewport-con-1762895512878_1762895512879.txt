@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iFlix KH - Watch Movies Online</title>
+    <meta name="description" content="Watch the top selected movies from iFlix KH— full of stunning performances and new emotions for movie lovers. Stream your favorite films today.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: #0a0a0a;
+            color: #fafafa;
+            line-height: 1.5;
+        }
+        /* Navbar Styles */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            background-color: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid #2d2d2d;
+        }
+        .navbar-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            height: 3.5rem;
+        }
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .navbar-logo {
+            width: 1.75rem;
+            height: 1.75rem;
+            background-color: #f97316;
+            border-radius: 0.375rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .navbar-logo span {
+            color: #fafafa;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+        .navbar-title {
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+        .navbar-search {
+            display: none;
+            flex: 1;
+            max-width: 28rem;
+            margin: 0 2rem;
+            position: relative;
+        }
+        .navbar-search input {
+            width: 100%;
+            padding: 0.5rem 1rem 0.5rem 2.5rem;
+            background-color: #292929;
+            border: 1px solid #292929;
+            border-radius: 0.375rem;
+            color: #fafafa;
+            font-size: 0.875rem;
+        }
+        .navbar-search input::placeholder {
+            color: #999;
+        }
+        .navbar-search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            width: 1rem;
+            height: 1rem;
+        }
+        .navbar-buttons {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            outline: none;
+        }
+        .btn-ghost {
+            background-color: transparent;
+            color: #fafafa;
+        }
+        .btn-ghost:hover {
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+        .btn-primary {
+            background-color: #f97316;
+            color: #fafafa;
+        }
+        .btn-primary:hover {
+            background-color: #ea580c;
+        }
+        .btn-secondary {
+            background-color: #292929;
+            color: #fafafa;
+        }
+        .btn-secondary:hover {
+            background-color: #3a3a3a;
+        }
+        /* Hero Section */
+        .hero {
+            position: relative;
+            width: 100%;
+            height: 50vh;
+            min-height: 400px;
+            overflow: hidden;
+            margin-top: 3.5rem;
+        }
+        .hero-background {
+            position: absolute;
+            inset: 0;
+            background-image: url('https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=1920&h=800&fit=crop');
+            background-size: cover;
+            background-position: center;
+        }
+        .hero-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to right, rgba(10, 10, 10, 1) 0%, rgba(10, 10, 10, 0.9) 50%, rgba(10, 10, 10, 0.2) 100%);
+        }
+        .hero-content {
+            position: relative;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+        }
+        .hero-text {
+            max-width: 42rem;
+        }
+        .hero-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 0.75rem;
+        }
+        .hero-description {
+            font-size: 0.875rem;
+            color: rgba(250, 250, 250, 0.9);
+            max-width: 36rem;
+            line-height: 1.625;
+            margin-bottom: 0.75rem;
+        }
+        .hero-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .hero-buttons .btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+        /* Category Filter */
+        .category-filter {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #2d2d2d;
+        }
+        .category-left {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .category-label {
+            font-size: 0.75rem;
+            color: #999;
+            display: none;
+        }
+        .category-dropdown {
+            position: relative;
+        }
+        .category-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.375rem 0.75rem;
+            background-color: transparent;
+            color: #fafafa;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .category-btn:hover {
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+        .category-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 0.25rem;
+            background-color: #171717;
+            border: 1px solid #2d2d2d;
+            border-radius: 0.375rem;
+            min-width: 10rem;
+            z-index: 10;
+        }
+        .category-menu.active {
+            display: block;
+        }
+        .category-item {
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        .category-item:hover {
+            background-color: rgba(255, 255, 255, 0.04);
+        }
+        .movie-count {
+            font-size: 0.75rem;
+            color: #999;
+        }
+        /* Movie Grid */
+        .movie-grid {
+            padding: 1.5rem 1rem;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+        }
+        .movie-card {
+            cursor: pointer;
+        }
+        .movie-poster {
+            position: relative;
+            aspect-ratio: 2/3;
+            border-radius: 0.375rem;
+            overflow: hidden;
+            background-color: #141414;
+        }
+        .movie-poster img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        .movie-card:hover .movie-poster img {
+            transform: scale(1.05);
+        }
+        .movie-poster-overlay {
+            position: absolute;
+            inset: 0;
+            background-color: rgba(0, 0, 0, 0);
+            transition: background-color 0.3s ease;
+        }
+        .movie-card:hover .movie-poster-overlay {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        .movie-info {
+            margin-top: 0.5rem;
+        }
+        .movie-title {
+            font-size: 0.75rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+        }
+        .movie-year {
+            font-size: 0.75rem;
+            color: #999;
+            margin-top: 0.125rem;
+        }
+        /* Responsive Styles */
+        @media (min-width: 640px) {
+            .category-label {
+                display: inline;
+            }
+            .movie-count::before {
+                content: "Showing ";
+            }
+            .grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        @media (min-width: 768px) {
+            .navbar-container {
+                padding: 0 3rem;
+                height: 4rem;
+            }
+            .navbar-logo {
+                width: 2rem;
+                height: 2rem;
+            }
+            .navbar-logo span {
+                font-size: 1.125rem;
+            }
+            .navbar-title {
+                font-size: 1.25rem;
+            }
+            .navbar-search {
+                display: flex;
+            }
+            .btn {
+                font-size: 0.875rem;
+            }
+            .hero {
+                height: 60vh;
+                min-height: 500px;
+                margin-top: 4rem;
+            }
+            .hero-content {
+                padding: 0 3rem;
+            }
+            .hero-title {
+                font-size: 3rem;
+                margin-bottom: 1.5rem;
+            }
+            .hero-description {
+                font-size: 1.125rem;
+                margin-bottom: 1.5rem;
+            }
+            .hero-buttons {
+                gap: 1rem;
+            }
+            .hero-buttons .btn {
+                font-size: 1rem;
+            }
+            .category-filter {
+                padding: 1rem 3rem;
+            }
+            .category-left {
+                gap: 1rem;
+            }
+            .category-label {
+                font-size: 0.875rem;
+            }
+            .category-btn {
+                gap: 0.5rem;
+                font-size: 0.875rem;
+            }
+            .movie-count {
+                font-size: 0.875rem;
+            }
+            .movie-grid {
+                padding: 2rem 3rem;
+            }
+            .grid {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 1rem;
+            }
+            .movie-title {
+                font-size: 0.875rem;
+            }
+        }
+        @media (min-width: 1024px) {
+            .hero-title {
+                font-size: 3.75rem;
+            }
+            .grid {
+                grid-template-columns: repeat(6, 1fr);
+                gap: 1.5rem;
+            }
+        }
+        /* Icons (simple SVG icons) */
+        .icon {
+            width: 1rem;
+            height: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-brand">
+                <div class="navbar-logo">
+                    <span>i</span>
+                </div>
+                <span class="navbar-title">iFlix KH</span>
+            </div>
+            <div class="navbar-search">
+                <svg class="navbar-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <input type="search" placeholder="Search movies, stars, or year...">
+            </div>
+            <div class="navbar-buttons">
+                <button class="btn btn-ghost">Login</button>
+                <button class="btn btn-primary">Register</button>
+            </div>
+        </div>
+    </nav>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-background"></div>
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1 class="hero-title">Featured Movie This Week</h1>
+                <p class="hero-description">
+                    Watch the top selected movies from iFlix KH— full of stunning performances and new emotions for movie lovers.
+                </p>
+                <div class="hero-buttons">
+                    <button class="btn btn-primary">
+                        <svg class="icon" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"></path>
+                        </svg>
+                        Watch Now
+                    </button>
+                    <button class="btn btn-secondary">
+                        <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Add to List
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Category Filter -->
+    <div class="category-filter">
+        <div class="category-left">
+            <span class="category-label">Category</span>
+            <div class="category-dropdown">
+                <button class="category-btn" id="categoryBtn">
+                    <span id="selectedCategory">All</span>
+                    <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                <div class="category-menu" id="categoryMenu">
+                    <div class="category-item" data-category="All">All</div>
+                    <div class="category-item" data-category="Popular">Popular</div>
+                    <div class="category-item" data-category="Trending">Trending</div>
+                    <div class="category-item" data-category="New Releases">New Releases</div>
+                </div>
+            </div>
+        </div>
+        <span class="movie-count" id="movieCount">13</span>
+    </div>
+    <!-- Movie Grid -->
+    <div class="movie-grid">
+        <div class="grid" id="movieGrid"></div>
+    </div>
+    <script>
+        // Movie data - Replace these image URLs with your actual movie poster URLs
+        const movies = [
+            { id: 1, title: 'Battle Sky', year: 2022, poster: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=400&h=600&fit=crop' },
+            { id: 2, title: 'Avatar', year: 2009, poster: 'https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=400&h=600&fit=crop' },
+            { id: 3, title: 'John Wick', year: 2014, poster: 'https://images.unsplash.com/photo-1509347528160-9a9e33742cdb?w=400&h=600&fit=crop' },
+            { id: 4, title: 'Black Adam', year: 2022, poster: 'https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=400&h=600&fit=crop' },
+            { id: 5, title: 'Arrival', year: 2016, poster: 'https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=400&h=600&fit=crop' },
+            { id: 6, title: 'The Godfather', year: 1972, poster: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&h=600&fit=crop' },
+            { id: 7, title: 'The Dark Knight', year: 2008, poster: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&h=600&fit=crop' },
+            { id: 8, title: 'Forrest Gump', year: 1994, poster: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=600&fit=crop' },
+            { id: 9, title: 'The Shawshank Redemption', year: 1994, poster: 'https://images.unsplash.com/photo-1523580846011-d3a5bc25702b?w=400&h=600&fit=crop' },
+            { id: 10, title: 'Inception', year: 2010, poster: 'https://images.unsplash.com/photo-1518676590629-3dcbd9c5a5c9?w=400&h=600&fit=crop' },
+            { id: 11, title: 'Pulp Fiction', year: 1994, poster: 'https://images.unsplash.com/photo-1594908900066-3f47337549d8?w=400&h=600&fit=crop' },
+            { id: 12, title: 'Spider-Man: No Way Home', year: 2021, poster: 'https://images.unsplash.com/photo-1608889825146-fcd20494d51c?w=400&h=600&fit=crop' },
+            { id: 13, title: 'The Lord of the Rings', year: 2001, poster: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=400&h=600&fit=crop' }
+        ];
+        // Render movies
+        function renderMovies() {
+            const grid = document.getElementById('movieGrid');
+            grid.innerHTML = movies.map(movie => `
+                <div class="movie-card" onclick="handleMovieClick('${movie.title}')">
+                    <div class="movie-poster">
+                        <img src="${movie.poster}" alt="${movie.title}">
+                        <div class="movie-poster-overlay"></div>
+                    </div>
+                    <div class="movie-info">
+                        <h3 class="movie-title">${movie.title}</h3>
+                        <p class="movie-year">${movie.year}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+        // Category dropdown functionality
+        const categoryBtn = document.getElementById('categoryBtn');
+        const categoryMenu = document.getElementById('categoryMenu');
+        const selectedCategory = document.getElementById('selectedCategory');
+        categoryBtn.addEventListener('click', () => {
+            categoryMenu.classList.toggle('active');
+        });
+        document.querySelectorAll('.category-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const category = item.getAttribute('data-category');
+                selectedCategory.textContent = category;
+                categoryMenu.classList.remove('active');
+                console.log('Category changed to:', category);
+            });
+        });
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!categoryBtn.contains(e.target) && !categoryMenu.contains(e.target)) {
+                categoryMenu.classList.remove('active');
+            }
+        });
+        // Handle movie click
+        function handleMovieClick(title) {
+            console.log('Movie clicked:', title);
+            alert('Movie clicked: ' + title);
+        }
+        // Initialize
+        renderMovies();
+    </script>
+</body>
+</html>

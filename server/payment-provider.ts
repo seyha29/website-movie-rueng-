@@ -1,0 +1,374 @@
+import crypto from "crypto";
+import querystring from "querystring";
+
+export interface PaymentInitiationResponse {
+  paymentRef: string;
+  checkoutUrl?: string;
+  formData?: Record<string, string>;
+  // Fields for future RaksemeyPay integration
+  sessionId?: string;
+  expiresAt?: number;
+}
+
+export interface PaymentVerificationResponse {
+  paymentRef: string;
+  status: 'pending' | 'completed' | 'failed' | 'cancelled';
+  amount: number;
+  currency: string;
+  transactionId?: string;
+  paidAt?: number;
+}
+
+export interface PaymentProvider {
+  initiatePayment(params: {
+    userId: string;
+    planId: string;
+    amount: number;
+    currency: string;
+    callbackUrl: string;
+  }): Promise<PaymentInitiationResponse>;
+
+  verifyPayment(paymentRef: string): Promise<PaymentVerificationResponse>;
+
+  parseWebhook(body: any, signature: string): Promise<PaymentVerificationResponse>;
+}
+
+// Mock provider for development - simulates RaksemeyPay API
+export class MockRaksmeyPayProvider implements PaymentProvider {
+  private payments: Map<string, PaymentVerificationResponse> = new Map();
+
+  async initiatePayment(params: {
+    userId: string;
+    planId: string;
+    amount: number;
+    currency: string;
+    callbackUrl: string;
+  }): Promise<PaymentInitiationResponse> {
+    const paymentRef = `MOCK_${crypto.randomBytes(8).toString('hex')}`;
+    
+    // Store pending payment
+    this.payments.set(paymentRef, {
+      paymentRef,
+      status: 'pending',
+      amount: params.amount,
+      currency: params.currency,
+    });
+
+    // In real RaksemeyPay, this would return their checkout URL
+    // For now, return a mock URL that frontend can use
+    return {
+      paymentRef,
+      checkoutUrl: `/mock-payment?ref=${paymentRef}`,
+      // Placeholder for future RaksemeyPay fields
+      sessionId: `SESSION_${paymentRef}`,
+      expiresAt: Math.floor(Date.now() / 1000) + 1800, // 30 minutes
+    };
+  }
+
+  async verifyPayment(paymentRef: string): Promise<PaymentVerificationResponse> {
+    const payment = this.payments.get(paymentRef);
+    
+    if (!payment) {
+      throw new Error('Payment not found');
+    }
+
+    return payment;
+  }
+
+  async parseWebhook(body: any, signature: string): Promise<PaymentVerificationResponse> {
+    // In real RaksemeyPay, verify HMAC signature here
+    const expectedSignature = this.generateMockSignature(body);
+    
+    if (signature !== expectedSignature) {
+      throw new Error('Invalid webhook signature');
+    }
+
+    const paymentRef = body.paymentRef;
+    const payment = this.payments.get(paymentRef);
+    
+    if (!payment) {
+      throw new Error('Payment not found');
+    }
+
+    // Update payment status based on webhook
+    payment.status = body.status;
+    payment.transactionId = body.transactionId;
+    payment.paidAt = body.paidAt || Math.floor(Date.now() / 1000);
+
+    return payment;
+  }
+
+  // Mock method to simulate payment success (for testing)
+  simulatePaymentSuccess(paymentRef: string): void {
+    const payment = this.payments.get(paymentRef);
+    if (payment) {
+      payment.status = 'completed';
+      payment.transactionId = `TXN_${crypto.randomBytes(8).toString('hex')}`;
+      payment.paidAt = Math.floor(Date.now() / 1000);
+    }
+  }
+
+  // Mock method to simulate payment failure (for testing)
+  simulatePaymentFailure(paymentRef: string): void {
+    const payment = this.payments.get(paymentRef);
+    if (payment) {
+      payment.status = 'failed';
+    }
+  }
+
+  private generateMockSignature(body: any): string {
+    const secret = process.env.RAKSMEYPAY_PROFILE_KEY || 'mock-secret';
+    return crypto.createHmac('sha256', secret).update(JSON.stringify(body)).digest('hex');
+  }
+}
+
+// Real RaksemeyPay provider - Implements redirect-based payment flow
+export class RealRaksmeyPayProvider implements PaymentProvider {
+  private merchantId: string;
+  private profileKey: string;
+  private paymentBaseUrl: string;
+
+  constructor() {
+    this.merchantId = process.env.RAKSMEYPAY_PROFILE_ID || '';
+    this.profileKey = process.env.RAKSMEYPAY_PROFILE_KEY || '';
+    this.paymentBaseUrl = `https://raksmeypay.com/payment/request/${this.merchantId}`;
+
+    if (!this.merchantId || !this.profileKey) {
+      throw new Error('RaksemeyPay credentials not configured. Set RAKSMEYPAY_PROFILE_ID and RAKSMEYPAY_PROFILE_KEY');
+    }
+  }
+
+  async initiatePayment(params: {
+    userId: string;
+    planId: string;
+    amount: number;
+    currency: string;
+    callbackUrl: string;
+  }): Promise<PaymentInitiationResponse> {
+    // Generate unique transaction ID (timestamp-based, exactly like the example)
+    const transactionId = Date.now();
+    
+    // URL encode the success_url with transaction_id parameter (exactly like the example)
+    const successUrl = encodeURIComponent(`${params.callbackUrl}?transaction_id=${transactionId}`);
+    
+    // Build remark (exactly like the example)
+    const remark = `Payment from user ${params.userId}`;
+    
+    // Generate SHA1 hash signature (exactly like the example)
+    // Format: SHA1(profileKey + transactionId + amount + successUrl + remark)
+    const hash = crypto
+      .createHash("sha1")
+      .update(this.profileKey + transactionId + params.amount + successUrl + remark)
+      .digest("hex");
+    
+    // Build query parameters using querystring.stringify (exactly like the example)
+    const queryParams = querystring.stringify({
+      transaction_id: transactionId,
+      amount: params.amount,
+      success_url: successUrl,
+      remark: remark,
+      hash: hash,
+    });
+    
+    // Build complete payment URL
+    const paymentUrl = `${this.paymentBaseUrl}?${queryParams}`;
+    
+    console.log(`[RaksemeyPay] Payment URL created for user ${params.userId}:`, {
+      transaction_id: transactionId,
+      amount: params.amount,
+      success_url: params.callbackUrl,
+      remark: remark,
+      hash: hash,
+      paymentUrl: paymentUrl.substring(0, 150) + '...',
+    });
+    
+    return {
+      paymentRef: transactionId.toString(),
+      checkoutUrl: paymentUrl,
+      sessionId: transactionId.toString(),
+      expiresAt: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiry
+    };
+  }
+
+  async verifyPayment(paymentRef: string): Promise<PaymentVerificationResponse> {
+    // Call RaksemeyPay's verification API to check payment status
+    // Based on official RaksemeyPay PHP verification example
+    
+    try {
+      // Generate hash for verification: SHA1(profileKey + transaction_id)
+      const hash = crypto.createHash('sha1')
+        .update(`${this.profileKey}${paymentRef}`)
+        .digest('hex');
+      
+      // Verification API endpoint
+      const verifyUrl = `https://raksmeypay.com/api/payment/verify/${this.merchantId}`;
+      
+      // Prepare POST data
+      const formData = new URLSearchParams({
+        transaction_id: paymentRef,
+        hash: hash,
+      });
+      
+      console.log(`[RaksemeyPay] Verifying payment ${paymentRef}...`);
+      
+      // Make API call (exactly like the example)
+      const response = await fetch(verifyUrl, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        console.error(`[RaksemeyPay] Verification API returned status ${response.status}`);
+        throw new Error(`Verification API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      console.log(`[RaksemeyPay] Verification response:`, data);
+      
+      // Parse response based on RaksemeyPay API spec
+      // Note: status === 0 can happen transiently (eventual consistency), don't treat as hard failure
+      if (data.status === 0) {
+        // Payment not found in API - this might be temporary
+        console.warn(`[RaksemeyPay] Payment not found in API (may be eventual consistency): ${paymentRef}`);
+        return {
+          paymentRef,
+          status: 'pending', // Treat as pending, not failed
+          amount: 0,
+          currency: 'USD',
+        };
+      }
+      
+      // Validate expected response shape
+      if (!data.payment_status) {
+        console.warn(`[RaksemeyPay] Unexpected API response shape for ${paymentRef}:`, data);
+        return {
+          paymentRef,
+          status: 'pending', // Unknown shape - treat as pending
+          amount: 0,
+          currency: 'USD',
+        };
+      }
+      
+      // Map RaksemeyPay status to our status
+      let status: 'pending' | 'completed' | 'failed' | 'cancelled' = 'pending';
+      const paymentStatus = String(data.payment_status).toUpperCase();
+      
+      if (paymentStatus === 'SUCCESS') {
+        status = 'completed';
+      } else if (paymentStatus === 'PENDING') {
+        status = 'pending';
+      } else if (paymentStatus === 'FAILED' || paymentStatus === 'CANCELLED') {
+        status = 'failed';
+      } else {
+        // Unknown status - log and treat as pending
+        console.warn(`[RaksemeyPay] Unknown payment_status: ${data.payment_status} for ${paymentRef}`);
+        status = 'pending';
+      }
+      
+      return {
+        paymentRef,
+        status,
+        amount: parseFloat(data.payment_amount) || 0,
+        currency: 'USD',
+        transactionId: paymentRef,
+        paidAt: status === 'completed' ? Math.floor(Date.now() / 1000) : undefined,
+      };
+      
+    } catch (error) {
+      console.error(`[RaksemeyPay] Verification failed for ${paymentRef}:`, error);
+      // Return pending status on error - don't fail the request
+      return {
+        paymentRef,
+        status: 'pending',
+        amount: 0,
+        currency: 'USD',
+      };
+    }
+  }
+
+  async parseWebhook(body: any, signature: string): Promise<PaymentVerificationResponse> {
+    // RaksemeyPay uses redirect-based flow, not webhooks
+    // This method is for future webhook support if RaksemeyPay adds it
+    throw new Error('RaksemeyPay does not support webhooks - uses redirect-based flow');
+  }
+
+  // Validate callback from RaksemeyPay success redirect
+  // Based on official RaksemeyPay PHP validation example
+  validateCallback(params: {
+    success_time: string;
+    success_amount: string;
+    bakong_hash: string;
+    success_hash: string;
+    transaction_id: string;
+  }): { isValid: boolean; paymentRef: string; errorMessage?: string } {
+    const { success_time, success_amount, bakong_hash, success_hash, transaction_id } = params;
+    
+    // Validate required parameters
+    if (!success_time || !success_amount || !bakong_hash || !success_hash || !transaction_id) {
+      console.error('[RaksemeyPay] Missing required callback parameters');
+      return { 
+        isValid: false, 
+        paymentRef: transaction_id || 'unknown',
+        errorMessage: 'Missing required parameters'
+      };
+    }
+    
+    // Validate token expiration (180 seconds as per RaksemeyPay spec)
+    const currentTime = Math.floor(Date.now() / 1000);
+    const successTime = parseInt(success_time, 10);
+    
+    if (isNaN(successTime) || (currentTime - successTime) > 180) {
+      console.error('[RaksemeyPay] Token expired. Success time:', success_time, 'Current time:', currentTime);
+      return { 
+        isValid: false, 
+        paymentRef: transaction_id,
+        errorMessage: 'Token expired (>180 seconds)'
+      };
+    }
+    
+    // Reconstruct hash to verify callback authenticity
+    // Format: SHA1(profileKey + success_time + success_amount + bakong_hash + transaction_id)
+    const b4hash = `${this.profileKey}${success_time}${success_amount}${bakong_hash}${transaction_id}`;
+    const expectedHash = crypto.createHash('sha1').update(b4hash).digest('hex');
+    
+    const isValid = success_hash === expectedHash;
+    
+    if (!isValid) {
+      console.error('[RaksemeyPay] Hash validation failed for transaction:', transaction_id);
+      console.error('Expected hash:', expectedHash);
+      console.error('Received hash:', success_hash);
+      console.error('Hash input:', b4hash);
+      return {
+        isValid: false,
+        paymentRef: transaction_id,
+        errorMessage: 'Invalid hash signature'
+      };
+    }
+    
+    console.log(`[RaksemeyPay] Callback validated successfully for ${transaction_id}`);
+    
+    return {
+      isValid: true,
+      paymentRef: transaction_id,
+    };
+  }
+}
+
+// Factory: Automatically select provider based on environment configuration
+// SECURITY: Decision is based on presence of RaksemeyPay credentials (build-time/deployment config)
+// This prevents runtime manipulation - if credentials exist, real provider MUST be used
+export function createPaymentProvider(): PaymentProvider {
+  const hasRaksmeyPayCredentials = Boolean(
+    process.env.RAKSMEYPAY_PROFILE_ID && 
+    process.env.RAKSMEYPAY_PROFILE_KEY
+  );
+  
+  if (hasRaksmeyPayCredentials) {
+    console.log('[Payment] Using RealRaksmeyPayProvider (credentials configured)');
+    return new RealRaksmeyPayProvider();
+  } else {
+    console.log('[Payment] Using MockRaksmeyPayProvider (no credentials - development mode)');
+    return new MockRaksmeyPayProvider();
+  }
+}
