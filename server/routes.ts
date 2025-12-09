@@ -402,7 +402,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ isPurchased: true, isFree: true });
       }
       
-      // If not free, check if user has purchased it
+      // Check if user has an active subscription (grants access to all movies)
+      const isSubscribed = await storage.isUserSubscribed(userId);
+      if (isSubscribed) {
+        return res.json({ isPurchased: true, isFree: false, hasSubscription: true });
+      }
+      
+      // If not subscribed, check if user has purchased this specific video
       const isPurchased = await storage.hasUserPurchasedVideo(userId, movieId);
       res.json({ isPurchased, isFree: false });
     } catch (error) {
