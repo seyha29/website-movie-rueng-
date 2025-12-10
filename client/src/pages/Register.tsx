@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { X } from "lucide-react";
+import { X, Eye, EyeOff } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { registerPageLabels } from "@/lib/translations";
 
@@ -16,6 +16,7 @@ export default function Register() {
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
   const registerMutation = useMutation({
@@ -146,15 +147,24 @@ export default function Register() {
               <label htmlFor="password" className="text-xs sm:text-sm font-medium">
                 {registerPageLabels.password[language]}
               </label>
-              <Input
-                id="password"
-                type="password"
-                placeholder={registerPageLabels.passwordPlaceholder[language]}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                data-testid="input-password-register"
-                className="text-sm"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder={registerPageLabels.passwordPlaceholder[language]}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  data-testid="input-password-register"
+                  className="text-sm pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               <p className="text-xs text-muted-foreground">
                 {registerPageLabels.passwordHelper[language]}
               </p>

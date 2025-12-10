@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { X } from "lucide-react";
+import { X, Eye, EyeOff } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { loginPageLabels } from "@/lib/translations";
 
@@ -15,6 +15,7 @@ export default function Login() {
   const { language } = useLanguage();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
   const loginMutation = useMutation({
@@ -110,15 +111,24 @@ export default function Login() {
               <label htmlFor="password" className="text-xs sm:text-sm font-medium">
                 {loginPageLabels.password[language]}
               </label>
-              <Input
-                id="password"
-                type="password"
-                placeholder={loginPageLabels.passwordPlaceholder[language]}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                data-testid="input-password-login"
-                className="text-sm"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder={loginPageLabels.passwordPlaceholder[language]}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  data-testid="input-password-login"
+                  className="text-sm pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             <Button
