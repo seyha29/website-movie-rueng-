@@ -1385,13 +1385,6 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
   
   // Block drag
   document.addEventListener('dragstart',function(e){e.preventDefault()});
-  ${isTrusted ? '' : `
-  // Detect DevTools (disabled for trusted users)
-  setInterval(function(){
-    if(window.outerHeight-window.innerHeight>200||window.outerWidth-window.innerWidth>200){
-      document.body.innerHTML='<div style="color:#fff;text-align:center;padding:50px">Please close developer tools</div>';
-    }
-  },1000);`}
 })();
 </script>
 </body></html>`);
