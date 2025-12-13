@@ -54,12 +54,11 @@ export class MockRaksmeyPayProvider implements PaymentProvider {
       currency: params.currency,
     });
 
-    // In real RaksemeyPay, this would return their checkout URL
-    // For now, return a mock URL that frontend can use
+    // For mock payments, don't return a checkoutUrl
+    // This triggers the frontend to auto-complete the payment
     return {
       paymentRef,
-      checkoutUrl: `/mock-payment?ref=${paymentRef}`,
-      // Placeholder for future RaksemeyPay fields
+      // No checkoutUrl for mock - triggers auto-complete flow
       sessionId: `SESSION_${paymentRef}`,
       expiresAt: Math.floor(Date.now() / 1000) + 1800, // 30 minutes
     };
