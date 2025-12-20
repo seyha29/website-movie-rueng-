@@ -245,14 +245,14 @@ export default function MovieDetail() {
       <div className={activeBanners && activeBanners.length > 0 ? "" : "pt-14 lg:pt-16"}>
         <div className="relative">
           {movie.trailerUrl ? (
-            <div className="relative w-full aspect-video max-h-[70vh]">
+            <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
               {movie.trailerUrl.toLowerCase().endsWith('.mp4') || movie.trailerUrl.toLowerCase().endsWith('.webm') ? (
                 <video
                   src={movie.trailerUrl}
                   controls
                   autoPlay
                   muted
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain bg-black"
                   title={`${movie.title} Trailer`}
                 >
                   Your browser does not support the video tag.
@@ -266,7 +266,6 @@ export default function MovieDetail() {
                   title={`${movie.title} Trailer`}
                 />
               )}
-              <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none" />
             </div>
           ) : (
             <div className="relative w-full aspect-video max-h-[70vh]">
