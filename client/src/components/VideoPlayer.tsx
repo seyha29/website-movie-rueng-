@@ -257,8 +257,8 @@ export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, requi
           }`}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Ad Banner 1 - Top (hidden in fullscreen) */}
-          {!isFullscreen && (
+          {/* Ad Banner 1 - Top (hidden in fullscreen and for purchased videos) */}
+          {!isFullscreen && !hasPurchased && (
             <a 
               href="https://taptapthai.com" 
               target="_blank" 
@@ -365,8 +365,8 @@ export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, requi
             )}
           </div>
 
-          {/* Ad Banner 2 - Bottom (hidden in fullscreen) */}
-          {!isFullscreen && (
+          {/* Ad Banner 2 - Bottom (hidden in fullscreen and for purchased videos) */}
+          {!isFullscreen && !hasPurchased && (
             <a 
               href="https://dafabet.com" 
               target="_blank" 

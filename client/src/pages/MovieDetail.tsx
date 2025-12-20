@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Play, Plus, Check, ChevronLeft, Clock, Calendar, Film, Star, User, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Movie } from "@shared/schema";
+import type { Movie, AdBanner } from "@shared/schema";
 
 function getTrailerEmbedUrl(url: string, autoplay: boolean = true): string {
   if (!url) return "";
@@ -136,6 +136,16 @@ export default function MovieDetail() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: activeBanners } = useQuery<AdBanner[]>({
+    queryKey: ["/api/banners/active"],
+    queryFn: async () => {
+      const response = await fetch("/api/banners/active");
+      if (!response.ok) return [];
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const handlePlayMovie = () => {
     if (!user) {
       setPendingAction("play");
@@ -235,6 +245,28 @@ export default function MovieDetail() {
                 />
               )}
               <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+              
+              {/* Admin Banners Overlay on Trailer */}
+              {activeBanners && activeBanners.length > 0 && (
+                <div className="absolute top-4 left-4 right-4 z-10 flex flex-col gap-2">
+                  {activeBanners.slice(0, 2).map((banner) => (
+                    <a
+                      key={banner.id}
+                      href={banner.linkUrl || "#"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block w-full max-w-md mx-auto"
+                    >
+                      <img
+                        src={banner.imageUrl}
+                        alt={banner.name}
+                        className="w-full h-auto rounded-lg shadow-lg opacity-90 hover:opacity-100 transition-opacity"
+                        style={{ maxHeight: '80px', objectFit: 'contain' }}
+                      />
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <div className="relative w-full aspect-video max-h-[70vh]">
@@ -464,6 +496,7 @@ export default function MovieDetail() {
             setSecureVideoUrl(null);
           }}
           user={user}
+          hasPurchased={true}
         />
       )}
 
