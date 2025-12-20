@@ -125,7 +125,8 @@ export default function MovieDetail() {
     queryFn: async () => {
       const response = await fetch(`/api/movies`);
       if (!response.ok) return [];
-      const allMovies: Movie[] = await response.json();
+      const data = await response.json();
+      const allMovies: Movie[] = data.movies || data;
       return allMovies
         .filter(m => m.id !== movieId && movie?.genres.some(g => m.genres.includes(g)))
         .slice(0, 10);
