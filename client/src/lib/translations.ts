@@ -132,3 +132,42 @@ export const registerPageLabels = {
   haveAccount: { km: "មានអាខោនរួចហើយ?", en: "Already have an account?" },
   loginLink: { km: "ចូល", en: "Login" }
 };
+
+export const footerLabels = {
+  company: { km: "ក្រុមហ៊ុន", en: "Company" },
+  aboutUs: { km: "អំពីយើង", en: "About Us" },
+  careers: { km: "ការងារ", en: "Careers" },
+  press: { km: "ព័ត៌មានសារព័ត៌មាន", en: "Press" },
+  support: { km: "ជំនួយ", en: "Support" },
+  helpCenter: { km: "មជ្ឈមណ្ឌលជំនួយ", en: "Help Center" },
+  contactUs: { km: "ទាក់ទងយើង", en: "Contact Us" },
+  termsOfService: { km: "លក្ខខណ្ឌសេវាកម្ម", en: "Terms of Service" },
+  legal: { km: "ច្បាប់", en: "Legal" },
+  privacyPolicy: { km: "គោលការណ៍ឯកជនភាព", en: "Privacy Policy" },
+  cookiePreferences: { km: "ចំណូលចិត្តខូឃី", en: "Cookie Preferences" },
+  corporateInfo: { km: "ព័ត៌មានក្រុមហ៊ុន", en: "Corporate Info" },
+  connectWithUs: { km: "តភ្ជាប់ជាមួយយើង", en: "Connect With Us" },
+  allRightsReserved: { km: "រក្សាសិទ្ធិគ្រប់យ៉ាង", en: "All rights reserved" }
+};
+
+export const movieDetailLabels = {
+  movieNotFound: { km: "រកមិនឃើញភាពយន្ត", en: "Movie not found" },
+  goHome: { km: "ទៅទំព័រដើម", en: "Go Home" },
+  trailer: { km: "ឃ្លីបខ្លី", en: "Trailer" },
+  watchTrailerFree: { km: "មើលឃ្លីបខ្លីដោយឥតគិតថ្លៃ", en: "Watch the trailer for free" },
+  year: { km: "ឆ្នាំ:", en: "Year:" },
+  duration: { km: "រយៈពេល:", en: "Time:" },
+  type: { km: "ប្រភេទ:", en: "Type:" },
+  rating: { km: "វាយតម្លៃ:", en: "Rating:" },
+  movie: { km: "ភាពយន្ត", en: "Movie" },
+  cast: { km: "តារាសម្តែង", en: "Cast" },
+  watchNow: { km: "មើលឥឡូវ", en: "Watch Now" },
+  buyMovie: { km: "ទិញភាពយន្ត", en: "Buy Movie" },
+  inMyList: { km: "ក្នុងបញ្ជីខ្ញុំ", en: "In My List" },
+  addToList: { km: "បន្ថែមក្នុងបញ្ជី", en: "Add to List" },
+  payOnceWatchAnytime: { km: "បង់ម្តង មើលគ្រប់ពេល", en: "Pay once, watch anytime" },
+  freeToWatch: { km: "មើលដោយឥតគិតថ្លៃ", en: "FREE TO WATCH" },
+  director: { km: "អ្នកដឹកនាំ", en: "Director" },
+  relatedTitles: { km: "ភាពយន្តស្រដៀងគ្នា", en: "Related Titles" },
+  moreFilms: { km: "ភាពយន្តបន្ថែម", en: "More Films" }
+};
