@@ -423,43 +423,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId!;
       const { movieId } = req.params;
       
-      const movie = await storage.getMovieById(movieId);
-      if (!movie) {
-        return res.status(404).json({ error: "Movie not found" });
-      }
+      // Use RaksmeyPay for video purchase (original flow)
+      const result = await paymentService.initiateVideoPurchase(userId, movieId);
       
-      const alreadyPurchased = await storage.hasUserPurchasedVideo(userId, movieId);
-      if (alreadyPurchased) {
-        return res.status(400).json({ error: "Video already purchased" });
-      }
+      console.log(`[RaksmeyPay] Video purchase initiated for movie ${movieId}, checkout: ${result.checkoutUrl}`);
       
-      const amount = parseFloat(movie.price || "1.00");
-      const transactionId = `TXN${Date.now()}`;
-      
-      const { qrString, md5Hash } = generateKHQRForPayment(amount, "USD", transactionId);
-      
-      const transaction = await storage.createPaymentTransaction({
-        userId,
-        planId: "video-purchase",
-        amount: amount.toString(),
-        currency: "USD",
-        status: "pending",
-        paymentMethod: "khqr",
-        transactionRef: transactionId,
-      });
-      
-      console.log(`[KHQR] Generated QR for movie ${movieId}, amount: $${amount}, txn: ${transactionId}`);
-      
-      res.status(201).json({
-        paymentId: transaction.id,
-        paymentRef: transactionId,
-        qrString: qrString,
-        md5Hash: md5Hash,
-        amount: amount.toString(),
-        currency: "USD",
-        movieId,
-        movieTitle: movie.title,
-      });
+      res.status(201).json(result);
     } catch (error) {
       console.error("Failed to initiate video purchase:", error);
       if (error instanceof Error) {
