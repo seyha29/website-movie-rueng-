@@ -20,17 +20,27 @@ function getTrailerEmbedUrl(url: string, autoplay: boolean = true): string {
   
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
     let videoId = '';
+    
     if (url.includes('/embed/')) {
       const match = url.match(/\/embed\/([a-zA-Z0-9_-]+)/);
       videoId = match ? match[1] : '';
+    } else if (url.includes('/shorts/')) {
+      const match = url.match(/\/shorts\/([a-zA-Z0-9_-]+)/);
+      videoId = match ? match[1] : '';
+    } else if (url.includes('watch?v=')) {
+      const match = url.match(/[?&]v=([a-zA-Z0-9_-]+)/);
+      videoId = match ? match[1] : '';
+    } else if (url.includes('youtu.be/')) {
+      const match = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+      videoId = match ? match[1] : '';
     } else {
-      const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/;
-      const match = url.match(youtubeRegex);
+      const match = url.match(/([a-zA-Z0-9_-]{11})/);
       videoId = match ? match[1] : '';
     }
+    
     if (videoId) {
       const autoplayParam = autoplay ? '&autoplay=1&mute=1' : '';
-      return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1${autoplayParam}`;
+      return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&enablejsapi=1${autoplayParam}`;
     }
   }
   
