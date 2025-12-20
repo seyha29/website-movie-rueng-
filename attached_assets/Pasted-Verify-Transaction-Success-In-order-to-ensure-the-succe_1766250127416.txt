@@ -1,0 +1,48 @@
+Verify Transaction Success
+In order to ensure the success of a transaction, you will need to invoke the checking API to verify its status. By making this call, you can confirm whether the transaction was successful or not.
+
+*** You must call verify transactions on the backend side only; never validate them in JavaScript.
+
+Your API URL: https://raksmeypay.com/api/payment/verify/5eebfa4ea9e0f54a55bd13e19e3fae84
+Type: POST
+Parameter	Type	Mandatory	Remark
+transaction_id	Number	Yes	The transaction ID of a payment
+hash	String	Yes	sha1($profile_key . $transaction_id)
+PHP Code Example
+<?php
+    $payment_verify_url = "https://raksmeypay.com/api/payment/verify/5eebfa4ea9e0f54a55bd13e19e3fae84";
+    $profile_key = "YOUR_PROFILE_KEY"; //Replace with your Profile Key
+    $transaction_id = 12345678; // Replace with your transaction ID
+    $transaction_amount = 0.01; // Replace with your transaction amount
+    $hash = sha1($profile_key . $transaction_id);
+    $data = [
+        "transaction_id" => $transaction_id,
+        "hash" => $hash
+    ];
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $payment_verify_url);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $response = curl_exec($ch);
+    curl_close($ch);
+    $response = json_decode($response, 1);
+    // Ensure that the Payment Status and Payment Amount are correctly validated to match your transaction.
+    if(!empty($response["payment_status"])
+        && strtoupper($response["payment_status"]) == "SUCCESS"
+        && $response["payment_amount"] == $transaction_amount){
+        //code to handle payment success
+        // *** Proper validation is necessary on your side to prevent the service from being provided more than once.
+        echo "payment success";
+    }
+?>
+
+Sample Responses
+Payment Success
+{"status":1,"payment_amount":0.01,"payment_status":"SUCCESS"}
+
+Payment Pending
+{"status":1,"payment_amount":0.01,"payment_status":"PENDING"}
+
+Payment not found
+{"status":0,"err_msg":"Payment not found"}
