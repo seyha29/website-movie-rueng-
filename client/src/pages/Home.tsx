@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
@@ -16,45 +16,6 @@ import type { Movie } from "@shared/schema";
 import { countryMapping } from "@shared/countries";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { genres as genresTranslation, ratings as ratingsTranslation, years as yearsTranslation, countries as countriesTranslation, filterLabels, paginationLabels } from "@/lib/translations";
-
-// Genre mapping: Khmer to English (for API calls)
-const genreMapping: { [key: string]: string } = {
-  "ទាំងអស់": "All",
-  "វាយប្រហារ": "Action",
-  "ផ្សងព្រេង": "Adventure",
-  "កំប្លែង": "Comedy",
-  "ឧក្រិដ្ឋកម្ម": "Crime",
-  "ស្នេហា": "Drama",
-  "ប្រឌិត": "Fantasy",
-  "ខ្មោច": "Horror",
-  "អាថ៍កំបាំង": "Mystery",
-  "មនោសញ្ចេតនា": "Romance",
-  "វិទ្យាសាស្ត្រ": "Sci-Fi",
-  "អរូបីយ៏": "Supernatural",
-  "រន្ធត់": "Thriller",
-  "សង្គ្រាម": "War",
-  "គំនូរជីវចល": "Anime"
-};
-
-// Rating mapping: Khmer to English (for filtering logic)
-const ratingMapping: { [key: string]: string } = {
-  "ទាំងអស់": "All",
-  "9+": "9+",
-  "8-9": "8-9",
-  "7-8": "7-8",
-  "6-7": "6-7",
-  "Below 6": "Below 6"
-};
-
-// Year mapping: Khmer to English (for filtering logic)
-const yearMapping: { [key: string]: string } = {
-  "ទាំងអស់": "All",
-  "2024+": "2024+",
-  "2020-2023": "2020-2023",
-  "2010-2019": "2010-2019",
-  "2000-2009": "2000-2009",
-  "Before 2000": "Before 2000"
-};
 
 export default function Home() {
   const [, navigate] = useLocation();
@@ -74,25 +35,31 @@ export default function Home() {
   const [selectedCountryIndex, setSelectedCountryIndex] = useState<number>(0);
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  
+
+  // Load Khmer font and set language attribute when component mounts
+  useEffect(() => {
+    // Set lang attribute on html element for proper font rendering
+    document.documentElement.lang = language === 'kh' ? 'km' : 'en';
+  }, [language]);
+
   const genres = genresTranslation[language];
   const ratings = ratingsTranslation[language];
   const years = yearsTranslation[language];
   const countries = countriesTranslation[language];
-  
+
   const selectedGenre = genres[selectedGenreIndex] || genres[0];
   const selectedRating = ratings[selectedRatingIndex] || ratings[0];
   const selectedYear = years[selectedYearIndex] || years[0];
   const selectedCountry = countries[selectedCountryIndex] || countries[0];
-  
+
   const selectedGenreEnglish = genresTranslation.en[selectedGenreIndex] || "All";
   const selectedRatingEnglish = ratingsTranslation.en[selectedRatingIndex] || "All";
   const selectedYearEnglish = yearsTranslation.en[selectedYearIndex] || "All";
   const selectedCountryEnglish = countriesTranslation.en[selectedCountryIndex] || "All";
-  
+
   // My List hook
   const { toggleMyList } = useMyList();
-  
+
   // Video purchase gate hook
   const {
     checkAndExecute: checkVideoPurchaseAndExecute,
@@ -137,7 +104,7 @@ export default function Home() {
   const movies = moviesData?.movies || [];
   const total = moviesData?.total || 0;
   const totalPages = Math.ceil(total / 30);
-  
+
   // Apply client-side filters for rating, year, and country (only on current page)
   const filteredMovies = movies.filter(movie => {
     // Rating filter using English values
@@ -155,7 +122,7 @@ export default function Home() {
         if (movieRating >= 6) return false;
       }
     }
-    
+
     // Year filter using English values
     if (selectedYearEnglish !== "All") {
       const movieYear = movie.year;
@@ -171,17 +138,17 @@ export default function Home() {
         if (movieYear >= 2000) return false;
       }
     }
-    
+
     // Country filter using English values
     if (selectedCountryEnglish !== "All") {
       if (movie.country !== selectedCountryEnglish) return false;
     }
-    
+
     return true;
   });
-  
+
   const displayCount = filteredMovies.length;
-  
+
   // Reset to page 1 when genre changes
   const handleGenreChange = (index: number) => {
     setSelectedGenreIndex(index);
@@ -210,8 +177,6 @@ export default function Home() {
   }
 
   const handlePlayMovie = (movieId: string) => {
-    // Navigate to movie detail page where user can watch free trailer
-    // and purchase full movie if they want
     navigate(`/movie/${movieId}`);
   };
 
@@ -221,15 +186,12 @@ export default function Home() {
       setIsAuthModalOpen(true);
       return;
     }
-
     toggleMyList(movieId);
   };
 
   const handleAuthSuccess = async () => {
     await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
-    
     if (pendingPlayMovie) {
-      // Navigate to movie detail page after login
       navigate(`/movie/${pendingPlayMovie}`);
       setPendingPlayMovie(null);
     }
@@ -256,28 +218,30 @@ export default function Home() {
         <div className="px-4 lg:px-12 py-4 lg:py-6">
           <div className="flex flex-col items-center gap-4">
             {/* Centered Filter Box */}
-            <div className="w-full max-w-4xl mx-auto bg-secondary/30 border border-border rounded-lg px-4 py-3 shadow-sm">
-              <div className="flex items-center justify-center gap-3 lg:gap-6 flex-wrap">
+            <div className="w-full max-w-4xl mx-auto bg-secondary/30 border border-border rounded-lg px-3 lg:px-4 py-3 shadow-sm">
+              <div className="flex items-center justify-center gap-2 lg:gap-6 flex-wrap">
                 {/* Genre Filter */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">{filterLabels.genre[language]}</span>
+                <div className="flex items-center gap-1.5 lg:gap-2 min-w-0">
+                  <span className="text-sm lg:text-base text-muted-foreground whitespace-nowrap flex-shrink-0">
+                    {filterLabels.genre[language]}
+                  </span>
                   <div className="relative">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="gap-1 hover-elevate"
+                      className="gap-1 hover-elevate min-w-[70px] max-w-[110px] h-9 px-2 lg:px-3"
                       onClick={() => setIsGenreDropdownOpen(!isGenreDropdownOpen)}
                       data-testid="button-genre-filter"
                     >
-                      <span className="text-sm">{selectedGenre}</span>
-                      <ChevronDown className="h-4 w-4" />
+                      <span className="text-sm lg:text-base truncate block">{selectedGenre}</span>
+                      <ChevronDown className="h-4 w-4 lg:h-5 lg:w-5 flex-shrink-0" />
                     </Button>
                     {isGenreDropdownOpen && (
                       <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[160px] max-h-[400px] overflow-y-auto z-50">
                         {genres.map((genre, index) => (
                           <button
                             key={genre}
-                            className="w-full text-left px-4 py-2 text-sm hover:bg-accent/50 first:rounded-t-md last:rounded-b-md transition-colors"
+                            className="w-full text-left px-4 py-2 text-base hover:bg-accent/50 first:rounded-t-md last:rounded-b-md transition-colors whitespace-nowrap"
                             onClick={() => handleGenreChange(index)}
                             data-testid={`button-genre-${genresTranslation.en[index].toLowerCase().replace(' ', '-')}`}
                           >
@@ -290,25 +254,27 @@ export default function Home() {
                 </div>
 
                 {/* Rating Filter */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">{filterLabels.rating[language]}</span>
+                <div className="flex items-center gap-1.5 lg:gap-2 min-w-0">
+                  <span className="text-sm lg:text-base text-muted-foreground whitespace-nowrap flex-shrink-0">
+                    {filterLabels.rating[language]}
+                  </span>
                   <div className="relative">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="gap-1 hover-elevate"
+                      className="gap-1 hover-elevate min-w-[60px] max-w-[90px] h-9 px-2 lg:px-3"
                       onClick={() => setIsRatingDropdownOpen(!isRatingDropdownOpen)}
                       data-testid="button-rating-filter"
                     >
-                      <span className="text-sm">{selectedRating}</span>
-                      <ChevronDown className="h-4 w-4" />
+                      <span className="text-sm lg:text-base truncate block">{selectedRating}</span>
+                      <ChevronDown className="h-4 w-4 lg:h-5 lg:w-5 flex-shrink-0" />
                     </Button>
                     {isRatingDropdownOpen && (
                       <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[140px] z-50">
                         {ratings.map((rating, index) => (
                           <button
                             key={rating}
-                            className="w-full text-left px-4 py-2 text-sm hover:bg-accent/50 first:rounded-t-md last:rounded-b-md transition-colors"
+                            className="w-full text-left px-4 py-2 text-base hover:bg-accent/50 first:rounded-t-md last:rounded-b-md transition-colors whitespace-nowrap"
                             onClick={() => {
                               setSelectedRatingIndex(index);
                               setCurrentPage(1);
@@ -325,25 +291,27 @@ export default function Home() {
                 </div>
 
                 {/* Year Filter */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">{filterLabels.year[language]}</span>
+                <div className="flex items-center gap-1.5 lg:gap-2 min-w-0">
+                  <span className="text-sm lg:text-base text-muted-foreground whitespace-nowrap flex-shrink-0">
+                    {filterLabels.year[language]}
+                  </span>
                   <div className="relative">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="gap-1 hover-elevate"
+                      className="gap-1 hover-elevate min-w-[70px] max-w-[110px] h-9 px-2 lg:px-3"
                       onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
                       data-testid="button-year-filter"
                     >
-                      <span className="text-sm">{selectedYear}</span>
-                      <ChevronDown className="h-4 w-4" />
+                      <span className="text-sm lg:text-base truncate block">{selectedYear}</span>
+                      <ChevronDown className="h-4 w-4 lg:h-5 lg:w-5 flex-shrink-0" />
                     </Button>
                     {isYearDropdownOpen && (
                       <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[160px] z-50">
                         {years.map((year, index) => (
                           <button
                             key={year}
-                            className="w-full text-left px-4 py-2 text-sm hover:bg-accent/50 first:rounded-t-md last:rounded-b-md transition-colors"
+                            className="w-full text-left px-4 py-2 text-base hover:bg-accent/50 first:rounded-t-md last:rounded-b-md transition-colors whitespace-nowrap"
                             onClick={() => {
                               setSelectedYearIndex(index);
                               setCurrentPage(1);
@@ -360,25 +328,27 @@ export default function Home() {
                 </div>
 
                 {/* Country Filter */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">{filterLabels.country[language]}</span>
+                <div className="flex items-center gap-1.5 lg:gap-2 min-w-0">
+                  <span className="text-sm lg:text-base text-muted-foreground whitespace-nowrap flex-shrink-0">
+                    {filterLabels.country[language]}
+                  </span>
                   <div className="relative">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="gap-1 hover-elevate"
+                      className="gap-1 hover-elevate min-w-[70px] max-w-[110px] h-9 px-2 lg:px-3"
                       onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
                       data-testid="button-country-filter"
                     >
-                      <span className="text-sm">{selectedCountry}</span>
-                      <ChevronDown className="h-4 w-4" />
+                      <span className="text-sm lg:text-base truncate block">{selectedCountry}</span>
+                      <ChevronDown className="h-4 w-4 lg:h-5 lg:w-5 flex-shrink-0" />
                     </Button>
                     {isCountryDropdownOpen && (
                       <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[160px] max-h-[400px] overflow-y-auto z-50">
                         {countries.map((country, index) => (
                           <button
                             key={country}
-                            className="w-full text-left px-4 py-2 text-sm hover:bg-accent/50 first:rounded-t-md last:rounded-b-md transition-colors"
+                            className="w-full text-left px-4 py-2 text-base hover:bg-accent/50 first:rounded-t-md last:rounded-b-md transition-colors whitespace-nowrap"
                             onClick={() => {
                               setSelectedCountryIndex(index);
                               setCurrentPage(1);
@@ -395,9 +365,9 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            
+
             {/* Movie count */}
-            <span className="text-sm text-muted-foreground" data-testid="text-movie-count">
+            <span className="text-base text-muted-foreground" data-testid="text-movie-count">
               <span className="hidden sm:inline">{paginationLabels.showing[language]} </span>{displayCount}<span className="hidden sm:inline"> {paginationLabels.of[language]} {total}</span>
             </span>
           </div>
@@ -415,11 +385,11 @@ export default function Home() {
               disabled={currentPage === 1}
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               data-testid="button-prev-page-top"
-              className="hover-elevate"
+              className="hover-elevate text-sm lg:text-base"
             >
               {paginationLabels.previous[language]}
             </Button>
-            
+
             <div className="flex items-center gap-1">
               {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                 let pageNumber: number;
@@ -440,7 +410,7 @@ export default function Home() {
                     size="sm"
                     onClick={() => setCurrentPage(pageNumber)}
                     data-testid={`button-page-${pageNumber}-top`}
-                    className="w-10 hover-elevate"
+                    className="w-9 lg:w-11 hover-elevate text-sm lg:text-base"
                   >
                     {pageNumber}
                   </Button>
@@ -454,7 +424,7 @@ export default function Home() {
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               data-testid="button-next-page-top"
-              className="hover-elevate"
+              className="hover-elevate text-sm lg:text-base"
             >
               {paginationLabels.next[language]}
             </Button>
@@ -462,10 +432,11 @@ export default function Home() {
         )}
 
         {isFetching && (
-          <div className="mb-4 text-center text-sm text-muted-foreground">
+          <div className="mb-4 text-center text-base text-muted-foreground">
             Loading...
           </div>
         )}
+
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 lg:gap-6">
           {filteredMovies.map((movie) => (
             <div
@@ -490,7 +461,7 @@ export default function Home() {
                   }}
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
-                
+
                 {/* Hover overlay with actions */}
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-2">
                   <Button
@@ -520,10 +491,10 @@ export default function Home() {
                 </div>
               </div>
               <div className="mt-2">
-                <h3 className="text-xs lg:text-sm font-medium truncate" data-testid={`text-title-${movie.id}`}>
+                <h3 className="text-sm lg:text-base font-medium truncate" data-testid={`text-title-${movie.id}`}>
                   {movie.title}
                 </h3>
-                <p className="text-xs text-muted-foreground mt-0.5" data-testid={`text-year-${movie.id}`}>
+                <p className="text-sm text-muted-foreground mt-0.5" data-testid={`text-year-${movie.id}`}>
                   {movie.year}
                 </p>
               </div>
@@ -540,14 +511,13 @@ export default function Home() {
               disabled={currentPage === 1}
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               data-testid="button-prev-page"
-              className="hover-elevate"
+              className="hover-elevate text-sm lg:text-base"
             >
               {paginationLabels.previous[language]}
             </Button>
-            
+
             <div className="flex items-center gap-1">
               {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                // Smart pagination: show first, last, current, and neighbors
                 let pageNumber: number;
                 if (totalPages <= 5) {
                   pageNumber = i + 1;
@@ -566,7 +536,7 @@ export default function Home() {
                     size="sm"
                     onClick={() => setCurrentPage(pageNumber)}
                     data-testid={`button-page-${pageNumber}`}
-                    className="w-10 hover-elevate"
+                    className="w-9 lg:w-11 hover-elevate text-sm lg:text-base"
                   >
                     {pageNumber}
                   </Button>
@@ -580,7 +550,7 @@ export default function Home() {
               disabled={currentPage === totalPages}
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               data-testid="button-next-page"
-              className="hover-elevate"
+              className="hover-elevate text-sm lg:text-base"
             >
               {paginationLabels.next[language]}
             </Button>
@@ -642,12 +612,17 @@ export default function Home() {
         movieId={currentMovieId}
         movieTitle={currentMovieTitle}
       />
-      
-      {/* Click outside to close dropdown */}
-      {isGenreDropdownOpen && (
+
+      {/* Click outside to close dropdowns */}
+      {(isGenreDropdownOpen || isRatingDropdownOpen || isYearDropdownOpen || isCountryDropdownOpen) && (
         <div
           className="fixed inset-0 z-40"
-          onClick={() => setIsGenreDropdownOpen(false)}
+          onClick={() => {
+            setIsGenreDropdownOpen(false);
+            setIsRatingDropdownOpen(false);
+            setIsYearDropdownOpen(false);
+            setIsCountryDropdownOpen(false);
+          }}
         />
       )}
     </div>
