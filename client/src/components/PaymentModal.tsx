@@ -257,7 +257,7 @@ export function PaymentModal({
   return (
     <Dialog open={open} onOpenChange={handleClosePayment}>
       <DialogContent 
-        className={checkoutUrl ? "sm:max-w-[800px] h-[90vh]" : "sm:max-w-[500px]"} 
+        className="sm:max-w-[500px]" 
         data-testid="dialog-payment"
       >
         <DialogHeader>
@@ -303,25 +303,49 @@ export function PaymentModal({
               </Button>
             </div>
           ) : checkoutUrl ? (
-            <div className="flex-1 h-full">
-              <iframe
-                src={checkoutUrl}
-                className="w-full h-[calc(90vh-180px)] rounded-md border border-border"
-                title="RaksemeyPay Payment"
-                data-testid="iframe-payment"
-              />
-              <div className="mt-4 text-center text-sm text-muted-foreground">
-                <p>After completing payment, this window will close automatically.</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-2"
-                  onClick={handleClosePayment}
-                  data-testid="button-close-payment"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Close
-                </Button>
+            <div className="flex-1 flex flex-col items-center justify-center py-8">
+              {/* QR Code Display */}
+              <div className="bg-white p-6 rounded-xl shadow-lg mb-6">
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(checkoutUrl)}`}
+                  alt="Payment QR Code"
+                  className="w-[280px] h-[280px]"
+                  data-testid="img-qr-code"
+                />
+              </div>
+              
+              <div className="text-center space-y-4">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-bold">Scan QR Code with Banking App</h3>
+                  <p className="text-sm text-muted-foreground max-w-md">
+                    Open your mobile banking app (ABA, ACLEDA, Wing, etc.) and scan this QR code to complete payment.
+                  </p>
+                </div>
+                
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Waiting for payment confirmation...</span>
+                </div>
+                
+                <div className="flex gap-3 mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(checkoutUrl, '_blank')}
+                    data-testid="button-open-payment"
+                  >
+                    Open Payment Page
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClosePayment}
+                    data-testid="button-close-payment"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Cancel
+                  </Button>
+                </div>
               </div>
             </div>
           ) : (
