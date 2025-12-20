@@ -58,11 +58,19 @@ export function PaymentModal({
         paymentRefRef.current = data.paymentRef;
       }
       
-      // Check if we have a checkout URL (RaksmeyPay payment page)
+      // Check if we have a KHQR string (proper Bakong QR code for banking apps)
+      if (data.qrString) {
+        console.log('[Payment] Displaying KHQR code for Bakong payment');
+        setQrString(data.qrString);
+        setCheckoutUrl(data.qrString); // Use for display logic
+        return;
+      }
+      
+      // Check if we have a checkout URL (fallback)
       if (data.checkoutUrl) {
-        console.log('[Payment] Displaying RaksmeyPay payment QR code:', data.checkoutUrl);
+        console.log('[Payment] Displaying payment page QR code:', data.checkoutUrl);
         setCheckoutUrl(data.checkoutUrl);
-        setQrString(null); // Not using KHQR directly
+        setQrString(null);
         return;
       }
       
@@ -306,11 +314,11 @@ export function PaymentModal({
             </div>
           ) : checkoutUrl ? (
             <div className="flex-1 flex flex-col items-center justify-center py-8">
-              {/* RaksmeyPay QR Code Display */}
+              {/* KHQR Code Display */}
               <div className="bg-white p-6 rounded-xl shadow-lg mb-6">
                 <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(checkoutUrl)}`}
-                  alt="RaksmeyPay Payment QR Code"
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrString || checkoutUrl)}`}
+                  alt="KHQR Payment Code"
                   className="w-[280px] h-[280px]"
                   data-testid="img-qr-code"
                 />
@@ -318,9 +326,12 @@ export function PaymentModal({
               
               <div className="text-center space-y-4">
                 <div className="space-y-2">
-                  <h3 className="text-lg font-bold">Scan to Pay with RaksmeyPay</h3>
+                  <h3 className="text-lg font-bold">Scan KHQR to Pay</h3>
                   <p className="text-sm text-muted-foreground max-w-md">
-                    Scan this QR code with your phone camera to open the RaksmeyPay payment page, or click the button below.
+                    Open your mobile banking app (ABA, ACLEDA, Wing, Bakong, etc.) and scan this KHQR code to complete payment.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Paying to: <span className="font-semibold">cham_toem2@aclb</span>
                   </p>
                 </div>
                 
@@ -329,15 +340,7 @@ export function PaymentModal({
                   <span>Waiting for payment confirmation...</span>
                 </div>
                 
-                <div className="flex gap-3 mt-4">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => window.open(checkoutUrl, '_blank')}
-                    data-testid="button-open-payment"
-                  >
-                    Open Payment Page
-                  </Button>
+                <div className="flex justify-center mt-4">
                   <Button
                     variant="outline"
                     size="sm"
