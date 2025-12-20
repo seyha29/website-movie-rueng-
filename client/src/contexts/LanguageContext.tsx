@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useLayoutEffect, ReactNode } from "react";
 
 type Language = "km" | "en";
 
@@ -10,8 +10,25 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+const LANGUAGE_STORAGE_KEY = "rueng_language";
+
+function getInitialLanguage(): Language {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+    if (saved === "km" || saved === "en") {
+      return saved;
+    }
+  }
+  return "km";
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>("km");
+  const [language, setLanguageState] = useState<Language>(getInitialLanguage);
+  
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
+  };
 
   const t = (km: string, en: string) => {
     return language === "km" ? km : en;
