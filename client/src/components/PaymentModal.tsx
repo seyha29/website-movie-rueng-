@@ -36,8 +36,10 @@ export function PaymentModal({
   const paymentType = isVideoMode ? 'video purchase' : 'monthly subscription';
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [countdown, setCountdown] = useState(5);
+  const [paymentCountdown, setPaymentCountdown] = useState(300); // 5 minutes in seconds
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const paymentRefRef = useRef<string | null>(null);
+  const paymentCountdownRef = useRef<NodeJS.Timeout | null>(null);
 
   const initiatePaymentMutation = useMutation({
     mutationFn: async () => {
@@ -201,6 +203,34 @@ export function PaymentModal({
       }
     }
   }, [paymentSuccess, countdown]);
+
+  // 5-minute countdown timer for QR code payment
+  useEffect(() => {
+    if (checkoutUrl && !paymentSuccess && paymentCountdown > 0) {
+      paymentCountdownRef.current = setInterval(() => {
+        setPaymentCountdown((prev) => {
+          if (prev <= 1) {
+            // Time expired - close the payment modal
+            handleClosePayment();
+            toast({
+              title: "Payment Expired",
+              description: "The QR code has expired. Please try again.",
+              variant: "destructive",
+            });
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+      return () => {
+        if (paymentCountdownRef.current) {
+          clearInterval(paymentCountdownRef.current);
+          paymentCountdownRef.current = null;
+        }
+      };
+    }
+  }, [checkoutUrl, paymentSuccess]);
 
   // Poll for payment status when QR code is showing
   useEffect(() => {
