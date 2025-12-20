@@ -474,7 +474,6 @@ function VideoForm({ movie, onSuccess }: VideoFormProps) {
                     allowFullScreen
                     title="Full Movie Preview"
                     data-testid="iframe-movie-preview"
-                    sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
                   />
                 )}
               </div>
@@ -528,7 +527,6 @@ function VideoForm({ movie, onSuccess }: VideoFormProps) {
                     allowFullScreen
                     title="Trailer Preview"
                     data-testid="iframe-trailer-preview"
-                    sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
                   />
                 )}
               </div>
