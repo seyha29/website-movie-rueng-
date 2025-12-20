@@ -219,8 +219,30 @@ export default function MovieDetail() {
     <div className="min-h-screen bg-background">
       <Header />
 
+      {/* Admin Banners Above Trailer */}
+      {activeBanners && activeBanners.length > 0 && (
+        <div className="pt-14 lg:pt-16">
+          {activeBanners.slice(0, 2).map((banner) => (
+            <a
+              key={banner.id}
+              href={banner.linkUrl || "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full"
+            >
+              <img
+                src={banner.imageUrl}
+                alt={banner.name}
+                className="w-full h-auto object-cover"
+                style={{ maxHeight: '120px' }}
+              />
+            </a>
+          ))}
+        </div>
+      )}
+
       {/* Hero Trailer Section */}
-      <div className="pt-14 lg:pt-16">
+      <div className={activeBanners && activeBanners.length > 0 ? "" : "pt-14 lg:pt-16"}>
         <div className="relative">
           {movie.trailerUrl ? (
             <div className="relative w-full aspect-video max-h-[70vh]">
@@ -245,28 +267,6 @@ export default function MovieDetail() {
                 />
               )}
               <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none" />
-              
-              {/* Admin Banners Overlay on Trailer */}
-              {activeBanners && activeBanners.length > 0 && (
-                <div className="absolute top-4 left-4 right-4 z-10 flex flex-col gap-2">
-                  {activeBanners.slice(0, 2).map((banner) => (
-                    <a
-                      key={banner.id}
-                      href={banner.linkUrl || "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block w-full max-w-md mx-auto"
-                    >
-                      <img
-                        src={banner.imageUrl}
-                        alt={banner.name}
-                        className="w-full h-auto rounded-lg shadow-lg opacity-90 hover:opacity-100 transition-opacity"
-                        style={{ maxHeight: '80px', objectFit: 'contain' }}
-                      />
-                    </a>
-                  ))}
-                </div>
-              )}
             </div>
           ) : (
             <div className="relative w-full aspect-video max-h-[70vh]">
