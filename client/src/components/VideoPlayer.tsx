@@ -1,11 +1,6 @@
 import { X, Maximize, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRef, useState, useEffect } from "react";
-import DynamicWatermark from "@/components/DynamicWatermark";
-import ScreenProtection from "@/components/ScreenProtection";
-import DRMProtection from "@/components/DRMProtection";
-import adBanner1 from "@assets/TAPTAP2-728x180-3_1764365836520.gif";
-import adBanner2 from "@assets/DAFABET-728x180-1_1764365836521.gif";
 
 interface VideoPlayerProps {
   title: string;
@@ -18,19 +13,11 @@ interface VideoPlayerProps {
   hasPurchased?: boolean;
 }
 
-// Obfuscate video provider identification
-function obfuscateUrl(url: string): string {
-  // Add random parameter to prevent easy URL matching
-  const randomParam = `_t=${Date.now()}`;
-  return url.includes('?') ? `${url}&${randomParam}` : `${url}?${randomParam}`;
-}
-
 function getEmbedUrl(url: string): string {
   if (!url) return "";
 
   let processedUrl = "";
 
-  // YouTube embed handling
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
     let videoId = '';
     
@@ -55,7 +42,6 @@ function getEmbedUrl(url: string): string {
       processedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`;
     }
   }
-  // Vimeo embed handling - with branding removal for paid plans
   else if (url.includes('vimeo.com')) {
     const vimeoParams = 'autoplay=1&badge=0&title=0&byline=0&portrait=0&controls=1&dnt=1';
     
@@ -77,7 +63,6 @@ function getEmbedUrl(url: string): string {
       }
     }
   }
-  // Cloudflare Stream handling
   else if (url.includes('cloudflarestream.com') || url.includes('videodelivery.net')) {
     const cfParams = 'autoplay=true&muted=false&controls=true';
     
@@ -104,7 +89,6 @@ function getEmbedUrl(url: string): string {
       }
     }
   }
-  // Bunny.net Stream handling
   else if (url.includes('bunnycdn') || url.includes('b-cdn.net') || url.includes('iframe.mediadelivery.net')) {
     if (url.includes('?')) {
       if (!url.includes('autoplay=')) {
@@ -116,7 +100,6 @@ function getEmbedUrl(url: string): string {
       processedUrl = url + '?autoplay=true';
     }
   }
-  // Other embed URLs
   else if (url.includes('/embed/') || url.includes('player.') || url.includes('/iframe')) {
     processedUrl = url.includes('?') ? `${url}&autoplay=1` : `${url}?autoplay=1`;
   }
@@ -127,9 +110,8 @@ function getEmbedUrl(url: string): string {
   return processedUrl;
 }
 
-export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, requiresAuth, onAuthRequired, user, hasPurchased = false }: VideoPlayerProps) {
+export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, hasPurchased = false }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(true); // Start in fullscreen-like mode
   const [isBrowserFullscreen, setIsBrowserFullscreen] = useState(false);
   const embedUrl = videoUrl ? getEmbedUrl(videoUrl) : "";
 
@@ -162,12 +144,6 @@ export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, requi
     }
   };
 
-  const exitPlayer = () => {
-    setIsFullscreen(false);
-    if (onClose) onClose();
-  };
-
-  // Listen for browser fullscreen changes
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsBrowserFullscreen(!!document.fullscreenElement);
@@ -180,10 +156,6 @@ export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, requi
     };
   }, []);
 
-  // Video player starts in fullscreen-like mode (full viewport) by default
-  // No auto-fullscreen API needed since we use CSS to fill viewport
-
-  // Handle Escape key to close player
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && onClose) {
@@ -197,197 +169,91 @@ export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, requi
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  // Cleanup: exit fullscreen and unlock orientation when component unmounts
   useEffect(() => {
     return () => {
-      // Exit fullscreen if active
       if (document.fullscreenElement) {
         document.exitFullscreen().catch(() => {});
       }
-      // Unlock orientation
       if ('screen' in window && 'orientation' in window.screen) {
         try {
           (window.screen.orientation as any).unlock();
-        } catch (e) {
-          // Ignore unlock errors
-        }
+        } catch (e) {}
       }
     };
   }, []);
 
-  // Only apply protection if user is provided (authenticated)
-  const ProtectionWrapper = user ? ScreenProtection : "div";
-  const protectionProps = user ? { showWarnings: true, userName: user.fullName } : {};
-
   return (
-    // @ts-ignore
-    <ProtectionWrapper {...protectionProps}>
-      {/* Full viewport overlay - video fills entire screen */}
+    <div 
+      className="fixed inset-0 bg-black z-50 flex flex-col"
+      data-testid="player-video"
+    >
       <div 
-        className="fixed inset-0 bg-black z-50 flex flex-col"
-        data-testid="player-video"
+        ref={containerRef}
+        className="relative bg-black overflow-hidden w-full h-full flex flex-col"
       >
-        {/* Main container - fills entire viewport */}
-        <div 
-          ref={containerRef}
-          className="relative bg-black overflow-hidden w-full h-full flex flex-col"
-        >
-          {/* Ad Banner 1 - Top (hidden in fullscreen and for purchased videos) */}
-          {!isFullscreen && !hasPurchased && (
-            <a 
-              href="https://taptapthai.com" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="block w-full"
-              data-testid="link-video-ad-banner-1"
+        <div className="relative w-full h-full flex-1 bg-black">
+          {embedUrl ? (
+            <iframe
+              src={embedUrl}
+              title={title}
+              className="w-full h-full"
+              style={{ colorScheme: 'normal' }}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+              allowFullScreen
+              data-testid="iframe-video"
+            />
+          ) : (
+            <div 
+              className="w-full h-full bg-cover bg-center flex items-center justify-center"
+              style={{ backgroundImage: `url(${posterUrl})` }}
             >
-              <img 
-                src={adBanner1} 
-                alt="Advertisement" 
-                className="w-full h-auto object-cover"
-                data-testid="img-video-ad-banner-1"
-              />
-            </a>
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                <div className="text-center text-white">
+                  <p className="text-xl mb-2">{title}</p>
+                  <p className="text-sm text-gray-400">No video URL available</p>
+                </div>
+              </div>
+            </div>
           )}
-
-          {/* Video Header with controls (hidden in fullscreen) */}
-          {!isFullscreen && (
-            <div className="flex items-center justify-between bg-zinc-900 px-4 py-2">
+          
+          <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-10 bg-gradient-to-b from-black/70 to-transparent">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-white/20 gap-2"
+              onClick={onClose}
+              data-testid="button-back-player"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span className="text-sm font-medium">Back</span>
+            </Button>
+            
+            <h3 className="text-white text-sm font-medium truncate flex-1 text-center px-4">{title}</h3>
+            
+            <div className="flex items-center gap-2">
               <Button
+                size="icon"
                 variant="ghost"
-                size="sm"
-                className="text-white hover:bg-white/10 gap-2"
-                onClick={onClose}
-                data-testid="button-back-player"
+                className="text-white hover:bg-white/20 h-9 w-9"
+                onClick={toggleBrowserFullscreen}
+                data-testid="button-fullscreen"
+                title="Enter browser fullscreen"
               >
-                <ArrowLeft className="h-4 w-4" />
-                <span className="text-sm">Back</span>
+                <Maximize className="h-5 w-5" />
               </Button>
-              
-              <h3 className="text-white text-sm font-medium truncate flex-1 text-center px-4">{title}</h3>
-              
-              <div className="flex items-center gap-2">
-                {embedUrl && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="text-white hover:bg-white/10 h-8 w-8"
-                    onClick={toggleBrowserFullscreen}
-                    data-testid="button-fullscreen"
-                  >
-                    <Maximize className="h-4 w-4" />
-                  </Button>
-                )}
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="text-white hover:bg-white/10 h-8 w-8"
-                  onClick={onClose}
-                  data-testid="button-close-player"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Video Player - Full size in fullscreen mode */}
-          <DRMProtection>
-            <div className={`relative select-none bg-black ${
-              isFullscreen 
-                ? 'w-full h-full flex-1' 
-                : 'w-full aspect-video'
-            }`}>
-              {embedUrl ? (
-                <>
-                  <iframe
-                    src={embedUrl}
-                    title={title}
-                    className="w-full h-full"
-                    style={{ colorScheme: 'normal' }}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    data-testid="iframe-video"
-                  />
-                  
-                </>
-              ) : (
-              <div 
-                className="w-full h-full bg-cover bg-center flex items-center justify-center"
-                style={{ backgroundImage: `url(${posterUrl})` }}
+              <Button
+                size="icon"
+                variant="ghost"
+                className="text-white hover:bg-white/20 h-9 w-9"
+                onClick={onClose}
+                data-testid="button-close-player"
               >
-                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                  <div className="text-center text-white">
-                    <p className="text-xl mb-2">{title}</p>
-                    <p className="text-sm text-gray-400">No video URL available</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Dynamic watermark overlay - only show if user hasn't purchased */}
-            {user && !hasPurchased && <DynamicWatermark intensity="strong" showTimestamp={true} user={user} />}
-            
-              {/* Top controls - always visible for full viewport mode */}
-              <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-10 bg-gradient-to-b from-black/70 to-transparent">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white hover:bg-white/20 gap-2"
-                  onClick={onClose}
-                  data-testid="button-back-player"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                  <span className="text-sm font-medium">Back</span>
-                </Button>
-                
-                <h3 className="text-white text-sm font-medium truncate flex-1 text-center px-4">{title}</h3>
-                
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="text-white hover:bg-white/20 h-9 w-9"
-                    onClick={toggleBrowserFullscreen}
-                    data-testid="button-fullscreen"
-                    title="Enter browser fullscreen"
-                  >
-                    <Maximize className="h-5 w-5" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="text-white hover:bg-white/20 h-9 w-9"
-                    onClick={onClose}
-                    data-testid="button-close-player"
-                  >
-                    <X className="h-5 w-5" />
-                  </Button>
-                </div>
-              </div>
+                <X className="h-5 w-5" />
+              </Button>
             </div>
-          </DRMProtection>
-
-          {/* Ad Banner 2 - Bottom (hidden in fullscreen and for purchased videos) */}
-          {!isFullscreen && !hasPurchased && (
-            <a 
-              href="https://dafabet.com" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="block w-full"
-              data-testid="link-video-ad-banner-2"
-            >
-              <img 
-                src={adBanner2} 
-                alt="Advertisement" 
-                className="w-full h-auto object-cover"
-                data-testid="img-video-ad-banner-2"
-              />
-            </a>
-          )}
+          </div>
         </div>
       </div>
-    {/* @ts-ignore */}
-    </ProtectionWrapper>
+    </div>
   );
 }
