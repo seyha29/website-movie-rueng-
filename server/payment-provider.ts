@@ -144,28 +144,26 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
     currency: string;
     callbackUrl: string;
   }): Promise<PaymentInitiationResponse> {
-    // Generate unique transaction ID (timestamp-based, exactly like the example)
+    // Generate unique transaction ID (timestamp-based, exactly like official RaksmeyPay sample)
     const transactionId = Date.now();
     
-    // URL encode the success_url with transaction_id parameter (exactly like the example)
-    const successUrl = encodeURIComponent(`${params.callbackUrl}?transaction_id=${transactionId}`);
+    // URL encode the success_url with transaction_id and amount (exactly like official sample)
+    // Format: urlencode("callback_url?transaction_id=XXX&amount=YYY")
+    const successUrl = encodeURIComponent(`${params.callbackUrl}?transaction_id=${transactionId}&amount=${params.amount}`);
     
-    // Build remark (exactly like the example)
-    const remark = `Payment from user ${params.userId}`;
-    
-    // Generate SHA1 hash signature (exactly like the example)
-    // Format: SHA1(profileKey + transactionId + amount + successUrl + remark)
+    // Generate SHA1 hash signature (EXACTLY like official RaksmeyPay PHP sample)
+    // Format: SHA1(profile_key + transaction_id + amount + success_url)
+    // NOTE: NO remark in the hash - this is the official format
     const hash = crypto
       .createHash("sha1")
-      .update(this.profileKey + transactionId + params.amount + successUrl + remark)
+      .update(this.profileKey + transactionId + params.amount + successUrl)
       .digest("hex");
     
-    // Build query parameters using querystring.stringify (exactly like the example)
+    // Build query parameters (exactly like official sample: transaction_id, amount, success_url, hash)
     const queryParams = querystring.stringify({
       transaction_id: transactionId,
       amount: params.amount,
       success_url: successUrl,
-      remark: remark,
       hash: hash,
     });
     
@@ -175,8 +173,7 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
     console.log(`[RaksemeyPay] Payment URL created for user ${params.userId}:`, {
       transaction_id: transactionId,
       amount: params.amount,
-      success_url: params.callbackUrl,
-      remark: remark,
+      success_url: `${params.callbackUrl}?transaction_id=${transactionId}&amount=${params.amount}`,
       hash: hash,
       paymentUrl: paymentUrl.substring(0, 150) + '...',
     });
