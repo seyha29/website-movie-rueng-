@@ -231,14 +231,15 @@ export default function MovieDetail() {
 
       {/* Admin Banners Above Trailer */}
       {activeBanners && activeBanners.length > 0 && (
-        <div className="pt-14 lg:pt-16">
+        <div className="pt-14 lg:pt-16 flex flex-col items-center" style={{ gap: '1px' }}>
           {activeBanners.slice(0, 2).map((banner) => (
             <a
               key={banner.id}
               href={banner.linkUrl || "#"}
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full"
+              className="block"
+              style={{ width: '90%' }}
             >
               <img
                 src={banner.imageUrl}
@@ -253,9 +254,9 @@ export default function MovieDetail() {
 
       {/* Hero Trailer Section */}
       <div className={activeBanners && activeBanners.length > 0 ? "" : "pt-14 lg:pt-16"}>
-        <div className="relative">
+        <div className="relative flex justify-center" style={{ paddingTop: '2px' }}>
           {movie.trailerUrl ? (
-            <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+            <div className="relative" style={{ width: '90%', aspectRatio: '16/9' }}>
               {movie.trailerUrl.toLowerCase().endsWith('.mp4') || movie.trailerUrl.toLowerCase().endsWith('.webm') ? (
                 <video
                   src={movie.trailerUrl}
@@ -278,7 +279,7 @@ export default function MovieDetail() {
               )}
             </div>
           ) : (
-            <div className="relative w-full aspect-video max-h-[70vh]">
+            <div className="relative aspect-video max-h-[70vh]" style={{ width: '90%' }}>
               <img
                 src={movie.backdropImage}
                 alt={movie.title}
