@@ -423,12 +423,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId!;
       const { movieId } = req.params;
       
-      // Use RaksmeyPay for video purchase (original flow)
-      const result = await paymentService.initiateVideoPurchase(userId, movieId);
+      const movie = await storage.getMovieById(movieId);
+      if (!movie) {
+        return res.status(404).json({ error: "Movie not found" });
+      }
       
-      console.log(`[RaksmeyPay] Video purchase initiated for movie ${movieId}, checkout: ${result.checkoutUrl}`);
+      const alreadyPurchased = await storage.hasUserPurchasedVideo(userId, movieId);
+      if (alreadyPurchased) {
+        return res.status(400).json({ error: "Video already purchased" });
+      }
       
-      res.status(201).json(result);
+      const amount = parseFloat(movie.price || "1.00");
+      const transactionId = `TXN${Date.now()}`;
+      
+      // Generate KHQR code with Bakong ID
+      const { qrString, md5Hash } = generateKHQRForPayment(amount, "USD", transactionId);
+      
+      const transaction = await storage.createPaymentTransaction({
+        userId,
+        planId: "video-purchase",
+        amount: amount.toString(),
+        currency: "USD",
+        status: "pending",
+        paymentMethod: "khqr",
+        transactionRef: transactionId,
+      });
+      
+      // Note: For KHQR payments, verification is done via admin panel or user confirmation
+      
+      console.log(`[KHQR] Generated QR for movie ${movieId}, amount: $${amount}, txn: ${transactionId}`);
+      
+      res.status(201).json({
+        paymentId: transaction.id,
+        paymentRef: transactionId,
+        qrString: qrString,
+        md5Hash: md5Hash,
+        amount: amount.toString(),
+        currency: "USD",
+        movieId,
+        movieTitle: movie.title,
+      });
     } catch (error) {
       console.error("Failed to initiate video purchase:", error);
       if (error instanceof Error) {
@@ -500,7 +534,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Transaction does not belong to this user" });
       }
 
-      // Verify with RaksemeyPay and complete purchase if successful
+      // For KHQR payments, return pending status - admin needs to confirm manually
+      // KHQR payments go directly to Bakong account and cannot be verified via API
+      if (transaction.paymentMethod === 'khqr') {
+        console.log(`[KHQR Verify] Payment ${paymentRef} is KHQR - awaiting admin confirmation`);
+        res.json({ 
+          isPurchased: false,
+          status: 'pending',
+          message: 'Payment pending admin confirmation',
+        });
+        return;
+      }
+
+      // For RaksmeyPay payments, verify with their API
       const result = await paymentService.verifyVideoPurchase(paymentRef, movieId);
       
       res.json({ 
@@ -513,6 +559,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: error.message });
       }
       res.status(500).json({ error: "Failed to verify purchase" });
+    }
+  });
+  
+  // Admin endpoint to confirm KHQR payment manually
+  app.post("/api/admin/confirm-khqr-payment", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const { paymentRef, movieId } = req.body;
+      
+      if (!paymentRef || !movieId) {
+        return res.status(400).json({ error: "Payment reference and movie ID required" });
+      }
+      
+      const transaction = await storage.getPaymentTransactionByRef(paymentRef);
+      if (!transaction) {
+        return res.status(404).json({ error: "Transaction not found" });
+      }
+      
+      if (transaction.paymentMethod !== 'khqr') {
+        return res.status(400).json({ error: "This is not a KHQR payment" });
+      }
+      
+      // Mark transaction as completed
+      await storage.updatePaymentTransaction(transaction.id, {
+        status: 'completed',
+        completedAt: Math.floor(Date.now() / 1000),
+      });
+      
+      // Record video purchase
+      await storage.createVideoPurchase({
+        userId: transaction.userId,
+        movieId: movieId,
+        amount: transaction.amount,
+        currency: 'USD',
+        transactionRef: paymentRef,
+      });
+      
+      console.log(`[KHQR Admin] Payment ${paymentRef} confirmed for movie ${movieId}`);
+      res.json({ success: true, message: 'Payment confirmed' });
+    } catch (error) {
+      console.error("Failed to confirm KHQR payment:", error);
+      res.status(500).json({ error: "Failed to confirm payment" });
     }
   });
 
