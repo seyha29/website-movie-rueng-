@@ -177,6 +177,13 @@ export function PaymentModal({
     }
   };
 
+  // Reset payment countdown when modal opens
+  useEffect(() => {
+    if (open) {
+      setPaymentCountdown(300); // Reset to 5 minutes
+    }
+  }, [open]);
+
   // Countdown effect for auto-close after payment success
   useEffect(() => {
     if (paymentSuccess && countdown > 0) {
@@ -366,9 +373,9 @@ export function PaymentModal({
               
               <div className="text-center space-y-3">
                 <div className="space-y-1">
-                  <h3 className="text-lg font-bold">Scan KHQR to Pay</h3>
+                  <h3 className="text-lg font-bold">Scan QR to Pay</h3>
                   <p className="text-sm text-muted-foreground max-w-md">
-                    Open your mobile banking app (ABA, ACLEDA, Wing, Bakong, etc.) and scan this KHQR code to complete payment.
+                    Scan this QR code with your phone camera to open the payment page, then pay with Bakong or any supported banking app.
                   </p>
                 </div>
                 

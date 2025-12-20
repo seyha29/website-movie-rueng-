@@ -149,7 +149,9 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
     
     // URL encode the success_url with transaction_id and amount (exactly like official sample)
     // Format: urlencode("callback_url?transaction_id=XXX&amount=YYY")
-    const successUrl = encodeURIComponent(`${params.callbackUrl}?transaction_id=${transactionId}&amount=${params.amount}`);
+    // Check if callbackUrl already has query params (use & instead of ?)
+    const separator = params.callbackUrl.includes('?') ? '&' : '?';
+    const successUrl = encodeURIComponent(`${params.callbackUrl}${separator}transaction_id=${transactionId}&amount=${params.amount}`);
     
     // Generate SHA1 hash signature (EXACTLY like official RaksmeyPay PHP sample)
     // Format: SHA1(profile_key + transaction_id + amount + success_url)
@@ -173,7 +175,7 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
     console.log(`[RaksemeyPay] Payment URL created for user ${params.userId}:`, {
       transaction_id: transactionId,
       amount: params.amount,
-      success_url: `${params.callbackUrl}?transaction_id=${transactionId}&amount=${params.amount}`,
+      success_url: `${params.callbackUrl}${separator}transaction_id=${transactionId}&amount=${params.amount}`,
       hash: hash,
       paymentUrl: paymentUrl.substring(0, 150) + '...',
     });
