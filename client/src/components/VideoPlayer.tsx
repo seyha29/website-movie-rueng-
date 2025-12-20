@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useRef, useState, useEffect } from "react";
 import DynamicWatermark from "@/components/DynamicWatermark";
 import ScreenProtection from "@/components/ScreenProtection";
+import DRMProtection from "@/components/DRMProtection";
 import adBanner1 from "@assets/TAPTAP2-728x180-3_1764365836520.gif";
 import adBanner2 from "@assets/DAFABET-728x180-1_1764365836521.gif";
 
@@ -317,24 +318,26 @@ export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, requi
           )}
 
           {/* Video Player - Full size in fullscreen mode */}
-          <div className={`relative select-none bg-black ${
-            isFullscreen 
-              ? 'w-full h-full flex-1' 
-              : 'w-full aspect-video'
-          }`}>
-            {embedUrl ? (
-              <>
-                <iframe
-                  src={embedUrl}
-                  title={title}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  data-testid="iframe-video"
-                />
-                
-              </>
-            ) : (
+          <DRMProtection>
+            <div className={`relative select-none bg-black ${
+              isFullscreen 
+                ? 'w-full h-full flex-1' 
+                : 'w-full aspect-video'
+            }`}>
+              {embedUrl ? (
+                <>
+                  <iframe
+                    src={embedUrl}
+                    title={title}
+                    className="w-full h-full"
+                    style={{ colorScheme: 'normal' }}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    data-testid="iframe-video"
+                  />
+                  
+                </>
+              ) : (
               <div 
                 className="w-full h-full bg-cover bg-center flex items-center justify-center"
                 style={{ backgroundImage: `url(${posterUrl})` }}
@@ -351,19 +354,20 @@ export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, requi
             {/* Dynamic watermark overlay - only show if user hasn't purchased */}
             {user && !hasPurchased && <DynamicWatermark intensity="strong" showTimestamp={true} user={user} />}
             
-            {/* Fullscreen exit button - only in fullscreen mode */}
-            {isFullscreen && (
-              <Button
-                size="icon"
-                variant="ghost"
-                className="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/70 h-10 w-10 z-10"
-                onClick={toggleFullscreen}
-                data-testid="button-exit-fullscreen"
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            )}
-          </div>
+              {/* Fullscreen exit button - only in fullscreen mode */}
+              {isFullscreen && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/70 h-10 w-10 z-10"
+                  onClick={toggleFullscreen}
+                  data-testid="button-exit-fullscreen"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              )}
+            </div>
+          </DRMProtection>
 
           {/* Ad Banner 2 - Bottom (hidden in fullscreen and for purchased videos) */}
           {!isFullscreen && !hasPurchased && (
