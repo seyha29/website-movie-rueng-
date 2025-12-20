@@ -218,8 +218,8 @@ export default function MovieDetail() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Movie not found</h1>
-          <Button onClick={() => navigate("/")}>Go Home</Button>
+          <h1 className="text-2xl font-bold mb-4">រកមិនឃើញភាពយន្ត</h1>
+          <Button onClick={() => navigate("/")}>ទៅទំព័រដើម</Button>
         </div>
       </div>
     );
@@ -299,9 +299,9 @@ export default function MovieDetail() {
         <div className="px-4 lg:px-8 -mt-4 relative z-10">
           <div className="max-w-7xl mx-auto text-center">
             <Badge className="bg-red-600 text-white border-red-600 mb-2">
-              <Play className="h-3 w-3 mr-1 fill-current" /> Trailer
+              <Play className="h-3 w-3 mr-1 fill-current" /> ឃ្លីបខ្លី
             </Badge>
-            <p className="text-sm text-muted-foreground">Watch the trailer for free</p>
+            <p className="text-sm text-muted-foreground">មើលឃ្លីបខ្លីដោយឥតគិតថ្លៃ</p>
           </div>
         </div>
       </div>
@@ -337,22 +337,22 @@ export default function MovieDetail() {
                     <div className="grid grid-cols-2 gap-3 text-sm mb-4">
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Year:</span>
+                        <span className="text-muted-foreground">ឆ្នាំ:</span>
                         <span className="text-primary font-medium" data-testid="text-year">{movie.year}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Time:</span>
+                        <span className="text-muted-foreground">រយៈពេល:</span>
                         <span data-testid="text-duration">{movie.duration}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Film className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Type:</span>
-                        <span className="text-cyan-500">{movie.genres[0] || "Movie"}</span>
+                        <span className="text-muted-foreground">ប្រភេទ:</span>
+                        <span className="text-cyan-500">{movie.genres[0] || "ភាពយន្ត"}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Star className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-muted-foreground">Rating:</span>
+                        <span className="text-muted-foreground">វាយតម្លៃ:</span>
                         <Badge variant="outline" className="text-xs" data-testid="badge-rating">{movie.rating}</Badge>
                       </div>
                     </div>
@@ -368,7 +368,7 @@ export default function MovieDetail() {
 
                     {/* Cast Section */}
                     <div>
-                      <h3 className="text-sm font-semibold text-muted-foreground mb-3">Cast</h3>
+                      <h3 className="text-sm font-semibold text-muted-foreground mb-3">តារាសម្តែង</h3>
                       <div className="flex flex-wrap gap-4">
                         {movie.cast.slice(0, 5).map((actor, index) => (
                           <div key={index} className="flex flex-col items-center">
@@ -393,7 +393,7 @@ export default function MovieDetail() {
                       data-testid="button-play"
                     >
                       <Play className="h-5 w-5 fill-current" />
-                      {movie.isFree === 1 ? "Watch Now" : `Buy Movie $${movie.price || "1.00"}`}
+                      {movie.isFree === 1 ? "មើលឥឡូវ" : `ទិញភាពយន្ត $${movie.price || "1.00"}`}
                     </Button>
                     
                     <Button
@@ -406,31 +406,31 @@ export default function MovieDetail() {
                       {inMyList ? (
                         <>
                           <Check className="h-5 w-5" />
-                          In My List
+                          ក្នុងបញ្ជីខ្ញុំ
                         </>
                       ) : (
                         <>
                           <Plus className="h-5 w-5" />
-                          Add to List
+                          បន្ថែមក្នុងបញ្ជី
                         </>
                       )}
                     </Button>
 
                     {movie.isFree !== 1 && (
                       <p className="text-xs text-center text-muted-foreground">
-                        Pay once, watch anytime
+                        បង់ម្តង មើលគ្រប់ពេល
                       </p>
                     )}
 
                     {movie.isFree === 1 && (
                       <Badge className="bg-green-500/20 text-green-500 border-green-500/30 justify-center" data-testid="badge-free">
-                        FREE TO WATCH
+                        មើលដោយឥតគិតថ្លៃ
                       </Badge>
                     )}
 
                     {/* Director */}
                     <div className="mt-4 pt-4 border-t border-border">
-                      <p className="text-xs text-muted-foreground">Director</p>
+                      <p className="text-xs text-muted-foreground">អ្នកដឹកនាំ</p>
                       <p className="text-sm font-medium" data-testid="text-director">{movie.director}</p>
                     </div>
                   </div>
@@ -446,9 +446,9 @@ export default function MovieDetail() {
         <div className="px-4 lg:px-8 py-6">
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">Related Titles</h2>
+              <h2 className="text-xl font-bold">ភាពយន្តស្រដៀងគ្នា</h2>
               <Link href="/" className="text-sm text-primary flex items-center gap-1 hover:underline">
-                More Films <ChevronRight className="h-4 w-4" />
+                ភាពយន្តបន្ថែម <ChevronRight className="h-4 w-4" />
               </Link>
             </div>
             
