@@ -343,25 +343,43 @@ export function PaymentModal({
               </Button>
             </div>
           ) : checkoutUrl ? (
-            <div className="flex-1 flex flex-col items-center justify-center py-8">
-              {/* KHQR Code Display */}
-              <div className="bg-white p-6 rounded-xl shadow-lg mb-6">
+            <div className="flex-1 flex flex-col items-center justify-center py-4">
+              {/* QR Code with Bakong Logo */}
+              <div className="relative bg-white p-4 rounded-xl shadow-lg mb-4">
                 <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrString || checkoutUrl)}`}
-                  alt="KHQR Payment Code"
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(checkoutUrl)}`}
+                  alt="Payment QR Code"
                   className="w-[280px] h-[280px]"
                   data-testid="img-qr-code"
                 />
+                {/* Bakong Logo Overlay */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="bg-white p-2 rounded-lg shadow-md">
+                    <img 
+                      src="https://www.bakongapp.com/wp-content/uploads/2023/07/bakong-logo.png"
+                      alt="Bakong"
+                      className="w-12 h-12 object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
               
-              <div className="text-center space-y-4">
-                <div className="space-y-2">
+              {/* 5-Minute Countdown Timer */}
+              <div className="text-center mb-4">
+                <div className="text-2xl font-bold text-orange-500">
+                  {Math.floor(paymentCountdown / 60)}:{(paymentCountdown % 60).toString().padStart(2, '0')}
+                </div>
+                <p className="text-xs text-muted-foreground">Time remaining to complete payment</p>
+              </div>
+              
+              <div className="text-center space-y-3">
+                <div className="space-y-1">
                   <h3 className="text-lg font-bold">Scan KHQR to Pay</h3>
                   <p className="text-sm text-muted-foreground max-w-md">
                     Open your mobile banking app (ABA, ACLEDA, Wing, Bakong, etc.) and scan this KHQR code to complete payment.
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Paying to: <span className="font-semibold">cham_toem2@aclb</span>
                   </p>
                 </div>
                 
@@ -370,7 +388,7 @@ export function PaymentModal({
                   <span>Waiting for payment confirmation...</span>
                 </div>
                 
-                <div className="flex justify-center mt-4">
+                <div className="flex justify-center mt-3">
                   <Button
                     variant="outline"
                     size="sm"
