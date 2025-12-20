@@ -37,3 +37,10 @@ channel = "stable-25_05"
 deploymentTarget = "autoscale"
 run = ["bash", "-c", "npm run start"]
 build = ["bash", "-c", "npm run build"]
+
+[userenv]
+
+[userenv.shared]
+BAKONG_ID = "cham_toem2@aclb"
+MERCHANT_NAME = "RUENG Movies"
+MERCHANT_CITY = "Phnom Penh"

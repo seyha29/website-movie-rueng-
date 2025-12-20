@@ -27,6 +27,7 @@ export function PaymentModal({
 }: PaymentModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [qrString, setQrString] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -57,10 +58,17 @@ export function PaymentModal({
         paymentRefRef.current = data.paymentRef;
       }
       
-      // Check if we have a checkout URL (real payment provider)
+      // Check if we have a KHQR string (proper Bakong QR code)
+      if (data.qrString) {
+        console.log('[Payment] Displaying KHQR QR code for Bakong payment');
+        setQrString(data.qrString);
+        setCheckoutUrl(data.qrString); // Use for display logic
+        return;
+      }
+      
+      // Check if we have a checkout URL (fallback)
       if (data.checkoutUrl) {
         console.log('[Payment] Opening RaksemeyPay QR code:', data.checkoutUrl);
-        // Show the checkout URL in the modal (QR code will be displayed in iframe)
         setCheckoutUrl(data.checkoutUrl);
         return;
       }
@@ -143,6 +151,7 @@ export function PaymentModal({
       pollingRef.current = null;
     }
     setCheckoutUrl(null);
+    setQrString(null);
     setPaymentSuccess(false);
     setCountdown(5);
     paymentRefRef.current = null;
@@ -304,11 +313,11 @@ export function PaymentModal({
             </div>
           ) : checkoutUrl ? (
             <div className="flex-1 flex flex-col items-center justify-center py-8">
-              {/* QR Code Display */}
+              {/* KHQR Code Display */}
               <div className="bg-white p-6 rounded-xl shadow-lg mb-6">
                 <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(checkoutUrl)}`}
-                  alt="Payment QR Code"
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(qrString || checkoutUrl)}`}
+                  alt="KHQR Payment Code"
                   className="w-[280px] h-[280px]"
                   data-testid="img-qr-code"
                 />
@@ -316,9 +325,12 @@ export function PaymentModal({
               
               <div className="text-center space-y-4">
                 <div className="space-y-2">
-                  <h3 className="text-lg font-bold">Scan QR Code with Banking App</h3>
+                  <h3 className="text-lg font-bold">Scan KHQR Code to Pay</h3>
                   <p className="text-sm text-muted-foreground max-w-md">
-                    Open your mobile banking app (ABA, ACLEDA, Wing, etc.) and scan this QR code to complete payment.
+                    Open your mobile banking app (ABA, ACLEDA, Wing, Bakong, etc.) and scan this KHQR code to complete payment.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Paying to: <span className="font-semibold">cham_toem2@aclb</span>
                   </p>
                 </div>
                 
@@ -327,15 +339,7 @@ export function PaymentModal({
                   <span>Waiting for payment confirmation...</span>
                 </div>
                 
-                <div className="flex gap-3 mt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(checkoutUrl, '_blank')}
-                    data-testid="button-open-payment"
-                  >
-                    Open Payment Page
-                  </Button>
+                <div className="flex justify-center mt-4">
                   <Button
                     variant="outline"
                     size="sm"

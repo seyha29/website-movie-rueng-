@@ -6,6 +6,7 @@ import { z } from "zod";
 import bcrypt from "bcrypt";
 import { createPaymentProvider } from "./payment-provider";
 import { PaymentService } from "./payment-service";
+import { generateKHQRForPayment } from "./khqr-generator";
 
 // Initialize payment service
 const paymentProvider = createPaymentProvider();
@@ -422,8 +423,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId!;
       const { movieId } = req.params;
       
-      const paymentData = await paymentService.initiateVideoPurchase(userId, movieId);
-      res.status(201).json(paymentData);
+      const movie = await storage.getMovieById(movieId);
+      if (!movie) {
+        return res.status(404).json({ error: "Movie not found" });
+      }
+      
+      const amount = parseFloat(movie.price || "1.00");
+      const transactionId = `TXN${Date.now()}`;
+      
+      const { qrString, md5Hash } = generateKHQRForPayment(amount, "USD", transactionId);
+      
+      const transaction = await storage.createPaymentTransaction({
+        userId,
+        planId: "video-purchase",
+        amount: amount.toString(),
+        currency: "USD",
+        status: "pending",
+        paymentMethod: "khqr",
+        transactionRef: transactionId,
+      });
+      
+      console.log(`[KHQR] Generated QR for movie ${movieId}, amount: $${amount}, txn: ${transactionId}`);
+      
+      res.status(201).json({
+        paymentId: transaction.id,
+        paymentRef: transactionId,
+        qrString: qrString,
+        md5Hash: md5Hash,
+        amount: amount.toString(),
+        currency: "USD",
+        movieId,
+        movieTitle: movie.title,
+      });
     } catch (error) {
       console.error("Failed to initiate video purchase:", error);
       if (error instanceof Error) {
