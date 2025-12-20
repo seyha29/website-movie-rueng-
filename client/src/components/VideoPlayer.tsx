@@ -183,21 +183,20 @@ export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, requi
     };
   }, []);
 
-  // Auto-fullscreen on mobile for purchased videos
+  // Auto-fullscreen when video player opens (for all devices)
   useEffect(() => {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    if (isMobile && embedUrl && containerRef.current) {
+    if (embedUrl && containerRef.current) {
       // Small delay to ensure the component is fully mounted
       const timer = setTimeout(async () => {
         try {
-          // Request fullscreen
+          // Request fullscreen on all devices
           if (containerRef.current && !document.fullscreenElement) {
             await containerRef.current.requestFullscreen();
             setIsFullscreen(true);
             
             // Lock orientation to landscape on mobile
-            if ('screen' in window && 'orientation' in window.screen) {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (isMobile && 'screen' in window && 'orientation' in window.screen) {
               try {
                 await (window.screen.orientation as any).lock('landscape').catch(() => {});
               } catch (e) {
@@ -209,7 +208,7 @@ export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, requi
           // Fullscreen may be blocked by browser - user interaction required
           console.log('Auto-fullscreen not available, user interaction required');
         }
-      }, 500);
+      }, 100);
 
       return () => clearTimeout(timer);
     }
