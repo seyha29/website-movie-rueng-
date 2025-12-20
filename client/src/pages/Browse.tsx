@@ -5,35 +5,21 @@ import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import MovieCard from "@/components/MovieCard";
 import Footer from "@/components/Footer";
-import VideoPlayer from "@/components/VideoPlayer";
 import MovieDetailModal from "@/components/MovieDetailModal";
 import AuthModal from "@/components/AuthModal";
-import { PaymentModal } from "@/components/PaymentModal";
 import { Badge } from "@/components/ui/badge";
 import { useMyList } from "@/hooks/use-my-list";
-import { useVideoPurchaseGate } from "@/hooks/use-video-purchase";
 import type { Movie } from "@shared/schema";
 
 export default function Browse() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
   const [selectedGenre, setSelectedGenre] = useState("All");
-  const [isPlayerOpen, setIsPlayerOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [pendingPlayMovie, setPendingPlayMovie] = useState<string | null>(null);
   const [pendingAddMovie, setPendingAddMovie] = useState<string | null>(null);
   const { toggleMyList } = useMyList();
-  
-  // Video purchase gate hook
-  const {
-    checkAndExecute: checkVideoPurchaseAndExecute,
-    showPaymentModal,
-    handlePaymentSuccess,
-    handlePaymentCancel,
-    currentMovieId,
-    currentMovieTitle,
-  } = useVideoPurchaseGate();
 
   // Check if user is authenticated
   const { data: user } = useQuery({
@@ -81,19 +67,7 @@ export default function Browse() {
   const allMovies = moviesData?.movies || [];
 
   const handlePlayMovie = (movieId: string) => {
-    if (!user) {
-      setPendingPlayMovie(movieId);
-      setIsAuthModalOpen(true);
-      return;
-    }
-
-    const movie = allMovies.find(m => m.id === movieId);
-    if (!movie) return;
-
-    checkVideoPurchaseAndExecute(movieId, movie.title, () => {
-      setSelectedMovie(movie);
-      setIsPlayerOpen(true);
-    });
+    navigate(`/movie/${movieId}`);
   };
 
   const handleAddToList = (movieId: string) => {
@@ -115,33 +89,15 @@ export default function Browse() {
   };
 
   const handleAuthSuccess = async () => {
-    // Wait for user query to refetch after successful auth
     await queryClient.refetchQueries({ queryKey: ["/api/auth/me"] });
     
-    // Now execute pending actions with fresh auth state
     if (pendingPlayMovie) {
-      const movie = allMovies.find(m => m.id === pendingPlayMovie);
-      if (movie) {
-        checkVideoPurchaseAndExecute(pendingPlayMovie, movie.title, () => {
-          setSelectedMovie(movie);
-          setIsPlayerOpen(true);
-        });
-      }
+      navigate(`/movie/${pendingPlayMovie}`);
       setPendingPlayMovie(null);
     }
     if (pendingAddMovie) {
       toggleMyList(pendingAddMovie);
       setPendingAddMovie(null);
-    }
-  };
-
-  const handleLocalPaymentSuccess = () => {
-    // After successful payment, execute pending action
-    handlePaymentSuccess();
-    
-    // Play the selected movie
-    if (selectedMovie) {
-      setIsPlayerOpen(true);
     }
   };
 
@@ -226,16 +182,6 @@ export default function Browse() {
 
       <Footer />
 
-      {isPlayerOpen && selectedMovie && (
-        <VideoPlayer
-          title={selectedMovie.title}
-          videoUrl={selectedMovie.videoEmbedUrl || undefined}
-          posterUrl={selectedMovie.backdropImage}
-          onClose={() => setIsPlayerOpen(false)}
-          user={user}
-        />
-      )}
-
       {isDetailModalOpen && selectedMovie && (
         <MovieDetailModal
           isOpen={isDetailModalOpen}
@@ -267,17 +213,6 @@ export default function Browse() {
           setPendingAddMovie(null);
         }}
         onSuccess={handleAuthSuccess}
-      />
-
-      <PaymentModal
-        open={showPaymentModal}
-        onOpenChange={(open) => {
-          if (!open) handlePaymentCancel();
-        }}
-        onSuccess={handleLocalPaymentSuccess}
-        mode="video"
-        movieId={currentMovieId}
-        movieTitle={currentMovieTitle}
       />
     </div>
   );
