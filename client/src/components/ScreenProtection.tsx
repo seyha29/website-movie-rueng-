@@ -1,81 +1,28 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ScreenProtectionProps {
   children: React.ReactNode;
   showWarnings?: boolean;
   userName?: string;
+  onSecurityViolation?: () => void;
 }
 
-export default function ScreenProtection({ children, showWarnings = true, userName = "User" }: ScreenProtectionProps) {
+export default function ScreenProtection({ 
+  children, 
+  showWarnings = true, 
+  userName = "User",
+  onSecurityViolation 
+}: ScreenProtectionProps) {
   const { toast } = useToast();
   const [detectionCount, setDetectionCount] = useState(0);
+  const [isBlurred, setIsBlurred] = useState(false);
   const lastDetectionTime = useRef(0);
+  const videoElementRef = useRef<HTMLVideoElement | null>(null);
 
-  useEffect(() => {
-    // Screenshot keyboard detection
-    const handleKeyUp = (e: KeyboardEvent) => {
-      // Print Screen key (Windows)
-      if (e.key === "PrintScreen") {
-        handleScreenshotAttempt("Print Screen");
-        
-        // Clear clipboard to prevent pasting
-        if (navigator.clipboard) {
-          navigator.clipboard.writeText("").catch(() => {});
-        }
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Windows: Win+Shift+S (Snipping Tool)
-      if (e.key === "s" && e.shiftKey && (e.metaKey || e.ctrlKey)) {
-        handleScreenshotAttempt("Snipping Tool");
-      }
-
-      // macOS: Cmd+Shift+3 (Full screenshot)
-      if (e.key === "3" && e.shiftKey && e.metaKey) {
-        handleScreenshotAttempt("macOS Screenshot");
-      }
-
-      // macOS: Cmd+Shift+4 (Partial screenshot)
-      if (e.key === "4" && e.shiftKey && e.metaKey) {
-        handleScreenshotAttempt("macOS Screenshot");
-      }
-
-      // macOS: Cmd+Shift+5 (Screenshot menu)
-      if (e.key === "5" && e.shiftKey && e.metaKey) {
-        handleScreenshotAttempt("macOS Screenshot");
-      }
-    };
-
-    // Disable right-click context menu
-    const handleContextMenu = (e: MouseEvent) => {
-      e.preventDefault();
-      if (showWarnings) {
-        toast({
-          title: "Right-click disabled",
-          description: "This content is protected from copying.",
-          variant: "destructive",
-        });
-      }
-      return false;
-    };
-
-    document.addEventListener("keyup", handleKeyUp);
-    document.addEventListener("keydown", handleKeyDown);
-    document.addEventListener("contextmenu", handleContextMenu);
-
-    return () => {
-      document.removeEventListener("keyup", handleKeyUp);
-      document.removeEventListener("keydown", handleKeyDown);
-      document.removeEventListener("contextmenu", handleContextMenu);
-    };
-  }, [showWarnings, toast]);
-
-  const handleScreenshotAttempt = (method: string) => {
+  const handleScreenshotAttempt = useCallback((method: string) => {
     const now = Date.now();
     
-    // Debounce: only trigger once every 2 seconds
     if (now - lastDetectionTime.current < 2000) {
       return;
     }
@@ -85,16 +32,174 @@ export default function ScreenProtection({ children, showWarnings = true, userNa
 
     if (showWarnings) {
       toast({
-        title: "⚠️ Screenshot Detected",
-        description: `This content is protected and being monitored. Your activity has been logged. (${userName})`,
+        title: "⚠️ ការថតអេក្រង់ត្រូវបានរកឃើញ",
+        description: `មាតិកានេះត្រូវបានការពារ។ សកម្មភាពរបស់អ្នកត្រូវបានកត់ត្រា។ (${userName})`,
         variant: "destructive",
         duration: 5000,
       });
     }
 
-    // Log the attempt
     logSecurityEvent("screenshot_attempt", method);
-  };
+    
+    if (onSecurityViolation) {
+      onSecurityViolation();
+    }
+  }, [showWarnings, userName, toast, onSecurityViolation]);
+
+  useEffect(() => {
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "PrintScreen") {
+        e.preventDefault();
+        handleScreenshotAttempt("Print Screen");
+        
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText("Screen recording is not allowed").catch(() => {});
+        }
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "s" && e.shiftKey && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        handleScreenshotAttempt("Snipping Tool");
+      }
+
+      if ((e.key === "3" || e.key === "4" || e.key === "5") && e.shiftKey && e.metaKey) {
+        e.preventDefault();
+        handleScreenshotAttempt("macOS Screenshot");
+      }
+
+      if (e.key === "F12" || (e.ctrlKey && e.shiftKey && (e.key === "I" || e.key === "i"))) {
+        e.preventDefault();
+        handleScreenshotAttempt("Developer Tools");
+      }
+
+      if (e.ctrlKey && e.key === "p") {
+        e.preventDefault();
+        handleScreenshotAttempt("Print");
+      }
+
+      if (e.ctrlKey && e.key === "s") {
+        e.preventDefault();
+        handleScreenshotAttempt("Save");
+      }
+    };
+
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      if (showWarnings) {
+        toast({
+          title: "បិទការចុចខាងស្តាំ",
+          description: "មាតិកានេះត្រូវបានការពារពីការចម្លង។",
+          variant: "destructive",
+        });
+      }
+      return false;
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setIsBlurred(true);
+        const videos = document.querySelectorAll('video');
+        videos.forEach(video => video.pause());
+        
+        const iframes = document.querySelectorAll('iframe');
+        iframes.forEach(iframe => {
+          try {
+            iframe.contentWindow?.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+          } catch (e) {}
+        });
+      } else {
+        setIsBlurred(false);
+      }
+    };
+
+    const handleBlur = () => {
+      setIsBlurred(true);
+    };
+
+    const handleFocus = () => {
+      setIsBlurred(false);
+    };
+
+    const handleCopy = (e: ClipboardEvent) => {
+      e.preventDefault();
+      if (showWarnings) {
+        toast({
+          title: "បិទការចម្លង",
+          description: "មាតិកានេះមិនអាចចម្លងបានទេ។",
+          variant: "destructive",
+        });
+      }
+    };
+
+    const handleDragStart = (e: DragEvent) => {
+      e.preventDefault();
+    };
+
+    const handleSelectStart = (e: Event) => {
+      e.preventDefault();
+    };
+
+    document.addEventListener("keyup", handleKeyUp);
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("contextmenu", handleContextMenu);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener("copy", handleCopy);
+    document.addEventListener("dragstart", handleDragStart);
+    document.addEventListener("selectstart", handleSelectStart);
+    window.addEventListener("blur", handleBlur);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      document.removeEventListener("keyup", handleKeyUp);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("contextmenu", handleContextMenu);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("copy", handleCopy);
+      document.removeEventListener("dragstart", handleDragStart);
+      document.removeEventListener("selectstart", handleSelectStart);
+      window.removeEventListener("blur", handleBlur);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [showWarnings, toast, handleScreenshotAttempt]);
+
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .screen-protected {
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+        user-select: none !important;
+        -webkit-touch-callout: none !important;
+        pointer-events: auto;
+      }
+      .screen-protected img,
+      .screen-protected video,
+      .screen-protected iframe {
+        -webkit-user-drag: none !important;
+        -khtml-user-drag: none !important;
+        -moz-user-drag: none !important;
+        -o-user-drag: none !important;
+        user-drag: none !important;
+        pointer-events: none;
+      }
+      .screen-protected iframe {
+        pointer-events: auto;
+      }
+      @media print {
+        .screen-protected {
+          display: none !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   const logSecurityEvent = async (eventType: string, details: string) => {
     try {
@@ -104,15 +209,36 @@ export default function ScreenProtection({ children, showWarnings = true, userNa
         body: JSON.stringify({
           eventType,
           details,
+          userName,
           userAgent: navigator.userAgent,
           timestamp: new Date().toISOString(),
         }),
       });
     } catch (error) {
-      // Silent fail - don't interrupt user experience
       console.error("Failed to log security event:", error);
     }
   };
 
-  return <>{children}</>;
+  return (
+    <div 
+      className={`screen-protected ${isBlurred ? 'blur-lg transition-all duration-300' : ''}`}
+      style={{ 
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none',
+        userSelect: 'none',
+      }}
+    >
+      {isBlurred && (
+        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center">
+          <div className="text-center text-white p-8">
+            <p className="text-2xl font-bold mb-4">⚠️ មាតិកាត្រូវបានការពារ</p>
+            <p className="text-gray-300">សូមត្រលប់មកទំព័រនេះវិញដើម្បីបន្តមើល</p>
+            <p className="text-sm text-gray-500 mt-4">Content Protected - Please return to continue watching</p>
+          </div>
+        </div>
+      )}
+      {children}
+    </div>
+  );
 }
