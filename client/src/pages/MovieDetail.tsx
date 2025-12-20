@@ -15,35 +15,41 @@ import { Play, Plus, Check, ChevronLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Movie } from "@shared/schema";
 
-// Convert any video URL to proper embed format
-function getTrailerEmbedUrl(url: string): string {
+// Convert any video URL to proper embed format with autoplay
+function getTrailerEmbedUrl(url: string, autoplay: boolean = true): string {
   if (!url) return "";
   
   // YouTube URL conversion
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
-    // Already an embed URL
+    let videoId = '';
     if (url.includes('/embed/')) {
-      return url;
+      const match = url.match(/\/embed\/([a-zA-Z0-9_-]+)/);
+      videoId = match ? match[1] : '';
+    } else {
+      const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/;
+      const match = url.match(youtubeRegex);
+      videoId = match ? match[1] : '';
     }
-    // Regular YouTube URL
-    const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/;
-    const match = url.match(youtubeRegex);
-    if (match && match[1]) {
-      return `https://www.youtube.com/embed/${match[1]}`;
+    if (videoId) {
+      const autoplayParam = autoplay ? '&autoplay=1&mute=1' : '';
+      return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1${autoplayParam}`;
     }
   }
   
   // Vimeo URL conversion
   if (url.includes('vimeo.com')) {
-    // Already player URL
-    if (url.includes('player.vimeo.com')) {
-      return url;
+    let videoId = '';
+    if (url.includes('player.vimeo.com/video/')) {
+      const match = url.match(/player\.vimeo\.com\/video\/(\d+)/);
+      videoId = match ? match[1] : '';
+    } else {
+      const vimeoRegex = /vimeo\.com\/(\d+)/;
+      const match = url.match(vimeoRegex);
+      videoId = match ? match[1] : '';
     }
-    // Regular Vimeo URL
-    const vimeoRegex = /vimeo\.com\/(\d+)/;
-    const match = url.match(vimeoRegex);
-    if (match && match[1]) {
-      return `https://player.vimeo.com/video/${match[1]}`;
+    if (videoId) {
+      const autoplayParam = autoplay ? '&autoplay=1&muted=1' : '';
+      return `https://player.vimeo.com/video/${videoId}?badge=0&title=0&byline=0${autoplayParam}`;
     }
   }
   
@@ -193,100 +199,189 @@ export default function MovieDetail() {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Backdrop Section */}
-      <div className="relative pt-14 lg:pt-16">
-        <div className="relative min-h-[50vh] lg:min-h-[60vh]">
-          <img
-            src={movie.backdropImage}
-            alt={movie.title}
-            className="absolute inset-0 w-full h-full object-cover"
-            loading="eager"
-            referrerPolicy="no-referrer"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-          
-          <div className="relative h-full flex items-end">
-            <div className="p-4 lg:p-12 pb-8 max-w-4xl">
-              {/* Back Button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="mb-4 hover-elevate"
-                onClick={() => navigate("/")}
-                data-testid="button-back"
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Back
-              </Button>
+      {/* Header with Back Button and Title */}
+      <div className="pt-14 lg:pt-16 px-4 lg:px-12">
+        <div className="max-w-6xl mx-auto">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-4 mb-4 hover-elevate"
+            onClick={() => navigate("/")}
+            data-testid="button-back"
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Back
+          </Button>
 
-              <h1 className="text-4xl lg:text-6xl font-bold mb-4" data-testid="text-movie-title">
-                {movie.title}
-              </h1>
-              
-              <div className="flex flex-wrap items-center gap-3 mb-6">
-                <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30" data-testid="badge-rating">
-                  ⭐ {movie.rating}
+          {/* Trailer Section - First Thing Users See */}
+          {movie.trailerUrl && (
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <h1 className="text-2xl lg:text-3xl font-bold" data-testid="text-movie-title">
+                  {movie.title}
+                </h1>
+                <Badge variant="secondary" className="bg-green-500/20 text-green-500 border-green-500/30">
+                  TRAILER - FREE
                 </Badge>
-                <span className="text-sm text-muted-foreground" data-testid="text-year">{movie.year}</span>
-                <span className="text-sm text-muted-foreground" data-testid="text-duration">{movie.duration}</span>
-                {movie.isFree === 1 && (
-                  <Badge variant="secondary" className="bg-green-500/20 text-green-500 border-green-500/30" data-testid="badge-free">
-                    FREE
-                  </Badge>
+              </div>
+              <div className="aspect-video rounded-lg overflow-hidden bg-card shadow-lg" data-testid="section-trailer">
+                {movie.trailerUrl.toLowerCase().endsWith('.mp4') || movie.trailerUrl.toLowerCase().endsWith('.webm') ? (
+                  <video
+                    src={movie.trailerUrl}
+                    controls
+                    autoPlay
+                    muted
+                    className="w-full h-full object-contain"
+                    title={`${movie.title} Trailer`}
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                ) : (
+                  <iframe
+                    src={getTrailerEmbedUrl(movie.trailerUrl, true)}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                    allowFullScreen
+                    title={`${movie.title} Trailer`}
+                  />
                 )}
               </div>
-
-              <div className="flex flex-wrap gap-2 mb-6">
-                {movie.genres.map((genre) => (
-                  <Badge key={genre} variant="outline" data-testid={`badge-genre-${genre.toLowerCase()}`}>
-                    {genre}
-                  </Badge>
-                ))}
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  size="lg"
-                  onClick={handlePlayMovie}
-                  className="gap-2"
-                  data-testid="button-play"
-                >
-                  <Play className="h-5 w-5 fill-current" />
-                  {movie.isFree === 1 ? "Play Full Movie" : "Watch Full Movie ($1)"}
-                </Button>
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  onClick={handleAddToList}
-                  className="gap-2"
-                  data-testid="button-add-to-list"
-                >
-                  {inMyList ? (
-                    <>
-                      <Check className="h-5 w-5" />
-                      In My List
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="h-5 w-5" />
-                      My List
-                    </>
-                  )}
-                </Button>
+              
+              {/* Buy Full Movie Button - Right Under Trailer */}
+              <div className="mt-4 p-4 bg-card/50 rounded-lg border border-border">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div>
+                    <p className="text-lg font-semibold">
+                      {movie.isFree === 1 ? "Watch Full Movie for Free!" : "Want to watch the full movie?"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {movie.isFree === 1 
+                        ? "This movie is free to watch. Click play to start watching!" 
+                        : "Purchase this movie for just $1 and enjoy the complete film."}
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button
+                      size="lg"
+                      onClick={handlePlayMovie}
+                      className="gap-2 min-w-[180px]"
+                      data-testid="button-play"
+                    >
+                      <Play className="h-5 w-5 fill-current" />
+                      {movie.isFree === 1 ? "Play Full Movie" : "Buy Full Movie ($1)"}
+                    </Button>
+                    <Button
+                      size="lg"
+                      variant="secondary"
+                      onClick={handleAddToList}
+                      className="gap-2"
+                      data-testid="button-add-to-list"
+                    >
+                      {inMyList ? (
+                        <Check className="h-5 w-5" />
+                      ) : (
+                        <Plus className="h-5 w-5" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* No Trailer - Show Backdrop Instead */}
+          {!movie.trailerUrl && (
+            <div className="mb-6">
+              <div className="relative aspect-video rounded-lg overflow-hidden bg-card shadow-lg">
+                <img
+                  src={movie.backdropImage}
+                  alt={movie.title}
+                  className="w-full h-full object-cover"
+                  loading="eager"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+                <div className="absolute bottom-4 left-4 right-4">
+                  <h1 className="text-2xl lg:text-4xl font-bold mb-2" data-testid="text-movie-title">
+                    {movie.title}
+                  </h1>
+                </div>
+              </div>
+              
+              {/* Buy Full Movie Button */}
+              <div className="mt-4 p-4 bg-card/50 rounded-lg border border-border">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div>
+                    <p className="text-lg font-semibold">
+                      {movie.isFree === 1 ? "Watch Full Movie for Free!" : "Watch the full movie"}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {movie.isFree === 1 
+                        ? "This movie is free to watch." 
+                        : "Purchase for just $1 to watch the complete film."}
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button
+                      size="lg"
+                      onClick={handlePlayMovie}
+                      className="gap-2 min-w-[180px]"
+                      data-testid="button-play"
+                    >
+                      <Play className="h-5 w-5 fill-current" />
+                      {movie.isFree === 1 ? "Play Full Movie" : "Buy Full Movie ($1)"}
+                    </Button>
+                    <Button
+                      size="lg"
+                      variant="secondary"
+                      onClick={handleAddToList}
+                      className="gap-2"
+                      data-testid="button-add-to-list"
+                    >
+                      {inMyList ? (
+                        <Check className="h-5 w-5" />
+                      ) : (
+                        <Plus className="h-5 w-5" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Content Section */}
-      <div className="p-4 lg:p-12">
+      {/* Movie Details Section */}
+      <div className="px-4 lg:px-12 pb-8">
         <div className="max-w-6xl mx-auto">
+          {/* Movie Info Badges */}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30" data-testid="badge-rating">
+              ⭐ {movie.rating}
+            </Badge>
+            <span className="text-sm text-muted-foreground" data-testid="text-year">{movie.year}</span>
+            <span className="text-sm text-muted-foreground" data-testid="text-duration">{movie.duration}</span>
+            {movie.isFree === 1 && (
+              <Badge variant="secondary" className="bg-green-500/20 text-green-500 border-green-500/30" data-testid="badge-free">
+                FREE
+              </Badge>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2 mb-6">
+            {movie.genres.map((genre) => (
+              <Badge key={genre} variant="outline" data-testid={`badge-genre-${genre.toLowerCase()}`}>
+                {genre}
+              </Badge>
+            ))}
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Details */}
             <div className="lg:col-span-2 space-y-6">
               <div>
-                <h2 className="text-2xl font-semibold mb-4">Overview</h2>
+                <h2 className="text-xl font-semibold mb-3">Overview</h2>
                 <p className="text-base text-muted-foreground leading-relaxed" data-testid="text-description">
                   {movie.description}
                 </p>
@@ -294,7 +389,7 @@ export default function MovieDetail() {
 
               {/* Cast */}
               <div>
-                <h2 className="text-2xl font-semibold mb-4">Cast</h2>
+                <h2 className="text-xl font-semibold mb-3">Cast</h2>
                 <div className="flex flex-wrap gap-2">
                   {movie.cast.map((actor, index) => (
                     <Badge key={index} variant="secondary" className="text-sm" data-testid={`badge-actor-${index}`}>
@@ -303,43 +398,6 @@ export default function MovieDetail() {
                   ))}
                 </div>
               </div>
-
-              {/* Trailer */}
-              {movie.trailerUrl && (
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-2xl font-semibold">Trailer</h2>
-                    <Badge variant="secondary" className="bg-green-500/20 text-green-500 border-green-500/30">
-                      FREE TO WATCH
-                    </Badge>
-                  </div>
-                  <div className="aspect-video rounded-lg overflow-hidden bg-card" data-testid="section-trailer">
-                    {movie.trailerUrl.toLowerCase().endsWith('.mp4') || movie.trailerUrl.toLowerCase().endsWith('.webm') ? (
-                      <video
-                        src={movie.trailerUrl}
-                        controls
-                        className="w-full h-full object-contain"
-                        title={`${movie.title} Trailer`}
-                      >
-                        Your browser does not support the video tag.
-                      </video>
-                    ) : (
-                      <iframe
-                        src={getTrailerEmbedUrl(movie.trailerUrl)}
-                        className="w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-                        allowFullScreen
-                        title={`${movie.title} Trailer`}
-                      />
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-3">
-                    {movie.isFree === 1 
-                      ? "Watch the full movie for free by clicking 'Play Full Movie' above." 
-                      : "This is a preview. Click 'Watch Full Movie ($1)' above to purchase and watch the complete film."}
-                  </p>
-                </div>
-              )}
             </div>
 
             {/* Right Column - Info */}
