@@ -75,7 +75,7 @@ export class PaymentService {
 
     // 3. Create pending payment transaction for video purchase
     const paymentRef = crypto.randomBytes(16).toString('hex');
-    const videoPurchaseAmount = 1; // $1 per video
+    const videoPurchaseAmount = parseFloat(movie.price || "1.00"); // Use movie's custom price
     
     // Get or create a "video purchase" plan (we still use plan structure for consistency)
     const plan = await storage.getMonthlyPlan(); // We'll reuse plan structure for transaction record
@@ -98,7 +98,7 @@ export class PaymentService {
                     (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000');
     const callbackUrl = `${baseUrl}/api/payments/video-callback?movieId=${encodeURIComponent(movieId)}`;
     
-    console.log(`[Video Payment] Using callback URL: ${callbackUrl}`);
+    console.log(`[Video Payment] Using callback URL: ${callbackUrl}, Amount: $${videoPurchaseAmount}`);
     
     const paymentResponse = await this.paymentProvider.initiatePayment({
       userId,

@@ -13,6 +13,7 @@ interface PaymentModalProps {
   mode?: 'subscription' | 'video';
   movieId?: string | null;
   movieTitle?: string;
+  moviePrice?: string;
 }
 
 export function PaymentModal({ 
@@ -22,6 +23,7 @@ export function PaymentModal({
   mode = 'subscription',
   movieId = null,
   movieTitle = '',
+  moviePrice = '1.00',
 }: PaymentModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
@@ -29,7 +31,7 @@ export function PaymentModal({
   const queryClient = useQueryClient();
 
   const isVideoMode = mode === 'video' && movieId;
-  const paymentAmount = isVideoMode ? '$1' : '$2';
+  const paymentAmount = isVideoMode ? `$${moviePrice}` : '$2';
   const paymentType = isVideoMode ? 'video purchase' : 'monthly subscription';
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [countdown, setCountdown] = useState(5);

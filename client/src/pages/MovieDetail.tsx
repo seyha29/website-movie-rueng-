@@ -97,6 +97,7 @@ export default function MovieDetail() {
     handlePaymentCancel,
     currentMovieId,
     currentMovieTitle,
+    currentMoviePrice,
   } = useVideoPurchaseGate();
 
   const { data: user } = useQuery({
@@ -150,7 +151,7 @@ export default function MovieDetail() {
         setSecureVideoUrl(videoUrl);
         setIsPlayerOpen(true);
       }
-    });
+    }, movie.price || "1.00");
   };
 
   const handleAddToList = () => {
@@ -350,7 +351,7 @@ export default function MovieDetail() {
                       data-testid="button-play"
                     >
                       <Play className="h-5 w-5 fill-current" />
-                      {movie.isFree === 1 ? "Watch Now" : "Buy Movie $1"}
+                      {movie.isFree === 1 ? "Watch Now" : `Buy Movie $${movie.price || "1.00"}`}
                     </Button>
                     
                     <Button
@@ -431,7 +432,7 @@ export default function MovieDetail() {
                       )}
                       {relatedMovie.isFree !== 1 && (
                         <Badge className="absolute top-2 right-2 bg-red-500 text-white text-xs">
-                          $1
+                          ${relatedMovie.price || "1.00"}
                         </Badge>
                       )}
                     </div>
@@ -482,6 +483,7 @@ export default function MovieDetail() {
         mode="video"
         movieId={currentMovieId}
         movieTitle={currentMovieTitle}
+        moviePrice={currentMoviePrice}
       />
     </div>
   );

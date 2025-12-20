@@ -355,6 +355,7 @@ function VideoForm({ movie, onSuccess }: VideoFormProps) {
     videoEmbedUrl: movie?.videoEmbedUrl || "",
     trailerUrl: movie?.trailerUrl || "",
     isFree: movie?.isFree === 1,
+    price: movie?.price || "1.00",
     isTrending: movie?.isTrending === 1,
     isNewAndPopular: movie?.isNewAndPopular === 1,
     isHeroBanner: movie?.isHeroBanner === 1,
@@ -369,6 +370,7 @@ function VideoForm({ movie, onSuccess }: VideoFormProps) {
         genres: data.genres.map(g => GENRE_MAPPING[g] || g),
         cast: data.cast.split(",").map((c) => c.trim()).filter(Boolean),
         isFree: data.isFree ? 1 : 0,
+        price: data.isFree ? "0.00" : data.price.toString(),
         isTrending: data.isTrending ? 1 : 0,
         isNewAndPopular: data.isNewAndPopular ? 1 : 0,
         isHeroBanner: data.isHeroBanner ? 1 : 0,
@@ -534,19 +536,44 @@ function VideoForm({ movie, onSuccess }: VideoFormProps) {
           )}
         </div>
 
-        <div className="sm:col-span-2 flex flex-col sm:flex-row gap-4 sm:gap-6">
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="is-free"
-              checked={formData.isFree}
-              onCheckedChange={(checked) => setFormData({ ...formData, isFree: checked })}
-              data-testid="switch-is-free"
-            />
-            <Label htmlFor="is-free" className="text-xs sm:text-sm font-medium">
-              Free to play (no payment required)
-            </Label>
-          </div>
+        {/* Price Setting */}
+        <div className="sm:col-span-2">
+          <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 items-start sm:items-center">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="is-free"
+                checked={formData.isFree}
+                onCheckedChange={(checked) => setFormData({ ...formData, isFree: checked })}
+                data-testid="switch-is-free"
+              />
+              <Label htmlFor="is-free" className="text-xs sm:text-sm font-medium">
+                Free to play
+              </Label>
+            </div>
 
+            {!formData.isFree && (
+              <div className="flex items-center gap-2">
+                <Label htmlFor="price" className="text-xs sm:text-sm font-medium whitespace-nowrap">
+                  Price ($):
+                </Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.50"
+                  min="0.50"
+                  max="100"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  className="w-24 text-sm"
+                  placeholder="1.00"
+                  data-testid="input-movie-price"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="sm:col-span-2 flex flex-col sm:flex-row gap-4 sm:gap-6">
           <div className="flex items-center space-x-2">
             <Switch
               id="hero-banner"

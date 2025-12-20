@@ -24,6 +24,7 @@ export function useVideoPurchaseGate() {
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [currentMovieId, setCurrentMovieId] = useState<string | null>(null);
   const [currentMovieTitle, setCurrentMovieTitle] = useState<string>("");
+  const [currentMoviePrice, setCurrentMoviePrice] = useState<string>("1.00");
 
   const initiatePaymentMutation = useMutation({
     mutationFn: async (movieId: string) => {
@@ -31,7 +32,7 @@ export function useVideoPurchaseGate() {
     },
   });
 
-  const checkAndExecute = async (movieId: string, movieTitle: string, action: () => void) => {
+  const checkAndExecute = async (movieId: string, movieTitle: string, action: () => void, moviePrice?: string) => {
     try {
       // Check if video is already purchased
       const response = await fetch(`/api/videos/${movieId}/purchased`, {
@@ -51,6 +52,7 @@ export function useVideoPurchaseGate() {
         // Video not purchased, show payment modal
         setCurrentMovieId(movieId);
         setCurrentMovieTitle(movieTitle);
+        setCurrentMoviePrice(moviePrice || "1.00");
         setPendingAction(() => action);
         setShowPaymentModal(true);
       }
@@ -67,6 +69,7 @@ export function useVideoPurchaseGate() {
     }
     setCurrentMovieId(null);
     setCurrentMovieTitle("");
+    setCurrentMoviePrice("1.00");
   };
 
   const handlePaymentCancel = () => {
@@ -74,6 +77,7 @@ export function useVideoPurchaseGate() {
     setPendingAction(null);
     setCurrentMovieId(null);
     setCurrentMovieTitle("");
+    setCurrentMoviePrice("1.00");
   };
 
   return {
@@ -83,6 +87,7 @@ export function useVideoPurchaseGate() {
     handlePaymentCancel,
     currentMovieId,
     currentMovieTitle,
+    currentMoviePrice,
     initiatePayment: initiatePaymentMutation.mutate,
     isInitiatingPayment: initiatePaymentMutation.isPending,
   };
