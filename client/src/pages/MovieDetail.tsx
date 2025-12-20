@@ -20,13 +20,22 @@ import type { Movie, AdBanner } from "@shared/schema";
 function getTrailerEmbedUrl(url: string, autoplay: boolean = true): string {
   if (!url) return "";
   
+  const autoplayParams = autoplay ? 'autoplay=1&mute=1' : '';
+  
+  // If already a YouTube embed URL, just add parameters
+  if (url.includes('youtube.com/embed/')) {
+    const hasParams = url.includes('?');
+    if (hasParams) {
+      return `${url}&${autoplayParams}&rel=0&modestbranding=1&enablejsapi=1`;
+    }
+    return `${url}?${autoplayParams}&rel=0&modestbranding=1&enablejsapi=1`;
+  }
+  
+  // Handle other YouTube URL formats
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
     let videoId = '';
     
-    if (url.includes('/embed/')) {
-      const match = url.match(/\/embed\/([a-zA-Z0-9_-]+)/);
-      videoId = match ? match[1] : '';
-    } else if (url.includes('/shorts/')) {
+    if (url.includes('/shorts/')) {
       const match = url.match(/\/shorts\/([a-zA-Z0-9_-]+)/);
       videoId = match ? match[1] : '';
     } else if (url.includes('watch?v=')) {
@@ -41,24 +50,28 @@ function getTrailerEmbedUrl(url: string, autoplay: boolean = true): string {
     }
     
     if (videoId) {
-      const autoplayParam = autoplay ? '&autoplay=1&mute=1' : '';
-      return `https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&enablejsapi=1${autoplayParam}`;
+      return `https://www.youtube.com/embed/${videoId}?${autoplayParams}&rel=0&modestbranding=1&enablejsapi=1`;
     }
   }
   
-  if (url.includes('vimeo.com')) {
-    let videoId = '';
-    if (url.includes('player.vimeo.com/video/')) {
-      const match = url.match(/player\.vimeo\.com\/video\/(\d+)/);
-      videoId = match ? match[1] : '';
-    } else {
-      const vimeoRegex = /vimeo\.com\/(\d+)/;
-      const match = url.match(vimeoRegex);
-      videoId = match ? match[1] : '';
+  // If already a Vimeo player URL, just add parameters
+  if (url.includes('player.vimeo.com/video/')) {
+    const hasParams = url.includes('?');
+    const vimeoAutoplay = autoplay ? 'autoplay=1&muted=1' : '';
+    if (hasParams) {
+      return `${url}&${vimeoAutoplay}&badge=0&title=0&byline=0`;
     }
+    return `${url}?${vimeoAutoplay}&badge=0&title=0&byline=0`;
+  }
+  
+  // Handle other Vimeo URL formats
+  if (url.includes('vimeo.com')) {
+    const vimeoRegex = /vimeo\.com\/(\d+)/;
+    const match = url.match(vimeoRegex);
+    const videoId = match ? match[1] : '';
     if (videoId) {
-      const autoplayParam = autoplay ? '&autoplay=1&muted=1' : '';
-      return `https://player.vimeo.com/video/${videoId}?badge=0&title=0&byline=0${autoplayParam}`;
+      const vimeoAutoplay = autoplay ? 'autoplay=1&muted=1' : '';
+      return `https://player.vimeo.com/video/${videoId}?${vimeoAutoplay}&badge=0&title=0&byline=0`;
     }
   }
   
