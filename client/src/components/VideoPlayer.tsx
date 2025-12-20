@@ -129,40 +129,32 @@ function getEmbedUrl(url: string): string {
 
 export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, requiresAuth, onAuthRequired, user, hasPurchased = false }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(true); // Start in fullscreen-like mode
+  const [isBrowserFullscreen, setIsBrowserFullscreen] = useState(false);
   const embedUrl = videoUrl ? getEmbedUrl(videoUrl) : "";
 
-  const toggleFullscreen = async () => {
+  const toggleBrowserFullscreen = async () => {
     if (!containerRef.current) return;
 
     try {
       if (!document.fullscreenElement) {
-        // Enter fullscreen
         await containerRef.current.requestFullscreen();
-        setIsFullscreen(true);
+        setIsBrowserFullscreen(true);
         
-        // Try to lock orientation to landscape (mobile devices)
-        if ('screen' in window && 'orientation' in window.screen) {
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile && 'screen' in window && 'orientation' in window.screen) {
           try {
-            await (window.screen.orientation as any).lock('landscape').catch(() => {
-              // Orientation lock may not be supported or allowed
-            });
-          } catch (e) {
-            // Ignore orientation lock errors
-          }
+            await (window.screen.orientation as any).lock('landscape').catch(() => {});
+          } catch (e) {}
         }
       } else {
-        // Exit fullscreen
         await document.exitFullscreen();
-        setIsFullscreen(false);
+        setIsBrowserFullscreen(false);
         
-        // Unlock orientation
         if ('screen' in window && 'orientation' in window.screen) {
           try {
             (window.screen.orientation as any).unlock();
-          } catch (e) {
-            // Ignore unlock errors
-          }
+          } catch (e) {}
         }
       }
     } catch (error) {
@@ -170,10 +162,15 @@ export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, requi
     }
   };
 
-  // Listen for fullscreen changes with proper cleanup
+  const exitPlayer = () => {
+    setIsFullscreen(false);
+    if (onClose) onClose();
+  };
+
+  // Listen for browser fullscreen changes
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      setIsBrowserFullscreen(!!document.fullscreenElement);
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
@@ -183,36 +180,8 @@ export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, requi
     };
   }, []);
 
-  // Auto-fullscreen when video player opens (for all devices)
-  useEffect(() => {
-    if (embedUrl && containerRef.current) {
-      // Small delay to ensure the component is fully mounted
-      const timer = setTimeout(async () => {
-        try {
-          // Request fullscreen on all devices
-          if (containerRef.current && !document.fullscreenElement) {
-            await containerRef.current.requestFullscreen();
-            setIsFullscreen(true);
-            
-            // Lock orientation to landscape on mobile
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            if (isMobile && 'screen' in window && 'orientation' in window.screen) {
-              try {
-                await (window.screen.orientation as any).lock('landscape').catch(() => {});
-              } catch (e) {
-                // Orientation lock may not be supported
-              }
-            }
-          }
-        } catch (error) {
-          // Fullscreen may be blocked by browser - user interaction required
-          console.log('Auto-fullscreen not available, user interaction required');
-        }
-      }, 100);
-
-      return () => clearTimeout(timer);
-    }
-  }, [embedUrl]);
+  // Video player starts in fullscreen-like mode (full viewport) by default
+  // No auto-fullscreen API needed since we use CSS to fill viewport
 
   // Handle Escape key to close player
   useEffect(() => {
@@ -253,21 +222,15 @@ export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, requi
   return (
     // @ts-ignore
     <ProtectionWrapper {...protectionProps}>
-      {/* Dark overlay background */}
+      {/* Full viewport overlay - video fills entire screen */}
       <div 
-        className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
-        onClick={onClose}
+        className="fixed inset-0 bg-black z-50 flex flex-col"
         data-testid="player-video"
       >
-        {/* Main container - prevent click propagation */}
+        {/* Main container - fills entire viewport */}
         <div 
           ref={containerRef}
-          className={`relative bg-black overflow-hidden shadow-2xl ${
-            isFullscreen 
-              ? 'w-full h-full flex flex-col' 
-              : 'w-full max-w-4xl rounded-lg'
-          }`}
-          onClick={(e) => e.stopPropagation()}
+          className="relative bg-black overflow-hidden w-full h-full flex flex-col"
         >
           {/* Ad Banner 1 - Top (hidden in fullscreen and for purchased videos) */}
           {!isFullscreen && !hasPurchased && (
@@ -309,7 +272,7 @@ export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, requi
                     size="icon"
                     variant="ghost"
                     className="text-white hover:bg-white/10 h-8 w-8"
-                    onClick={toggleFullscreen}
+                    onClick={toggleBrowserFullscreen}
                     data-testid="button-fullscreen"
                   >
                     <Maximize className="h-4 w-4" />
@@ -365,18 +328,43 @@ export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, requi
             {/* Dynamic watermark overlay - only show if user hasn't purchased */}
             {user && !hasPurchased && <DynamicWatermark intensity="strong" showTimestamp={true} user={user} />}
             
-              {/* Fullscreen exit button - only in fullscreen mode */}
-              {isFullscreen && (
+              {/* Top controls - always visible for full viewport mode */}
+              <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-10 bg-gradient-to-b from-black/70 to-transparent">
                 <Button
-                  size="icon"
                   variant="ghost"
-                  className="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/70 h-10 w-10 z-10"
-                  onClick={toggleFullscreen}
-                  data-testid="button-exit-fullscreen"
+                  size="sm"
+                  className="text-white hover:bg-white/20 gap-2"
+                  onClick={onClose}
+                  data-testid="button-back-player"
                 >
-                  <X className="h-5 w-5" />
+                  <ArrowLeft className="h-5 w-5" />
+                  <span className="text-sm font-medium">Back</span>
                 </Button>
-              )}
+                
+                <h3 className="text-white text-sm font-medium truncate flex-1 text-center px-4">{title}</h3>
+                
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="text-white hover:bg-white/20 h-9 w-9"
+                    onClick={toggleBrowserFullscreen}
+                    data-testid="button-fullscreen"
+                    title="Enter browser fullscreen"
+                  >
+                    <Maximize className="h-5 w-5" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="text-white hover:bg-white/20 h-9 w-9"
+                    onClick={onClose}
+                    data-testid="button-close-player"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </DRMProtection>
 
