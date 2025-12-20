@@ -27,7 +27,6 @@ export function PaymentModal({
 }: PaymentModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
-  const [qrString, setQrString] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -60,19 +59,10 @@ export function PaymentModal({
         paymentRefRef.current = data.paymentRef;
       }
       
-      // Check if we have a KHQR string (proper Bakong QR code for banking apps)
-      if (data.qrString) {
-        console.log('[Payment] Displaying KHQR code for Bakong payment');
-        setQrString(data.qrString);
-        setCheckoutUrl(data.qrString); // Use for display logic
-        return;
-      }
-      
-      // Check if we have a checkout URL (fallback)
+      // Check if we have a checkout URL (RaksmeyPay payment URL)
       if (data.checkoutUrl) {
         console.log('[Payment] Displaying payment page QR code:', data.checkoutUrl);
         setCheckoutUrl(data.checkoutUrl);
-        setQrString(null);
         return;
       }
       
@@ -154,7 +144,6 @@ export function PaymentModal({
       pollingRef.current = null;
     }
     setCheckoutUrl(null);
-    setQrString(null);
     setPaymentSuccess(false);
     setCountdown(5);
     paymentRefRef.current = null;

@@ -6,7 +6,6 @@ import { z } from "zod";
 import bcrypt from "bcrypt";
 import { createPaymentProvider } from "./payment-provider";
 import { PaymentService } from "./payment-service";
-import { generateKHQRForPayment } from "./khqr-generator";
 
 // Initialize payment service
 const paymentProvider = createPaymentProvider();
