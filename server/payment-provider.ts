@@ -153,54 +153,47 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
     currency: string;
     callbackUrl: string;
   }): Promise<PaymentInitiationResponse> {
-    const transactionId = Date.now().toString();
+    const transactionId = Date.now();
     
-    // Option 2: Generate KHQR directly in our app
-    // User scans QR with banking app, we poll RaksmeyPay API to detect payment
-    
-    // Generate proper Bakong KHQR code using ts-khqr library
+    // Generate real Bakong KHQR code using ts-khqr library
     const khqrResult = KHQR.generate({
       tag: TAG.INDIVIDUAL,
       accountID: this.bakongAccountId,
       merchantName: this.merchantName,
+      acquiringBank: 'ACLEDA Bank',
       merchantCity: 'Phnom Penh',
+      currency: params.currency === 'USD' ? CURRENCY.USD : CURRENCY.KHR,
       amount: params.amount,
-      currency: CURRENCY.USD,
       countryCode: COUNTRY.KH,
+      expirationTimestamp: Date.now() + 10 * 60 * 1000, // 10 minutes
       additionalData: {
-        billNumber: transactionId,
-        mobileNumber: '',
-        storeLabel: 'RUENG',
-        terminalLabel: 'WEB',
+        billNumber: transactionId.toString(),
+        storeLabel: 'RUENG Movies',
+        terminalLabel: `TXN${transactionId}`,
       },
     });
     
-    // Extract the KHQR string from the result
-    let khqrString = '';
-    if (khqrResult && typeof khqrResult === 'object' && 'data' in khqrResult) {
-      const data = (khqrResult as any).data;
-      if (data && typeof data === 'object' && 'qr' in data) {
-        khqrString = data.qr;
-      }
-    }
+    // ts-khqr returns the QR string directly
+    const khqrString = String(khqrResult);
     
-    if (!khqrString || khqrString.length < 50) {
-      console.error('[RaksmeyPay] Failed to generate KHQR:', khqrResult);
+    if (!khqrString || khqrString === 'null' || khqrString === 'undefined') {
+      console.error('[KHQR] Failed to generate KHQR');
       throw new Error('Failed to generate KHQR code');
     }
     
-    console.log(`[RaksmeyPay] Generated KHQR for transaction ${transactionId}:`, {
+    console.log(`[KHQR] Generated Bakong KHQR for user ${params.userId}:`, {
+      transaction_id: transactionId,
       amount: params.amount,
-      bakongAccount: this.bakongAccountId,
+      currency: params.currency,
+      bakongAccountId: this.bakongAccountId,
       khqrLength: khqrString.length,
     });
     
-    // Return KHQR string - frontend displays QR and polls for verification
     return {
-      paymentRef: transactionId,
+      paymentRef: transactionId.toString(),
       khqrString: khqrString,
-      sessionId: transactionId,
-      expiresAt: Math.floor(Date.now() / 1000) + 1800, // 30 minutes
+      sessionId: transactionId.toString(),
+      expiresAt: Math.floor(Date.now() / 1000) + 600, // 10 minutes (KHQR standard)
     };
   }
 

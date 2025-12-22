@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, X, CheckCircle, ExternalLink } from "lucide-react";
+import { Loader2, X, CheckCircle } from "lucide-react";
 
 interface PaymentModalProps {
   open: boolean;
@@ -40,31 +40,6 @@ export function PaymentModal({
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const paymentRefRef = useRef<string | null>(null);
   const paymentCountdownRef = useRef<NodeJS.Timeout | null>(null);
-  const paymentWindowRef = useRef<Window | null>(null);
-  const [paymentOpened, setPaymentOpened] = useState(false);
-
-  // Open RaksmeyPay checkout in new window
-  const openPaymentWindow = (url: string) => {
-    // Open in a popup window for better UX
-    const width = 500;
-    const height = 700;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
-    
-    paymentWindowRef.current = window.open(
-      url,
-      'RaksmeyPay',
-      `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
-    );
-    
-    setPaymentOpened(true);
-    
-    // Check if popup was blocked
-    if (!paymentWindowRef.current) {
-      // Fallback: redirect in same window
-      window.location.href = url;
-    }
-  };
 
   const initiatePaymentMutation = useMutation({
     mutationFn: async () => {
@@ -85,19 +60,17 @@ export function PaymentModal({
         paymentRefRef.current = data.paymentRef;
       }
       
-      // Open RaksmeyPay checkout URL in popup for secure payment
-      // RaksmeyPay handles KHQR display, payment tracking, and auto-verification
-      if (data.checkoutUrl) {
-        console.log('[Payment] Opening RaksmeyPay checkout:', data.checkoutUrl);
-        setCheckoutUrl(data.checkoutUrl);
-        openPaymentWindow(data.checkoutUrl);
+      // Check if we have a KHQR string (Bakong KHQR for banking apps)
+      if (data.khqrString) {
+        console.log('[Payment] Displaying Bakong KHQR code');
+        setKhqrString(data.khqrString);
         return;
       }
       
-      // Check if we have a KHQR string from RaksmeyPay API
-      if (data.khqrString) {
-        console.log('[Payment] RaksmeyPay returned KHQR code');
-        setKhqrString(data.khqrString);
+      // Fallback to checkout URL if no KHQR
+      if (data.checkoutUrl) {
+        console.log('[Payment] Displaying payment page QR code:', data.checkoutUrl);
+        setCheckoutUrl(data.checkoutUrl);
         return;
       }
       
@@ -178,12 +151,6 @@ export function PaymentModal({
       clearInterval(pollingRef.current);
       pollingRef.current = null;
     }
-    // Close payment popup if open
-    if (paymentWindowRef.current && !paymentWindowRef.current.closed) {
-      paymentWindowRef.current.close();
-    }
-    paymentWindowRef.current = null;
-    setPaymentOpened(false);
     setCheckoutUrl(null);
     setKhqrString(null);
     setPaymentSuccess(false);
@@ -381,119 +348,63 @@ export function PaymentModal({
               </Button>
             </div>
           ) : (khqrString || checkoutUrl) ? (
-            <div className="flex-1 flex flex-col items-center justify-center py-8">
-              {/* RaksmeyPay checkout opened in popup */}
-              {checkoutUrl && paymentOpened ? (
-                <>
-                  {/* Waiting for payment completion */}
-                  <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6">
-                    <Loader2 className="w-12 h-12 text-primary animate-spin" />
+            <div className="flex-1 flex flex-col items-center justify-center py-4">
+              {/* QR Code with Bakong Logo */}
+              <div className="relative bg-white p-4 rounded-xl shadow-lg mb-4">
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(khqrString || checkoutUrl || '')}`}
+                  alt="Payment QR Code"
+                  className="w-[280px] h-[280px]"
+                  data-testid="img-qr-code"
+                />
+                {/* Bakong Logo Overlay */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="bg-white p-2 rounded-lg shadow-md">
+                    <img 
+                      src="https://www.bakongapp.com/wp-content/uploads/2023/07/bakong-logo.png"
+                      alt="Bakong"
+                      className="w-12 h-12 object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
                   </div>
-                  
-                  <h3 className="text-xl font-bold mb-2">Complete Payment</h3>
-                  <p className="text-sm text-muted-foreground text-center max-w-sm mb-6">
-                    A payment window has opened. Complete your payment there using your banking app.
+                </div>
+              </div>
+              
+              {/* 5-Minute Countdown Timer */}
+              <div className="text-center mb-4">
+                <div className="text-2xl font-bold text-orange-500">
+                  {Math.floor(paymentCountdown / 60)}:{(paymentCountdown % 60).toString().padStart(2, '0')}
+                </div>
+                <p className="text-xs text-muted-foreground">Time remaining to complete payment</p>
+              </div>
+              
+              <div className="text-center space-y-3">
+                <div className="space-y-1">
+                  <h3 className="text-lg font-bold">Scan with Banking App</h3>
+                  <p className="text-sm text-muted-foreground max-w-md">
+                    Scan this Bakong KHQR code with ABA, ACLEDA, Wing, or any Bakong-supported banking app to pay directly.
                   </p>
-                  
-                  {/* Countdown Timer */}
-                  <div className="text-center mb-6">
-                    <div className="text-2xl font-bold text-orange-500">
-                      {Math.floor(paymentCountdown / 60)}:{(paymentCountdown % 60).toString().padStart(2, '0')}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Time remaining</p>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Waiting for payment confirmation...</span>
-                  </div>
-                  
-                  {/* Reopen payment window button */}
+                </div>
+                
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Waiting for payment confirmation...</span>
+                </div>
+                
+                <div className="flex justify-center mt-3">
                   <Button
                     variant="outline"
-                    onClick={() => openPaymentWindow(checkoutUrl)}
-                    className="mb-4"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Reopen Payment Window
-                  </Button>
-                  
-                  <Button
-                    variant="ghost"
                     size="sm"
                     onClick={handleClosePayment}
-                    className="text-muted-foreground"
                     data-testid="button-close-payment"
                   >
-                    <X className="w-4 h-4 mr-1" />
+                    <X className="w-4 h-4 mr-2" />
                     Cancel
                   </Button>
-                </>
-              ) : khqrString ? (
-                <>
-                  {/* KHQR Code Display (if RaksmeyPay returns KHQR directly) */}
-                  <div className="relative bg-white p-4 rounded-xl shadow-lg mb-4">
-                    <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(khqrString)}`}
-                      alt="Payment QR Code"
-                      className="w-[280px] h-[280px]"
-                      data-testid="img-qr-code"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="bg-white p-2 rounded-lg shadow-md">
-                        <img 
-                          src="https://www.bakongapp.com/wp-content/uploads/2023/07/bakong-logo.png"
-                          alt="Bakong"
-                          className="w-12 h-12 object-contain"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="text-center mb-4">
-                    <div className="text-2xl font-bold text-orange-500">
-                      {Math.floor(paymentCountdown / 60)}:{(paymentCountdown % 60).toString().padStart(2, '0')}
-                    </div>
-                    <p className="text-xs text-muted-foreground">Time remaining</p>
-                  </div>
-                  
-                  <div className="text-center space-y-3">
-                    <h3 className="text-lg font-bold">Scan with Banking App</h3>
-                    <p className="text-sm text-muted-foreground max-w-md">
-                      Scan this KHQR code with ABA, ACLEDA, Wing, or any Bakong-supported banking app.
-                    </p>
-                    
-                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Payment will confirm automatically...</span>
-                    </div>
-                    
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleClosePayment}
-                      className="text-muted-foreground"
-                    >
-                      <X className="w-4 h-4 mr-1" />
-                      Cancel
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  {/* Initial checkout state - button to open payment */}
-                  <Button
-                    className="w-full"
-                    onClick={() => checkoutUrl && openPaymentWindow(checkoutUrl)}
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Open Payment Page
-                  </Button>
-                </>
-              )}
+                </div>
+              </div>
             </div>
           ) : (
             <>
