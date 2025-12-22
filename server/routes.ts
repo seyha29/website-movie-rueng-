@@ -514,6 +514,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to verify purchase" });
     }
   });
+
+  // User endpoint to confirm Bakong KHQR payment (self-service)
+  app.post("/api/videos/:movieId/confirm-payment", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const { movieId } = req.params;
+      const { paymentRef } = req.body;
+
+      if (!paymentRef) {
+        return res.status(400).json({ error: "Payment reference required" });
+      }
+
+      console.log(`[KHQR Confirm] User ${userId} confirming payment for movie ${movieId}, ref ${paymentRef}`);
+
+      // Check if already purchased
+      const alreadyPurchased = await storage.hasUserPurchasedVideo(userId, movieId);
+      if (alreadyPurchased) {
+        return res.json({ success: true, message: 'Already purchased' });
+      }
+
+      // Find the transaction and verify the user owns it
+      const transaction = await storage.getPaymentTransactionByRef(paymentRef);
+      if (!transaction) {
+        return res.status(404).json({ error: "Transaction not found" });
+      }
+
+      if (transaction.userId !== userId) {
+        return res.status(403).json({ error: "Transaction does not belong to this user" });
+      }
+
+      // Mark transaction as completed
+      await storage.updatePaymentTransaction(transaction.id, {
+        status: 'completed',
+        completedAt: Math.floor(Date.now() / 1000),
+      });
+
+      // Record video purchase
+      await storage.createVideoPurchase({
+        userId: userId,
+        movieId: movieId,
+        amount: transaction.amount,
+        currency: 'USD',
+        transactionRef: paymentRef,
+      });
+
+      // Auto-add to My List
+      const isInMyList = await storage.isInMyList(userId, movieId);
+      if (!isInMyList) {
+        await storage.addToMyList(userId, movieId);
+      }
+
+      console.log(`[KHQR Confirm] Payment ${paymentRef} confirmed for user ${userId}, movie ${movieId}`);
+      res.json({ success: true, message: 'Payment confirmed', isPurchased: true });
+    } catch (error) {
+      console.error("Failed to confirm payment:", error);
+      if (error instanceof Error) {
+        return res.status(400).json({ error: error.message });
+      }
+      res.status(500).json({ error: "Failed to confirm payment" });
+    }
+  });
   
   // Admin endpoint to confirm KHQR payment manually
   app.post("/api/admin/confirm-khqr-payment", requireAuth, requireAdmin, async (req, res) => {
