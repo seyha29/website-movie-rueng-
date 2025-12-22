@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, X, CheckCircle } from "lucide-react";
+import { Loader2, X, CheckCircle, Check } from "lucide-react";
 
 interface PaymentModalProps {
   open: boolean;
@@ -40,6 +40,50 @@ export function PaymentModal({
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const paymentRefRef = useRef<string | null>(null);
   const paymentCountdownRef = useRef<NodeJS.Timeout | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
+
+  // Confirm payment mutation - user clicks "I've Paid"
+  const confirmPaymentMutation = useMutation({
+    mutationFn: async () => {
+      const paymentRef = paymentRefRef.current;
+      if (!paymentRef) throw new Error('No payment reference');
+      
+      const endpoint = isVideoMode 
+        ? `/api/videos/${movieId}/confirm-payment`
+        : `/api/payments/${paymentRef}/confirm`;
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentRef }),
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to confirm payment');
+      }
+      return response.json();
+    },
+    onSuccess: async (data) => {
+      if (data.status === 'completed' || data.success) {
+        handlePaymentCompleted();
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Confirmation Failed",
+        description: error.message || "Please try again or contact support.",
+        variant: "destructive",
+      });
+      setIsConfirming(false);
+    },
+  });
+
+  const handleConfirmPayment = () => {
+    setIsConfirming(true);
+    confirmPaymentMutation.mutate();
+  };
 
   const initiatePaymentMutation = useMutation({
     mutationFn: async () => {
@@ -388,12 +432,31 @@ export function PaymentModal({
                   </p>
                 </div>
                 
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Waiting for payment confirmation...</span>
-                </div>
+                {/* I've Paid Button */}
+                <Button
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3"
+                  onClick={handleConfirmPayment}
+                  disabled={isConfirming || confirmPaymentMutation.isPending}
+                  data-testid="button-confirm-payment"
+                >
+                  {isConfirming || confirmPaymentMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Confirming...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      I've Paid - Confirm Payment
+                    </>
+                  )}
+                </Button>
                 
-                <div className="flex justify-center mt-3">
+                <p className="text-xs text-muted-foreground text-center">
+                  Click above after you've completed the payment in your banking app
+                </p>
+                
+                <div className="flex justify-center mt-2">
                   <Button
                     variant="outline"
                     size="sm"

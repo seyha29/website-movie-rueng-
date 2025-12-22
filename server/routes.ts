@@ -568,6 +568,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User self-confirm KHQR payment (for video purchases)
+  app.post("/api/videos/:movieId/confirm-payment", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const { movieId } = req.params;
+      const { paymentRef } = req.body;
+
+      if (!paymentRef) {
+        return res.status(400).json({ error: "Payment reference required" });
+      }
+
+      console.log(`[KHQR Confirm] User ${userId} confirming payment ${paymentRef} for movie ${movieId}`);
+
+      // Check if already purchased
+      const alreadyPurchased = await storage.hasUserPurchasedVideo(userId, movieId);
+      if (alreadyPurchased) {
+        return res.json({ success: true, status: 'completed', message: 'Already purchased' });
+      }
+
+      // Find the transaction
+      const transaction = await storage.getPaymentTransactionByRef(paymentRef);
+      if (!transaction) {
+        return res.status(404).json({ error: "Transaction not found" });
+      }
+
+      if (transaction.userId !== userId) {
+        return res.status(403).json({ error: "Transaction does not belong to this user" });
+      }
+
+      // Mark transaction as completed
+      await storage.updatePaymentTransaction(transaction.id, {
+        status: 'completed',
+        completedAt: Math.floor(Date.now() / 1000),
+      });
+
+      // Record video purchase
+      await storage.createVideoPurchase({
+        userId: userId,
+        movieId: movieId,
+        amount: transaction.amount,
+        currency: 'USD',
+        transactionRef: paymentRef,
+      });
+
+      // Auto-add to user's list
+      try {
+        await storage.addToMyList(userId, movieId);
+      } catch (e) {
+        // Ignore if already in list
+      }
+
+      console.log(`[KHQR Confirm] Payment ${paymentRef} confirmed by user for movie ${movieId}`);
+      res.json({ success: true, status: 'completed', message: 'Payment confirmed' });
+    } catch (error) {
+      console.error("Failed to confirm KHQR payment:", error);
+      res.status(500).json({ error: "Failed to confirm payment" });
+    }
+  });
+
+  // User self-confirm KHQR payment (for subscription)
+  app.post("/api/payments/:paymentRef/confirm", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const { paymentRef } = req.params;
+
+      console.log(`[KHQR Confirm] User ${userId} confirming subscription payment ${paymentRef}`);
+
+      // Find the transaction
+      const transaction = await storage.getPaymentTransactionByRef(paymentRef);
+      if (!transaction) {
+        return res.status(404).json({ error: "Transaction not found" });
+      }
+
+      if (transaction.userId !== userId) {
+        return res.status(403).json({ error: "Transaction does not belong to this user" });
+      }
+
+      // Check if already completed
+      if (transaction.status === 'completed') {
+        return res.json({ success: true, status: 'completed', message: 'Already completed' });
+      }
+
+      // Mark transaction as completed
+      await storage.updatePaymentTransaction(transaction.id, {
+        status: 'completed',
+        completedAt: Math.floor(Date.now() / 1000),
+      });
+
+      // Create subscription
+      const plan = await storage.getMonthlyPlan();
+      if (plan) {
+        const endDate = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60; // 30 days from now
+        
+        await storage.createUserSubscription({
+          userId: userId,
+          planId: plan.id,
+          status: 'active',
+          endDate: endDate,
+        });
+      }
+
+      console.log(`[KHQR Confirm] Subscription payment ${paymentRef} confirmed by user`);
+      res.json({ success: true, status: 'completed', message: 'Subscription activated' });
+    } catch (error) {
+      console.error("Failed to confirm subscription payment:", error);
+      res.status(500).json({ error: "Failed to confirm payment" });
+    }
+  });
+
   app.post("/api/payments/initiate", requireAuth, async (req, res) => {
     try {
       const userId = req.session.userId!;
