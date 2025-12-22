@@ -174,6 +174,9 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
     let khqrString: string | undefined;
     
     try {
+      // Expiration: 10 minutes from now (in milliseconds timestamp)
+      const expirationTime = Date.now() + (10 * 60 * 1000);
+      
       const khqrResult = KHQR.generate({
         tag: TAG.INDIVIDUAL,
         accountID: this.bakongAccountId,
@@ -182,6 +185,7 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
         currency: params.currency === 'USD' ? CURRENCY.USD : CURRENCY.KHR,
         amount: params.amount,
         countryCode: COUNTRY.KH,
+        expirationTimestamp: expirationTime,
         additionalData: {
           billNumber: transactionId.toString(),
           storeLabel: 'RUENG',
