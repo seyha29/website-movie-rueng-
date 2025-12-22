@@ -446,21 +446,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         movieId,
         success_time,
         success_amount,
+        has_hashes: !!(bakong_hash && success_hash),
       });
       
-      if (!success_time || !success_amount || !bakong_hash || !success_hash || !transaction_id || !movieId) {
+      if (!transaction_id || !movieId) {
         console.error('[RaksemeyPay Video] Missing required parameters');
         return res.redirect(`/?status=error&message=${encodeURIComponent('Missing payment parameters')}`);
       }
 
-      // Verify payment and record video purchase
-      const result = await paymentService.verifyVideoPurchase(transaction_id as string, movieId as string);
-      
-      if (result.status === 'completed') {
-        console.log(`[RaksemeyPay Video] Video purchase completed for movie ${movieId}`);
+      // Find transaction by payment reference
+      const transaction = await storage.getPaymentTransactionByRef(transaction_id as string);
+      if (!transaction) {
+        console.error(`[RaksemeyPay Video] Transaction not found: ${transaction_id}`);
+        return res.redirect(`/?status=error&message=${encodeURIComponent('Transaction not found')}`);
+      }
+
+      // RaksmeyPay only sends callback on successful payment
+      // If we receive success_time and success_hash, the payment was successful
+      if (success_time && success_hash) {
+        // Mark transaction as completed
+        if (transaction.status === 'pending') {
+          await storage.updatePaymentTransaction(transaction.id, {
+            status: 'completed',
+            completedAt: Math.floor(Date.now() / 1000),
+          });
+        }
+
+        // Check if already purchased (prevent duplicates)
+        const alreadyPurchased = await storage.hasUserPurchasedVideo(transaction.userId, movieId as string);
+        
+        if (!alreadyPurchased) {
+          // Record video purchase
+          await storage.createVideoPurchase({
+            userId: transaction.userId,
+            movieId: movieId as string,
+            amount: transaction.amount,
+            currency: transaction.currency,
+            transactionRef: transaction_id as string,
+          });
+
+          // Auto-add to My List
+          const isInMyList = await storage.isInMyList(transaction.userId, movieId as string);
+          if (!isInMyList) {
+            await storage.addToMyList(transaction.userId, movieId as string);
+          }
+        }
+
+        console.log(`[RaksemeyPay Video] Video purchase completed for movie ${movieId}, user ${transaction.userId}`);
         return res.redirect(`/?status=success&message=${encodeURIComponent('Video purchased successfully!')}&movieId=${movieId}`);
       } else {
-        console.warn(`[RaksemeyPay Video] Payment not completed: ${result.status}`);
+        console.warn(`[RaksemeyPay Video] Callback missing success parameters`);
         return res.redirect(`/?status=pending&message=${encodeURIComponent('Payment is being processed')}`);
       }
     } catch (error) {
@@ -481,11 +516,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Payment reference required" });
       }
 
-      console.log(`[Video Verify] Verifying purchase for user ${userId}, movie ${movieId}, ref ${paymentRef}`);
-
       // Check if already purchased (no need to verify again)
       const alreadyPurchased = await storage.hasUserPurchasedVideo(userId, movieId);
       if (alreadyPurchased) {
+        console.log(`[Video Verify] Already purchased: user ${userId}, movie ${movieId}`);
         return res.json({ isPurchased: true, status: 'completed' });
       }
 
@@ -499,7 +533,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Transaction does not belong to this user" });
       }
 
-      // Verify payment with RaksmeyPay API
+      // If transaction is already completed (e.g., via callback), record the purchase
+      if (transaction.status === 'completed') {
+        console.log(`[Video Verify] Transaction already completed, recording purchase: ${paymentRef}`);
+        
+        // Record video purchase
+        await storage.createVideoPurchase({
+          userId: userId,
+          movieId: movieId,
+          amount: transaction.amount,
+          currency: transaction.currency,
+          transactionRef: paymentRef,
+        });
+
+        // Auto-add to My List
+        const isInMyList = await storage.isInMyList(userId, movieId);
+        if (!isInMyList) {
+          await storage.addToMyList(userId, movieId);
+        }
+
+        return res.json({ isPurchased: true, status: 'completed' });
+      }
+
+      // Verify payment with RaksmeyPay API (for pending transactions)
+      console.log(`[Video Verify] Checking RaksmeyPay API for payment ${paymentRef}`);
       const result = await paymentService.verifyVideoPurchase(paymentRef, movieId);
       
       res.json({ 

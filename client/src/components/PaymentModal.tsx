@@ -60,17 +60,21 @@ export function PaymentModal({
         paymentRefRef.current = data.paymentRef;
       }
       
-      // Check if we have a KHQR string (Bakong KHQR for banking apps)
-      if (data.khqrString) {
-        console.log('[Payment] Displaying Bakong KHQR code');
-        setKhqrString(data.khqrString);
+      // Prioritize checkoutUrl for verifiable payments through RaksmeyPay
+      if (data.checkoutUrl) {
+        console.log('[Payment] Displaying RaksmeyPay checkout:', data.checkoutUrl);
+        setCheckoutUrl(data.checkoutUrl);
+        // Also save KHQR if available (for display option)
+        if (data.khqrString) {
+          setKhqrString(data.khqrString);
+        }
         return;
       }
       
-      // Fallback to checkout URL if no KHQR
-      if (data.checkoutUrl) {
-        console.log('[Payment] Displaying payment page QR code:', data.checkoutUrl);
-        setCheckoutUrl(data.checkoutUrl);
+      // Fallback to KHQR if no checkout URL
+      if (data.khqrString) {
+        console.log('[Payment] Displaying Bakong KHQR code');
+        setKhqrString(data.khqrString);
         return;
       }
       
@@ -348,37 +352,55 @@ export function PaymentModal({
               </Button>
             </div>
           ) : checkoutUrl ? (
-            /* RaksmeyPay Checkout URL - Open in new window */
+            /* RaksmeyPay Checkout - Show QR code and checkout button */
             <div className="flex-1 flex flex-col items-center justify-center py-4">
-              <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6">
-                <svg className="w-12 h-12 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg>
-              </div>
+              {/* Show KHQR QR code if available */}
+              {khqrString && (
+                <div className="relative bg-white p-4 rounded-xl shadow-lg mb-4">
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(khqrString)}`}
+                    alt="Payment QR Code"
+                    className="w-[220px] h-[220px]"
+                    data-testid="img-qr-code"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="bg-white p-1.5 rounded-lg shadow-md">
+                      <img 
+                        src="https://www.bakongapp.com/wp-content/uploads/2023/07/bakong-logo.png"
+                        alt="Bakong"
+                        className="w-10 h-10 object-contain"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
               
-              {/* 5-Minute Countdown Timer */}
-              <div className="text-center mb-4">
-                <div className="text-2xl font-bold text-orange-500">
+              {/* Countdown Timer */}
+              <div className="text-center mb-3">
+                <div className="text-xl font-bold text-orange-500">
                   {Math.floor(paymentCountdown / 60)}:{(paymentCountdown % 60).toString().padStart(2, '0')}
                 </div>
                 <p className="text-xs text-muted-foreground">Time remaining to complete payment</p>
               </div>
               
-              <div className="text-center space-y-4">
-                <div className="space-y-2">
-                  <h3 className="text-lg font-bold">Pay with RaksmeyPay</h3>
-                  <p className="text-sm text-muted-foreground max-w-md">
-                    Click the button below to open RaksmeyPay and complete your payment securely.
+              <div className="text-center space-y-3">
+                <div className="space-y-1">
+                  <h3 className="text-base font-bold">Scan QR or Pay via RaksmeyPay</h3>
+                  <p className="text-xs text-muted-foreground max-w-xs">
+                    Scan with any Bakong banking app, or click the button to pay via RaksmeyPay.
                   </p>
                 </div>
                 
                 <Button
-                  size="lg"
+                  size="default"
                   className="w-full max-w-xs"
                   onClick={() => window.open(checkoutUrl, '_blank')}
                   data-testid="button-open-raksmeypay"
                 >
-                  <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
                   Open RaksmeyPay
@@ -386,20 +408,18 @@ export function PaymentModal({
                 
                 <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Waiting for payment confirmation...</span>
+                  <span>Waiting for payment...</span>
                 </div>
                 
-                <div className="flex justify-center mt-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleClosePayment}
-                    data-testid="button-close-payment"
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Cancel
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClosePayment}
+                  data-testid="button-close-payment"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Cancel
+                </Button>
               </div>
             </div>
           ) : khqrString ? (
