@@ -165,6 +165,7 @@ export const movieDetailLabels = {
   buyMovie: { km: "ទិញភាពយន្ត", en: "Buy Movie" },
   inMyList: { km: "ក្នុងបញ្ជីខ្ញុំ", en: "In My List" },
   addToList: { km: "បន្ថែមក្នុងបញ្ជី", en: "Add to List" },
+  Purchased: { km: "បានទិញ", en: "Purchased" },
   payOnceWatchAnytime: { km: "បង់ម្តង មើលគ្រប់ពេល", en: "Pay once, watch anytime" },
   freeToWatch: { km: "មើលដោយឥតគិតថ្លៃ", en: "FREE TO WATCH" },
   director: { km: "អ្នកដឹកនាំ", en: "Director" },

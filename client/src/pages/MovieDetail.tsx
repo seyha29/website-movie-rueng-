@@ -444,7 +444,7 @@ export default function MovieDetail() {
 
                     {isPurchased && (
                       <Badge className="bg-blue-500/20 text-blue-500 border-blue-500/30 justify-center">
-                        Purchased
+                        {t("Purchased")}
                       </Badge>
                     )}
 
