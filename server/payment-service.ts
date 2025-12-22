@@ -55,6 +55,7 @@ export class PaymentService {
       paymentId: transaction.id,
       paymentRef: paymentResponse.paymentRef,
       checkoutUrl: paymentResponse.checkoutUrl,
+      khqrString: paymentResponse.khqrString,
       amount: plan.price,
       currency: plan.currency,
     };
@@ -117,6 +118,7 @@ export class PaymentService {
       paymentId: transaction.id,
       paymentRef: paymentResponse.paymentRef,
       checkoutUrl: paymentResponse.checkoutUrl,
+      khqrString: paymentResponse.khqrString,
       amount: videoPurchaseAmount.toString(),
       currency: 'USD',
       movieId,

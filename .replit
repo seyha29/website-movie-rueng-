@@ -44,3 +44,4 @@ build = ["bash", "-c", "npm run build"]
 BAKONG_ID = "cham_toem2@aclb"
 MERCHANT_NAME = "RUENG Movies"
 MERCHANT_CITY = "Phnom Penh"
+BAKONG_ACCOUNT_ID = "cham_toem2@aclb"

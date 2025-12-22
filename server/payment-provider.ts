@@ -1,11 +1,12 @@
 import crypto from "crypto";
 import querystring from "querystring";
+import { KHQR, TAG, CURRENCY, COUNTRY } from "ts-khqr";
 
 export interface PaymentInitiationResponse {
   paymentRef: string;
   checkoutUrl?: string;
+  khqrString?: string;
   formData?: Record<string, string>;
-  // Fields for future RaksemeyPay integration
   sessionId?: string;
   expiresAt?: number;
 }
@@ -121,19 +122,27 @@ export class MockRaksmeyPayProvider implements PaymentProvider {
   }
 }
 
-// Real RaksemeyPay provider - Implements redirect-based payment flow
+// Real Bakong KHQR provider - Generates proper KHQR codes for banking apps
 export class RealRaksmeyPayProvider implements PaymentProvider {
   private merchantId: string;
   private profileKey: string;
+  private bakongAccountId: string;
+  private merchantName: string;
   private paymentBaseUrl: string;
 
   constructor() {
     this.merchantId = process.env.RAKSMEYPAY_PROFILE_ID || '';
     this.profileKey = process.env.RAKSMEYPAY_PROFILE_KEY || '';
+    this.bakongAccountId = process.env.BAKONG_ACCOUNT_ID || '';
+    this.merchantName = process.env.BAKONG_MERCHANT_NAME || 'RUENG Movies';
     this.paymentBaseUrl = `https://raksmeypay.com/payment/request/${this.merchantId}`;
 
     if (!this.merchantId || !this.profileKey) {
       throw new Error('RaksemeyPay credentials not configured. Set RAKSMEYPAY_PROFILE_ID and RAKSMEYPAY_PROFILE_KEY');
+    }
+    
+    if (!this.bakongAccountId) {
+      throw new Error('Bakong Account ID not configured. Set BAKONG_ACCOUNT_ID');
     }
   }
 
@@ -144,47 +153,47 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
     currency: string;
     callbackUrl: string;
   }): Promise<PaymentInitiationResponse> {
-    // Generate unique transaction ID (timestamp-based, exactly like official RaksmeyPay sample)
     const transactionId = Date.now();
     
-    // URL encode the success_url with transaction_id and amount (exactly like official sample)
-    // Format: urlencode("callback_url?transaction_id=XXX&amount=YYY")
-    // Check if callbackUrl already has query params (use & instead of ?)
-    const separator = params.callbackUrl.includes('?') ? '&' : '?';
-    const successUrl = encodeURIComponent(`${params.callbackUrl}${separator}transaction_id=${transactionId}&amount=${params.amount}`);
-    
-    // Generate SHA1 hash signature (EXACTLY like official RaksmeyPay PHP sample)
-    // Format: SHA1(profile_key + transaction_id + amount + success_url)
-    // NOTE: NO remark in the hash - this is the official format
-    const hash = crypto
-      .createHash("sha1")
-      .update(this.profileKey + transactionId + params.amount + successUrl)
-      .digest("hex");
-    
-    // Build query parameters (exactly like official sample: transaction_id, amount, success_url, hash)
-    const queryParams = querystring.stringify({
-      transaction_id: transactionId,
+    // Generate real Bakong KHQR code using ts-khqr library
+    const khqrResult = KHQR.generate({
+      tag: TAG.INDIVIDUAL,
+      accountID: this.bakongAccountId,
+      merchantName: this.merchantName,
+      acquiringBank: 'ACLEDA Bank',
+      merchantCity: 'Phnom Penh',
+      currency: params.currency === 'USD' ? CURRENCY.USD : CURRENCY.KHR,
       amount: params.amount,
-      success_url: successUrl,
-      hash: hash,
+      countryCode: COUNTRY.KH,
+      expirationTimestamp: Date.now() + 10 * 60 * 1000, // 10 minutes
+      additionalData: {
+        billNumber: transactionId.toString(),
+        storeLabel: 'RUENG Movies',
+        terminalLabel: `TXN${transactionId}`,
+      },
     });
     
-    // Build complete payment URL
-    const paymentUrl = `${this.paymentBaseUrl}?${queryParams}`;
+    // ts-khqr returns the QR string directly
+    const khqrString = String(khqrResult);
     
-    console.log(`[RaksemeyPay] Payment URL created for user ${params.userId}:`, {
+    if (!khqrString || khqrString === 'null' || khqrString === 'undefined') {
+      console.error('[KHQR] Failed to generate KHQR');
+      throw new Error('Failed to generate KHQR code');
+    }
+    
+    console.log(`[KHQR] Generated Bakong KHQR for user ${params.userId}:`, {
       transaction_id: transactionId,
       amount: params.amount,
-      success_url: `${params.callbackUrl}${separator}transaction_id=${transactionId}&amount=${params.amount}`,
-      hash: hash,
-      paymentUrl: paymentUrl.substring(0, 150) + '...',
+      currency: params.currency,
+      bakongAccountId: this.bakongAccountId,
+      khqrLength: khqrString.length,
     });
     
     return {
       paymentRef: transactionId.toString(),
-      checkoutUrl: paymentUrl,
+      khqrString: khqrString,
       sessionId: transactionId.toString(),
-      expiresAt: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiry
+      expiresAt: Math.floor(Date.now() / 1000) + 600, // 10 minutes (KHQR standard)
     };
   }
 

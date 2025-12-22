@@ -27,6 +27,7 @@ export function PaymentModal({
 }: PaymentModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [khqrString, setKhqrString] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -59,7 +60,14 @@ export function PaymentModal({
         paymentRefRef.current = data.paymentRef;
       }
       
-      // Check if we have a checkout URL (RaksmeyPay payment URL)
+      // Check if we have a KHQR string (Bakong KHQR for banking apps)
+      if (data.khqrString) {
+        console.log('[Payment] Displaying Bakong KHQR code');
+        setKhqrString(data.khqrString);
+        return;
+      }
+      
+      // Fallback to checkout URL if no KHQR
       if (data.checkoutUrl) {
         console.log('[Payment] Displaying payment page QR code:', data.checkoutUrl);
         setCheckoutUrl(data.checkoutUrl);
@@ -144,6 +152,7 @@ export function PaymentModal({
       pollingRef.current = null;
     }
     setCheckoutUrl(null);
+    setKhqrString(null);
     setPaymentSuccess(false);
     setCountdown(5);
     paymentRefRef.current = null;
@@ -202,7 +211,7 @@ export function PaymentModal({
 
   // 5-minute countdown timer for QR code payment
   useEffect(() => {
-    if (checkoutUrl && !paymentSuccess && paymentCountdown > 0) {
+    if ((khqrString || checkoutUrl) && !paymentSuccess && paymentCountdown > 0) {
       paymentCountdownRef.current = setInterval(() => {
         setPaymentCountdown((prev) => {
           if (prev <= 1) {
@@ -230,7 +239,7 @@ export function PaymentModal({
 
   // Poll for payment status when QR code is showing
   useEffect(() => {
-    if (checkoutUrl && !paymentSuccess) {
+    if ((khqrString || checkoutUrl) && !paymentSuccess) {
       // Poll every 3 seconds to verify payment and complete purchase
       pollingRef.current = setInterval(async () => {
         try {
@@ -298,10 +307,10 @@ export function PaymentModal({
       >
         <DialogHeader>
           <DialogTitle className="text-2xl font-moul">
-            {checkoutUrl ? "Scan QR Code to Pay" : (isVideoMode ? `Purchase "${movieTitle}"` : "Subscribe to Watch")}
+            {(khqrString || checkoutUrl) ? "Scan QR Code to Pay" : (isVideoMode ? `Purchase "${movieTitle}"` : "Subscribe to Watch")}
           </DialogTitle>
           <DialogDescription className="text-base">
-            {checkoutUrl 
+            {(khqrString || checkoutUrl) 
               ? "Scan the QR code below with your mobile banking app to complete payment."
               : (isVideoMode 
                   ? `Pay $1 to watch this movie. It will be automatically added to your list.`
@@ -338,12 +347,12 @@ export function PaymentModal({
                 {isVideoMode ? "Play Now" : "Start Watching"}
               </Button>
             </div>
-          ) : checkoutUrl ? (
+          ) : (khqrString || checkoutUrl) ? (
             <div className="flex-1 flex flex-col items-center justify-center py-4">
               {/* QR Code with Bakong Logo */}
               <div className="relative bg-white p-4 rounded-xl shadow-lg mb-4">
                 <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(checkoutUrl)}`}
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(khqrString || checkoutUrl || '')}`}
                   alt="Payment QR Code"
                   className="w-[280px] h-[280px]"
                   data-testid="img-qr-code"
@@ -373,9 +382,9 @@ export function PaymentModal({
               
               <div className="text-center space-y-3">
                 <div className="space-y-1">
-                  <h3 className="text-lg font-bold">Scan QR to Pay</h3>
+                  <h3 className="text-lg font-bold">Scan with Banking App</h3>
                   <p className="text-sm text-muted-foreground max-w-md">
-                    Scan this QR code with your phone camera to open the payment page, then pay with Bakong or any supported banking app.
+                    Scan this Bakong KHQR code with ABA, ACLEDA, Wing, or any Bakong-supported banking app to pay directly.
                   </p>
                 </div>
                 
