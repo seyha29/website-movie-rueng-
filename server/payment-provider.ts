@@ -211,11 +211,10 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
       hasKhqr: !!khqrString,
     });
     
-    // Always use RaksmeyPay checkout URL for reliable payment verification
-    // KHQR direct payments can't be verified through RaksmeyPay API
     return {
       paymentRef: transactionId.toString(),
-      checkoutUrl: checkoutUrl, // Use RaksmeyPay checkout for verification
+      khqrString: khqrString, // Return KHQR for QR display
+      checkoutUrl: khqrString ? undefined : checkoutUrl, // Only use URL if KHQR fails
       sessionId: transactionId.toString(),
       expiresAt: Math.floor(Date.now() / 1000) + 600, // 10 minutes
     };
