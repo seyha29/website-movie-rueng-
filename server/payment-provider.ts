@@ -155,109 +155,34 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
   }): Promise<PaymentInitiationResponse> {
     const transactionId = Date.now().toString();
     
-    // Use RaksmeyPay's checkout API to create a transaction they can track
-    // This enables automatic payment verification via their API
-    try {
-      // Generate hash for RaksmeyPay: SHA1(profileKey + transaction_id + amount)
-      const hash = crypto.createHash('sha1')
-        .update(`${this.profileKey}${transactionId}${params.amount.toFixed(2)}`)
-        .digest('hex');
-      
-      // RaksmeyPay checkout request API
-      const checkoutUrl = `https://raksmeypay.com/api/payment/checkout/${this.merchantId}`;
-      
-      const requestData = {
-        transaction_id: transactionId,
-        amount: params.amount.toFixed(2),
-        items: 'RUENG Movies Subscription',
-        return_url: params.callbackUrl,
-        cancel_url: params.callbackUrl.replace('callback', 'cancel'),
-        hash: hash,
-      };
-      
-      console.log(`[RaksmeyPay] Creating checkout for transaction ${transactionId}:`, {
-        amount: params.amount,
-        callbackUrl: params.callbackUrl,
-      });
-      
-      // Call RaksmeyPay API to create checkout session
-      const response = await fetch(checkoutUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      });
-      
-      const data = await response.json();
-      
-      console.log(`[RaksmeyPay] Checkout response:`, data);
-      
-      // Check if RaksmeyPay returned a KHQR or checkout URL
-      if (data.status === 1 && data.khqr) {
-        // RaksmeyPay returned a KHQR code - use it for auto-verification
-        console.log(`[RaksmeyPay] Got KHQR from API, length: ${data.khqr.length}`);
-        return {
-          paymentRef: transactionId,
-          khqrString: data.khqr,
-          sessionId: data.session_id || transactionId,
-          expiresAt: Math.floor(Date.now() / 1000) + 600,
-        };
-      } else if (data.status === 1 && data.checkout_url) {
-        // RaksmeyPay returned a checkout URL
-        console.log(`[RaksmeyPay] Got checkout URL: ${data.checkout_url}`);
-        return {
-          paymentRef: transactionId,
-          checkoutUrl: data.checkout_url,
-          sessionId: data.session_id || transactionId,
-          expiresAt: Math.floor(Date.now() / 1000) + 1800,
-        };
-      }
-      
-      // Fallback: Generate KHQR locally but store transaction for manual confirmation
-      console.warn(`[RaksmeyPay] API did not return KHQR/checkout, falling back to local KHQR`);
-      
-    } catch (error) {
-      console.error(`[RaksmeyPay] Checkout API error:`, error);
-      // Continue with fallback
-    }
+    // Use RaksmeyPay's hosted checkout page for secure, auto-verified payments
+    // Users are redirected to RaksmeyPay's page where they scan KHQR and pay
+    // RaksmeyPay manages the entire flow and redirects back with verification
     
-    // Fallback: Generate local KHQR code
-    const khqrResult = KHQR.generate({
-      tag: TAG.INDIVIDUAL,
-      accountID: this.bakongAccountId,
-      merchantName: this.merchantName,
-      acquiringBank: 'ACLEDA Bank',
-      merchantCity: 'Phnom Penh',
-      currency: params.currency === 'USD' ? CURRENCY.USD : CURRENCY.KHR,
+    // Generate hash for RaksmeyPay form submission: SHA1(profileKey + transaction_id + amount)
+    const amountStr = params.amount.toFixed(2);
+    const hash = crypto.createHash('sha1')
+      .update(`${this.profileKey}${transactionId}${amountStr}`)
+      .digest('hex');
+    
+    // Build RaksmeyPay checkout URL with form data
+    // This is the hosted checkout approach - redirect user to RaksmeyPay's payment page
+    const checkoutUrl = `${this.paymentBaseUrl}?transaction_id=${encodeURIComponent(transactionId)}&amount=${encodeURIComponent(amountStr)}&items=${encodeURIComponent('RUENG Movies')}&return_url=${encodeURIComponent(params.callbackUrl)}&hash=${encodeURIComponent(hash)}`;
+    
+    console.log(`[RaksmeyPay] Creating hosted checkout for transaction ${transactionId}:`, {
       amount: params.amount,
-      countryCode: COUNTRY.KH,
-      expirationTimestamp: Date.now() + 10 * 60 * 1000,
-      additionalData: {
-        billNumber: transactionId,
-        storeLabel: 'RUENG Movies',
-        terminalLabel: `TXN${transactionId}`,
-      },
+      callbackUrl: params.callbackUrl,
+      checkoutUrl: checkoutUrl.substring(0, 100) + '...',
     });
     
-    if (!khqrResult || khqrResult.status?.code !== 0 || !khqrResult.data?.qr) {
-      console.error('[KHQR] Failed to generate KHQR:', khqrResult?.status);
-      throw new Error(`Failed to generate KHQR: ${khqrResult?.status?.message || 'Unknown error'}`);
-    }
-    
-    const khqrString = khqrResult.data.qr;
-    
-    console.log(`[KHQR] Generated local Bakong KHQR for user ${params.userId}:`, {
-      transaction_id: transactionId,
-      amount: params.amount,
-      khqrLength: khqrString.length,
-    });
-    
+    // Return the checkout URL - frontend will redirect/iframe to this page
+    // RaksmeyPay handles KHQR display, payment tracking, and verification
+    // On success, they redirect back to callbackUrl with verification params
     return {
       paymentRef: transactionId,
-      khqrString: khqrString,
+      checkoutUrl: checkoutUrl,
       sessionId: transactionId,
-      expiresAt: Math.floor(Date.now() / 1000) + 600,
+      expiresAt: Math.floor(Date.now() / 1000) + 1800, // 30 minutes
     };
   }
 

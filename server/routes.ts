@@ -755,10 +755,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.redirect(`/payments/result?status=error&message=${encodeURIComponent(errorMsg)}`);
         }
         
-        // Find transaction
-        const transaction = await storage.getPaymentTransaction(validation.paymentRef);
+        // Find transaction by transactionRef (the payment provider's reference)
+        const transaction = await storage.getPaymentTransactionByRef(validation.paymentRef);
         if (!transaction) {
-          console.error('[RaksemeyPay] Transaction not found:', validation.paymentRef);
+          console.error('[RaksemeyPay] Transaction not found by ref:', validation.paymentRef);
           return res.redirect(`/payments/result?status=error&message=Transaction+not+found`);
         }
         
