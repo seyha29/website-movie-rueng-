@@ -173,13 +173,14 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
       },
     });
     
-    // ts-khqr returns the QR string directly
-    const khqrString = String(khqrResult);
-    
-    if (!khqrString || khqrString === 'null' || khqrString === 'undefined') {
-      console.error('[KHQR] Failed to generate KHQR');
-      throw new Error('Failed to generate KHQR code');
+    // ts-khqr returns { status: { code, errorCode, message }, data: { qr, md5 } }
+    if (!khqrResult || khqrResult.status?.code !== 0 || !khqrResult.data?.qr) {
+      console.error('[KHQR] Failed to generate KHQR:', khqrResult?.status);
+      throw new Error(`Failed to generate KHQR: ${khqrResult?.status?.message || 'Unknown error'}`);
     }
+    
+    const khqrString = khqrResult.data.qr;
+    const md5Hash = khqrResult.data.md5;
     
     console.log(`[KHQR] Generated Bakong KHQR for user ${params.userId}:`, {
       transaction_id: transactionId,
@@ -187,12 +188,13 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
       currency: params.currency,
       bakongAccountId: this.bakongAccountId,
       khqrLength: khqrString.length,
+      md5: md5Hash,
     });
     
     return {
       paymentRef: transactionId.toString(),
       khqrString: khqrString,
-      sessionId: transactionId.toString(),
+      sessionId: md5Hash || transactionId.toString(),
       expiresAt: Math.floor(Date.now() / 1000) + 600, // 10 minutes (KHQR standard)
     };
   }
