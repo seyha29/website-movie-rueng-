@@ -441,45 +441,14 @@ export function PaymentModal({
                   </p>
                 </div>
                 
-                <Button
-                  size="lg"
-                  className="w-full max-w-xs bg-green-600 hover:bg-green-700"
-                  onClick={async () => {
-                    if (isVideoMode && movieId && paymentRefRef.current) {
-                      try {
-                        const response = await fetch(`/api/videos/${movieId}/confirm-payment`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ paymentRef: paymentRefRef.current }),
-                          credentials: 'include',
-                        });
-                        if (response.ok) {
-                          handlePaymentCompleted();
-                        } else {
-                          toast({
-                            title: "Error",
-                            description: "Failed to confirm payment. Please try again.",
-                            variant: "destructive",
-                          });
-                        }
-                      } catch (error) {
-                        toast({
-                          title: "Error",
-                          description: "Failed to confirm payment. Please try again.",
-                          variant: "destructive",
-                        });
-                      }
-                    }
-                  }}
-                  data-testid="button-payment-complete"
-                >
-                  <CheckCircle className="w-5 h-5 mr-2" />
-                  I've Completed Payment
-                </Button>
+                <div className="text-center text-sm text-muted-foreground bg-muted/50 rounded-lg p-3 max-w-xs">
+                  <p className="font-medium mb-1">After scanning and paying:</p>
+                  <p>Your payment will be detected automatically within 30 seconds.</p>
+                </div>
                 
                 <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Or wait for automatic detection...</span>
+                  <span>Checking for payment...</span>
                 </div>
                 
                 <div className="flex justify-center mt-3">
