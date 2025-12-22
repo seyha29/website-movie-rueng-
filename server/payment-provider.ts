@@ -184,9 +184,8 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
         countryCode: COUNTRY.KH,
         additionalData: {
           billNumber: transactionId.toString(),
-          mobileNumber: '',
-          storeLabel: 'RUENG Movies',
-          terminalLabel: `TXN${transactionId}`,
+          storeLabel: 'RUENG',
+          terminalLabel: transactionId.toString().slice(-8),
         },
       });
       
