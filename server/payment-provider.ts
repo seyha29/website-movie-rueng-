@@ -153,9 +153,76 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
     currency: string;
     callbackUrl: string;
   }): Promise<PaymentInitiationResponse> {
-    const transactionId = Date.now();
+    const transactionId = Date.now().toString();
     
-    // Generate real Bakong KHQR code using ts-khqr library
+    // Use RaksmeyPay's checkout API to create a transaction they can track
+    // This enables automatic payment verification via their API
+    try {
+      // Generate hash for RaksmeyPay: SHA1(profileKey + transaction_id + amount)
+      const hash = crypto.createHash('sha1')
+        .update(`${this.profileKey}${transactionId}${params.amount.toFixed(2)}`)
+        .digest('hex');
+      
+      // RaksmeyPay checkout request API
+      const checkoutUrl = `https://raksmeypay.com/api/payment/checkout/${this.merchantId}`;
+      
+      const requestData = {
+        transaction_id: transactionId,
+        amount: params.amount.toFixed(2),
+        items: 'RUENG Movies Subscription',
+        return_url: params.callbackUrl,
+        cancel_url: params.callbackUrl.replace('callback', 'cancel'),
+        hash: hash,
+      };
+      
+      console.log(`[RaksmeyPay] Creating checkout for transaction ${transactionId}:`, {
+        amount: params.amount,
+        callbackUrl: params.callbackUrl,
+      });
+      
+      // Call RaksmeyPay API to create checkout session
+      const response = await fetch(checkoutUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
+      
+      const data = await response.json();
+      
+      console.log(`[RaksmeyPay] Checkout response:`, data);
+      
+      // Check if RaksmeyPay returned a KHQR or checkout URL
+      if (data.status === 1 && data.khqr) {
+        // RaksmeyPay returned a KHQR code - use it for auto-verification
+        console.log(`[RaksmeyPay] Got KHQR from API, length: ${data.khqr.length}`);
+        return {
+          paymentRef: transactionId,
+          khqrString: data.khqr,
+          sessionId: data.session_id || transactionId,
+          expiresAt: Math.floor(Date.now() / 1000) + 600,
+        };
+      } else if (data.status === 1 && data.checkout_url) {
+        // RaksmeyPay returned a checkout URL
+        console.log(`[RaksmeyPay] Got checkout URL: ${data.checkout_url}`);
+        return {
+          paymentRef: transactionId,
+          checkoutUrl: data.checkout_url,
+          sessionId: data.session_id || transactionId,
+          expiresAt: Math.floor(Date.now() / 1000) + 1800,
+        };
+      }
+      
+      // Fallback: Generate KHQR locally but store transaction for manual confirmation
+      console.warn(`[RaksmeyPay] API did not return KHQR/checkout, falling back to local KHQR`);
+      
+    } catch (error) {
+      console.error(`[RaksmeyPay] Checkout API error:`, error);
+      // Continue with fallback
+    }
+    
+    // Fallback: Generate local KHQR code
     const khqrResult = KHQR.generate({
       tag: TAG.INDIVIDUAL,
       accountID: this.bakongAccountId,
@@ -165,37 +232,32 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
       currency: params.currency === 'USD' ? CURRENCY.USD : CURRENCY.KHR,
       amount: params.amount,
       countryCode: COUNTRY.KH,
-      expirationTimestamp: Date.now() + 10 * 60 * 1000, // 10 minutes
+      expirationTimestamp: Date.now() + 10 * 60 * 1000,
       additionalData: {
-        billNumber: transactionId.toString(),
+        billNumber: transactionId,
         storeLabel: 'RUENG Movies',
         terminalLabel: `TXN${transactionId}`,
       },
     });
     
-    // ts-khqr returns { status: { code, errorCode, message }, data: { qr, md5 } }
     if (!khqrResult || khqrResult.status?.code !== 0 || !khqrResult.data?.qr) {
       console.error('[KHQR] Failed to generate KHQR:', khqrResult?.status);
       throw new Error(`Failed to generate KHQR: ${khqrResult?.status?.message || 'Unknown error'}`);
     }
     
     const khqrString = khqrResult.data.qr;
-    const md5Hash = khqrResult.data.md5;
     
-    console.log(`[KHQR] Generated Bakong KHQR for user ${params.userId}:`, {
+    console.log(`[KHQR] Generated local Bakong KHQR for user ${params.userId}:`, {
       transaction_id: transactionId,
       amount: params.amount,
-      currency: params.currency,
-      bakongAccountId: this.bakongAccountId,
       khqrLength: khqrString.length,
-      md5: md5Hash,
     });
     
     return {
-      paymentRef: transactionId.toString(),
+      paymentRef: transactionId,
       khqrString: khqrString,
-      sessionId: md5Hash || transactionId.toString(),
-      expiresAt: Math.floor(Date.now() / 1000) + 600, // 10 minutes (KHQR standard)
+      sessionId: transactionId,
+      expiresAt: Math.floor(Date.now() / 1000) + 600,
     };
   }
 
