@@ -235,7 +235,7 @@ export function PaymentModal({
         }
       };
     }
-  }, [checkoutUrl, paymentSuccess]);
+  }, [khqrString, checkoutUrl, paymentSuccess]);
 
   // Poll for payment status when QR code is showing
   useEffect(() => {
