@@ -461,9 +461,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.redirect(`/?status=error&message=${encodeURIComponent('Transaction not found')}`);
       }
 
-      // RaksmeyPay only sends callback on successful payment
-      // If we receive success_time and success_hash, the payment was successful
-      if (success_time && success_hash) {
+      // Validate callback signature using RealRaksmeyPayProvider
+      const { RealRaksmeyPayProvider } = await import('./payment-provider');
+      if (paymentProvider instanceof RealRaksmeyPayProvider && success_time && success_amount && bakong_hash && success_hash) {
+        const validation = paymentProvider.validateCallback({
+          success_time: success_time as string,
+          success_amount: success_amount as string,
+          bakong_hash: bakong_hash as string,
+          success_hash: success_hash as string,
+          transaction_id: transaction_id as string,
+        });
+
+        if (!validation.isValid) {
+          console.error(`[RaksemeyPay Video] Callback validation failed: ${validation.errorMessage}`);
+          return res.redirect(`/?status=error&message=${encodeURIComponent('Payment validation failed')}`);
+        }
+
         // Mark transaction as completed
         if (transaction.status === 'pending') {
           await storage.updatePaymentTransaction(transaction.id, {
@@ -495,7 +508,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[RaksemeyPay Video] Video purchase completed for movie ${movieId}, user ${transaction.userId}`);
         return res.redirect(`/?status=success&message=${encodeURIComponent('Video purchased successfully!')}&movieId=${movieId}`);
       } else {
-        console.warn(`[RaksemeyPay Video] Callback missing success parameters`);
+        console.warn(`[RaksemeyPay Video] Callback missing success parameters or using mock provider`);
         return res.redirect(`/?status=pending&message=${encodeURIComponent('Payment is being processed')}`);
       }
     } catch (error) {
