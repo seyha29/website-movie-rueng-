@@ -8,7 +8,7 @@ import VideoPlayer from "@/components/VideoPlayer";
 import AuthModal from "@/components/AuthModal";
 import { PaymentModal } from "@/components/PaymentModal";
 import { useMyList } from "@/hooks/use-my-list";
-import { useVideoPurchaseGate } from "@/hooks/use-video-purchase";
+import { useVideoPurchaseGate, useVideoPurchase } from "@/hooks/use-video-purchase";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { movieDetailLabels } from "@/lib/translations";
 import { Button } from "@/components/ui/button";
@@ -126,6 +126,9 @@ export default function MovieDetail() {
     currentMovieTitle,
     currentMoviePrice,
   } = useVideoPurchaseGate();
+
+  // Check if this movie is already purchased
+  const { isPurchased } = useVideoPurchase(movieId || null);
 
   const { data: user } = useQuery({
     queryKey: ["/api/auth/me"],
@@ -410,7 +413,7 @@ export default function MovieDetail() {
                       data-testid="button-play"
                     >
                       <Play className="h-5 w-5 fill-current" />
-                      {movie.isFree === 1 ? t("watchNow") : `${t("buyMovie")} $${movie.price || "1.00"}`}
+                      {movie.isFree === 1 || isPurchased ? t("watchNow") : `${t("buyMovie")} $${movie.price || "1.00"}`}
                     </Button>
                     
                     <Button
@@ -433,10 +436,16 @@ export default function MovieDetail() {
                       )}
                     </Button>
 
-                    {movie.isFree !== 1 && (
+                    {movie.isFree !== 1 && !isPurchased && (
                       <p className="text-xs text-center text-muted-foreground">
                         {t("payOnceWatchAnytime")}
                       </p>
+                    )}
+
+                    {isPurchased && (
+                      <Badge className="bg-blue-500/20 text-blue-500 border-blue-500/30 justify-center">
+                        Purchased
+                      </Badge>
                     )}
 
                     {movie.isFree === 1 && (
