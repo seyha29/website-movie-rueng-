@@ -155,32 +155,50 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
   }): Promise<PaymentInitiationResponse> {
     const transactionId = Date.now().toString();
     
-    // Use RaksmeyPay's hosted checkout page for secure, auto-verified payments
-    // Users are redirected to RaksmeyPay's page where they scan KHQR and pay
-    // RaksmeyPay manages the entire flow and redirects back with verification
+    // Option 2: Generate KHQR directly in our app
+    // User scans QR with banking app, we poll RaksmeyPay API to detect payment
     
-    // Generate hash for RaksmeyPay form submission: SHA1(profileKey + transaction_id + amount)
-    const amountStr = params.amount.toFixed(2);
-    const hash = crypto.createHash('sha1')
-      .update(`${this.profileKey}${transactionId}${amountStr}`)
-      .digest('hex');
-    
-    // Build RaksmeyPay checkout URL with form data
-    // This is the hosted checkout approach - redirect user to RaksmeyPay's payment page
-    const checkoutUrl = `${this.paymentBaseUrl}?transaction_id=${encodeURIComponent(transactionId)}&amount=${encodeURIComponent(amountStr)}&items=${encodeURIComponent('RUENG Movies')}&return_url=${encodeURIComponent(params.callbackUrl)}&hash=${encodeURIComponent(hash)}`;
-    
-    console.log(`[RaksmeyPay] Creating hosted checkout for transaction ${transactionId}:`, {
+    // Generate proper Bakong KHQR code using ts-khqr library
+    const khqrResult = KHQR.generate({
+      tag: TAG.INDIVIDUAL,
+      accountID: this.bakongAccountId,
+      merchantName: this.merchantName,
+      merchantCity: 'Phnom Penh',
       amount: params.amount,
-      callbackUrl: params.callbackUrl,
-      checkoutUrl: checkoutUrl.substring(0, 100) + '...',
+      currency: CURRENCY.USD,
+      countryCode: COUNTRY.KH,
+      additionalData: {
+        billNumber: transactionId,
+        mobileNumber: '',
+        storeLabel: 'RUENG',
+        terminalLabel: 'WEB',
+      },
     });
     
-    // Return the checkout URL - frontend will redirect/iframe to this page
-    // RaksmeyPay handles KHQR display, payment tracking, and verification
-    // On success, they redirect back to callbackUrl with verification params
+    // Extract the KHQR string from the result
+    let khqrString = '';
+    if (khqrResult && typeof khqrResult === 'object' && 'data' in khqrResult) {
+      const data = (khqrResult as any).data;
+      if (data && typeof data === 'object' && 'qr' in data) {
+        khqrString = data.qr;
+      }
+    }
+    
+    if (!khqrString || khqrString.length < 50) {
+      console.error('[RaksmeyPay] Failed to generate KHQR:', khqrResult);
+      throw new Error('Failed to generate KHQR code');
+    }
+    
+    console.log(`[RaksmeyPay] Generated KHQR for transaction ${transactionId}:`, {
+      amount: params.amount,
+      bakongAccount: this.bakongAccountId,
+      khqrLength: khqrString.length,
+    });
+    
+    // Return KHQR string - frontend displays QR and polls for verification
     return {
       paymentRef: transactionId,
-      checkoutUrl: checkoutUrl,
+      khqrString: khqrString,
       sessionId: transactionId,
       expiresAt: Math.floor(Date.now() / 1000) + 1800, // 30 minutes
     };
