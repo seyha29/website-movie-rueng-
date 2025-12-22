@@ -388,23 +388,11 @@ export function PaymentModal({
               
               <div className="text-center space-y-3">
                 <div className="space-y-1">
-                  <h3 className="text-base font-bold">Scan QR or Pay via RaksmeyPay</h3>
+                  <h3 className="text-base font-bold">Scan QR Code to Pay</h3>
                   <p className="text-xs text-muted-foreground max-w-xs">
-                    Scan with any Bakong banking app, or click the button to pay via RaksmeyPay.
+                    Scan with any Bakong banking app (ABA, ACLEDA, Wing, etc.)
                   </p>
                 </div>
-                
-                <Button
-                  size="default"
-                  className="w-full max-w-xs"
-                  onClick={() => window.open(checkoutUrl, '_blank')}
-                  data-testid="button-open-raksmeypay"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                  Open RaksmeyPay
-                </Button>
                 
                 <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="w-4 h-4 animate-spin" />
