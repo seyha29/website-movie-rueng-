@@ -160,7 +160,7 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
       .update(`${this.profileKey}${params.amount}${transactionId}`)
       .digest('hex');
     
-    // Build RaksmeyPay checkout URL with parameters
+    // Build RaksmeyPay checkout URL for verification (backup)
     const checkoutParams = new URLSearchParams({
       amount: params.amount.toString(),
       transaction_id: transactionId.toString(),
@@ -170,16 +170,48 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
     
     const checkoutUrl = `${this.paymentBaseUrl}?${checkoutParams.toString()}`;
     
-    console.log(`[RaksmeyPay] Created checkout URL for user ${params.userId}:`, {
+    // Generate proper Bakong KHQR code that banking apps can scan
+    let khqrString: string | undefined;
+    
+    try {
+      const khqrResult = KHQR.generate({
+        tag: TAG.INDIVIDUAL,
+        accountID: this.bakongAccountId,
+        merchantName: this.merchantName,
+        merchantCity: 'Phnom Penh',
+        currency: params.currency === 'USD' ? CURRENCY.USD : CURRENCY.KHR,
+        amount: params.amount,
+        countryCode: COUNTRY.KH,
+        additionalData: {
+          billNumber: transactionId.toString(),
+          mobileNumber: '',
+          storeLabel: 'RUENG Movies',
+          terminalLabel: `TXN${transactionId}`,
+        },
+      });
+      
+      // Access the KHQR string from result.data.qr
+      if (khqrResult && khqrResult.data && khqrResult.data.qr) {
+        khqrString = khqrResult.data.qr;
+        console.log(`[KHQR] Generated valid Bakong KHQR for transaction ${transactionId}`);
+      } else {
+        console.error('[KHQR] Failed to generate KHQR - unexpected result structure:', khqrResult);
+      }
+    } catch (error) {
+      console.error('[KHQR] Failed to generate KHQR code:', error);
+    }
+    
+    console.log(`[RaksmeyPay] Created payment for user ${params.userId}:`, {
       transaction_id: transactionId,
       amount: params.amount,
       currency: params.currency,
-      checkoutUrl: checkoutUrl.substring(0, 100) + '...',
+      hasKhqr: !!khqrString,
     });
     
     return {
       paymentRef: transactionId.toString(),
-      checkoutUrl: checkoutUrl,
+      khqrString: khqrString, // Return KHQR for QR display
+      checkoutUrl: khqrString ? undefined : checkoutUrl, // Only use URL if KHQR fails
       sessionId: transactionId.toString(),
       expiresAt: Math.floor(Date.now() / 1000) + 600, // 10 minutes
     };
