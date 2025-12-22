@@ -499,19 +499,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ error: "Transaction does not belong to this user" });
       }
 
-      // For KHQR payments, return pending status - admin needs to confirm manually
-      // KHQR payments go directly to Bakong account and cannot be verified via API
-      if (transaction.paymentMethod === 'khqr') {
-        console.log(`[KHQR Verify] Payment ${paymentRef} is KHQR - awaiting admin confirmation`);
-        res.json({ 
-          isPurchased: false,
-          status: 'pending',
-          message: 'Payment pending admin confirmation',
-        });
-        return;
-      }
-
-      // For RaksmeyPay payments, verify with their API
+      // Verify payment with RaksmeyPay API
       const result = await paymentService.verifyVideoPurchase(paymentRef, movieId);
       
       res.json({ 

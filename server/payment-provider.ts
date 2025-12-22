@@ -155,47 +155,33 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
   }): Promise<PaymentInitiationResponse> {
     const transactionId = Date.now();
     
-    // Generate real Bakong KHQR code using ts-khqr library
-    const khqrResult = KHQR.generate({
-      tag: TAG.INDIVIDUAL,
-      accountID: this.bakongAccountId,
-      merchantName: this.merchantName,
-      acquiringBank: 'ACLEDA Bank',
-      merchantCity: 'Phnom Penh',
-      currency: params.currency === 'USD' ? CURRENCY.USD : CURRENCY.KHR,
-      amount: params.amount,
-      countryCode: COUNTRY.KH,
-      expirationTimestamp: Date.now() + 10 * 60 * 1000, // 10 minutes
-      additionalData: {
-        billNumber: transactionId.toString(),
-        storeLabel: 'RUENG Movies',
-        terminalLabel: `TXN${transactionId}`,
-      },
+    // Generate hash for RaksmeyPay: SHA1(profileKey + amount + transaction_id)
+    const hash = crypto.createHash('sha1')
+      .update(`${this.profileKey}${params.amount}${transactionId}`)
+      .digest('hex');
+    
+    // Build RaksmeyPay checkout URL with parameters
+    const checkoutParams = new URLSearchParams({
+      amount: params.amount.toString(),
+      transaction_id: transactionId.toString(),
+      return_url: params.callbackUrl,
+      hash: hash,
     });
     
-    // ts-khqr returns { status: { code, errorCode, message }, data: { qr, md5 } }
-    if (!khqrResult || khqrResult.status?.code !== 0 || !khqrResult.data?.qr) {
-      console.error('[KHQR] Failed to generate KHQR:', khqrResult?.status);
-      throw new Error(`Failed to generate KHQR: ${khqrResult?.status?.message || 'Unknown error'}`);
-    }
+    const checkoutUrl = `${this.paymentBaseUrl}?${checkoutParams.toString()}`;
     
-    const khqrString = khqrResult.data.qr;
-    const md5Hash = khqrResult.data.md5;
-    
-    console.log(`[KHQR] Generated Bakong KHQR for user ${params.userId}:`, {
+    console.log(`[RaksmeyPay] Created checkout URL for user ${params.userId}:`, {
       transaction_id: transactionId,
       amount: params.amount,
       currency: params.currency,
-      bakongAccountId: this.bakongAccountId,
-      khqrLength: khqrString.length,
-      md5: md5Hash,
+      checkoutUrl: checkoutUrl.substring(0, 100) + '...',
     });
     
     return {
       paymentRef: transactionId.toString(),
-      khqrString: khqrString,
-      sessionId: md5Hash || transactionId.toString(),
-      expiresAt: Math.floor(Date.now() / 1000) + 600, // 10 minutes (KHQR standard)
+      checkoutUrl: checkoutUrl,
+      sessionId: transactionId.toString(),
+      expiresAt: Math.floor(Date.now() / 1000) + 600, // 10 minutes
     };
   }
 
