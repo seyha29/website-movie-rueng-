@@ -441,34 +441,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { success_time, success_amount, bakong_hash, success_hash, transaction_id, movieId } = req.query;
       
-      console.log('[Video Callback] ========== CALLBACK RECEIVED ==========');
-      console.log('[Video Callback] Query parameters:', {
+      console.log('[RaksemeyPay Video] Callback received:', {
         transaction_id,
         movieId,
         success_time,
         success_amount,
-        bakong_hash: bakong_hash ? `${String(bakong_hash).slice(0, 10)}...` : null,
-        success_hash: success_hash ? `${String(success_hash).slice(0, 10)}...` : null,
+        has_hashes: !!(bakong_hash && success_hash),
       });
       
       if (!transaction_id || !movieId) {
-        console.error('[Video Callback] ERROR - Missing required parameters');
+        console.error('[RaksemeyPay Video] Missing required parameters');
         return res.redirect(`/?status=error&message=${encodeURIComponent('Missing payment parameters')}`);
       }
 
       // Find transaction by payment reference
-      console.log(`[Video Callback] Looking up transaction: ${transaction_id}`);
       const transaction = await storage.getPaymentTransactionByRef(transaction_id as string);
       if (!transaction) {
-        console.error(`[Video Callback] ERROR - Transaction not found: ${transaction_id}`);
+        console.error(`[RaksemeyPay Video] Transaction not found: ${transaction_id}`);
         return res.redirect(`/?status=error&message=${encodeURIComponent('Transaction not found')}`);
       }
-      console.log(`[Video Callback] Transaction found - Status: ${transaction.status}, User: ${transaction.userId.slice(0, 8)}...`);
 
       // Validate callback signature using RealRaksmeyPayProvider
       const { RealRaksmeyPayProvider } = await import('./payment-provider');
       if (paymentProvider instanceof RealRaksmeyPayProvider && success_time && success_amount && bakong_hash && success_hash) {
-        console.log('[Video Callback] Validating signature...');
         const validation = paymentProvider.validateCallback({
           success_time: success_time as string,
           success_amount: success_amount as string,
@@ -478,28 +473,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         if (!validation.isValid) {
-          console.error(`[Video Callback] ERROR - Signature validation failed: ${validation.errorMessage}`);
+          console.error(`[RaksemeyPay Video] Callback validation failed: ${validation.errorMessage}`);
           return res.redirect(`/?status=error&message=${encodeURIComponent('Payment validation failed')}`);
         }
-        console.log('[Video Callback] ✅ Signature validated successfully');
 
         // Mark transaction as completed
         if (transaction.status === 'pending') {
-          console.log('[Video Callback] Updating transaction status to completed...');
           await storage.updatePaymentTransaction(transaction.id, {
             status: 'completed',
             completedAt: Math.floor(Date.now() / 1000),
           });
-          console.log('[Video Callback] ✅ Transaction marked as completed');
-        } else {
-          console.log(`[Video Callback] Transaction already ${transaction.status}, skipping status update`);
         }
 
         // Check if already purchased (prevent duplicates)
         const alreadyPurchased = await storage.hasUserPurchasedVideo(transaction.userId, movieId as string);
         
         if (!alreadyPurchased) {
-          console.log('[Video Callback] Recording video purchase...');
           // Record video purchase
           await storage.createVideoPurchase({
             userId: transaction.userId,
@@ -508,26 +497,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             currency: transaction.currency,
             transactionRef: transaction_id as string,
           });
-          console.log('[Video Callback] ✅ Video purchase recorded');
 
           // Auto-add to My List
           const isInMyList = await storage.isInMyList(transaction.userId, movieId as string);
           if (!isInMyList) {
             await storage.addToMyList(transaction.userId, movieId as string);
-            console.log('[Video Callback] ✅ Movie added to My List');
           }
-        } else {
-          console.log('[Video Callback] Video already purchased, skipping duplicate');
         }
 
-        console.log(`[Video Callback] ========== PURCHASE COMPLETE ==========`);
+        console.log(`[RaksemeyPay Video] Video purchase completed for movie ${movieId}, user ${transaction.userId}`);
         return res.redirect(`/?status=success&message=${encodeURIComponent('Video purchased successfully!')}&movieId=${movieId}`);
       } else {
-        console.warn(`[Video Callback] Missing success parameters or using mock provider`);
+        console.warn(`[RaksemeyPay Video] Callback missing success parameters or using mock provider`);
         return res.redirect(`/?status=pending&message=${encodeURIComponent('Payment is being processed')}`);
       }
     } catch (error) {
-      console.error("[Video Callback] ERROR:", error);
+      console.error("Failed to process video purchase callback:", error);
       const message = error instanceof Error ? error.message : 'Unknown error';
       return res.redirect(`/?status=error&message=${encodeURIComponent(message)}`);
     }
@@ -540,37 +525,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { movieId } = req.params;
       const { paymentRef } = req.body;
 
-      console.log(`[Video Verify] START - User: ${userId.slice(0, 8)}..., Movie: ${movieId.slice(0, 8)}..., Ref: ${paymentRef}`);
-
       if (!paymentRef) {
-        console.log(`[Video Verify] ERROR - Missing payment reference`);
         return res.status(400).json({ error: "Payment reference required" });
       }
 
       // Check if already purchased (no need to verify again)
       const alreadyPurchased = await storage.hasUserPurchasedVideo(userId, movieId);
       if (alreadyPurchased) {
-        console.log(`[Video Verify] ✅ Already purchased - returning completed`);
+        console.log(`[Video Verify] Already purchased: user ${userId}, movie ${movieId}`);
         return res.json({ isPurchased: true, status: 'completed' });
       }
 
       // Find the transaction and verify the user owns it
       const transaction = await storage.getPaymentTransactionByRef(paymentRef);
       if (!transaction) {
-        console.log(`[Video Verify] ERROR - Transaction not found: ${paymentRef}`);
         return res.status(404).json({ error: "Transaction not found" });
       }
 
-      console.log(`[Video Verify] Transaction status: ${transaction.status}`);
-
       if (transaction.userId !== userId) {
-        console.log(`[Video Verify] ERROR - Transaction belongs to different user`);
         return res.status(403).json({ error: "Transaction does not belong to this user" });
       }
 
       // If transaction is already completed (e.g., via callback), record the purchase
       if (transaction.status === 'completed') {
-        console.log(`[Video Verify] Transaction already completed, recording purchase`);
+        console.log(`[Video Verify] Transaction already completed, recording purchase: ${paymentRef}`);
         
         // Record video purchase
         await storage.createVideoPurchase({
@@ -587,26 +565,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.addToMyList(userId, movieId);
         }
 
-        console.log(`[Video Verify] ✅ Purchase recorded successfully`);
         return res.json({ isPurchased: true, status: 'completed' });
       }
 
       // Verify payment with RaksmeyPay API (for pending transactions)
-      console.log(`[Video Verify] Calling RaksmeyPay API to verify payment...`);
+      console.log(`[Video Verify] Checking RaksmeyPay API for payment ${paymentRef}`);
       const result = await paymentService.verifyVideoPurchase(paymentRef, movieId);
-      
-      console.log(`[Video Verify] RaksmeyPay response - Status: ${result.status}`);
-      
-      if (result.status === 'completed') {
-        console.log(`[Video Verify] ✅ Payment verified as completed by RaksmeyPay`);
-      }
       
       res.json({ 
         isPurchased: result.status === 'completed',
         status: result.status,
       });
     } catch (error) {
-      console.error("[Video Verify] ERROR:", error);
+      console.error("Failed to verify video purchase:", error);
       if (error instanceof Error) {
         return res.status(400).json({ error: error.message });
       }
