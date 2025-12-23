@@ -1,13 +1,51 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, DollarSign, TrendingUp, TrendingDown, Eye, Clock, Film, AlertCircle, Activity, ChevronUp, ChevronDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Users, DollarSign, TrendingUp, TrendingDown, Eye, Clock, Film, AlertCircle, Activity, ChevronUp, ChevronDown, CreditCard, CheckCircle, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 export default function Analytics() {
+  const { toast } = useToast();
+  const [transactionId, setTransactionId] = useState("");
+  const [movieId, setMovieId] = useState("");
+
+  const confirmPaymentMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/confirm-khqr-payment", {
+        transactionId,
+        movieId: parseInt(movieId),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to confirm payment");
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Payment Confirmed",
+        description: `Successfully confirmed payment for movie ID ${movieId}`,
+      });
+      setTransactionId("");
+      setMovieId("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Confirmation Failed",
+        description: error.message || "Failed to confirm payment",
+        variant: "destructive",
+      });
+    },
+  });
+
   const { data: overview } = useQuery<any>({
     queryKey: ["/api/admin/analytics/overview"],
   });
@@ -65,11 +103,12 @@ export default function Analytics() {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5" data-testid="tabs-admin">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6" data-testid="tabs-admin">
             <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
             <TabsTrigger value="revenue" data-testid="tab-revenue">Revenue</TabsTrigger>
             <TabsTrigger value="content" data-testid="tab-content">Content</TabsTrigger>
             <TabsTrigger value="issues" data-testid="tab-issues">Issues</TabsTrigger>
+            <TabsTrigger value="payments" data-testid="tab-payments">Payments</TabsTrigger>
             <TabsTrigger value="predictions" data-testid="tab-predictions">Predictions</TabsTrigger>
           </TabsList>
 
@@ -510,6 +549,122 @@ export default function Analytics() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="payments" className="space-y-6">
+            <Card data-testid="card-confirm-payment">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Confirm KHQR Payment
+                </CardTitle>
+                <CardDescription>
+                  Manually confirm a user's payment when automatic detection fails. 
+                  Use this when a customer reports they've paid but the movie wasn't unlocked.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="max-w-md space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="transactionId">Transaction ID (Payment Reference)</Label>
+                    <Input
+                      id="transactionId"
+                      placeholder="e.g., VID_123_1234567890"
+                      value={transactionId}
+                      onChange={(e) => setTransactionId(e.target.value)}
+                      data-testid="input-transaction-id"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      The payment reference shown to the user during checkout
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="movieId">Movie ID</Label>
+                    <Input
+                      id="movieId"
+                      type="number"
+                      placeholder="e.g., 5"
+                      value={movieId}
+                      onChange={(e) => setMovieId(e.target.value)}
+                      data-testid="input-movie-id"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      The ID of the movie the user purchased
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => confirmPaymentMutation.mutate()}
+                    disabled={!transactionId || !movieId || confirmPaymentMutation.isPending}
+                    className="w-full"
+                    data-testid="button-confirm-payment"
+                  >
+                    {confirmPaymentMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Confirming...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Confirm Payment & Unlock Movie
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Pending Transactions</CardTitle>
+                <CardDescription>Transactions that may need manual confirmation</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {paymentIssues && paymentIssues.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Transaction ID</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paymentIssues.slice(0, 10).map((issue: any, index: number) => (
+                        <TableRow key={index}>
+                          <TableCell>{new Date(issue.createdAt * 1000).toLocaleDateString()}</TableCell>
+                          <TableCell className="font-mono text-xs">{issue.id}</TableCell>
+                          <TableCell className="font-medium">{formatCurrency(parseFloat(issue.amount))}</TableCell>
+                          <TableCell>
+                            <Badge variant={issue.status === 'pending' ? 'outline' : 'destructive'}>{issue.status}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                setTransactionId(issue.id);
+                                if (issue.movieId) setMovieId(issue.movieId.toString());
+                              }}
+                            >
+                              Use for Confirmation
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-8">
+                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                    <p className="text-lg font-medium">No pending payments!</p>
+                    <p className="text-sm text-muted-foreground mt-1">All transactions are processing correctly</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="predictions" className="space-y-6">
