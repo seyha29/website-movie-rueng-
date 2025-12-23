@@ -276,6 +276,20 @@ export async function seedData() {
       ],
       maxMovies: null, // unlimited
       isActive: 1
+    },
+    {
+      name: "monthly",
+      displayName: "Monthly Plan",
+      price: "5.99",
+      currency: "USD",
+      features: [
+        "Full movie library access",
+        "HD streaming quality",
+        "Watch on 2 devices",
+        "Ad-free experience"
+      ],
+      maxMovies: null, // unlimited
+      isActive: 1
     }
   ];
 
@@ -289,4 +303,43 @@ export async function seedData() {
     }
   }
   console.log(`Successfully seeded ${plans.length} subscription plans`);
+}
+
+// Separate function to ensure critical plans exist (runs every startup)
+export async function ensureCriticalPlansExist() {
+  if (!process.env.DATABASE_URL) {
+    console.log("No DATABASE_URL - skipping plan check");
+    return;
+  }
+
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const db = drizzle(pool);
+
+  // Check for monthly plan (required for payments)
+  const existingMonthly = await db.select().from(subscriptionPlans)
+    .where(eq(subscriptionPlans.name, 'monthly'))
+    .limit(1);
+
+  if (existingMonthly.length === 0) {
+    console.log("Monthly plan missing - creating it now...");
+    await db.insert(subscriptionPlans).values({
+      name: "monthly",
+      displayName: "Monthly Plan",
+      price: "5.99",
+      currency: "USD",
+      features: [
+        "Full movie library access",
+        "HD streaming quality",
+        "Watch on 2 devices",
+        "Ad-free experience"
+      ],
+      maxMovies: null,
+      isActive: 1
+    });
+    console.log("Monthly plan created successfully");
+  } else {
+    console.log("Monthly plan exists");
+  }
+
+  await pool.end();
 }
