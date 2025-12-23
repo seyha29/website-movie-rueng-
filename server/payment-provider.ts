@@ -208,16 +208,13 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
       transaction_id: transactionId,
       amount: params.amount,
       currency: params.currency,
-      checkoutUrl: checkoutUrl,
       hasKhqr: !!khqrString,
     });
     
-    // Always return checkoutUrl for verifiable payments through RaksmeyPay
-    // The KHQR is also returned for display, but verification goes through RaksmeyPay
     return {
       paymentRef: transactionId.toString(),
-      checkoutUrl: checkoutUrl, // Always use RaksmeyPay checkout for verifiable payments
-      khqrString: khqrString, // Also return KHQR for QR display option
+      khqrString: khqrString, // Return KHQR for QR display
+      checkoutUrl: khqrString ? undefined : checkoutUrl, // Only use URL if KHQR fails
       sessionId: transactionId.toString(),
       expiresAt: Math.floor(Date.now() / 1000) + 600, // 10 minutes
     };

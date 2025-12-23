@@ -44,15 +44,13 @@ Preferred communication style: Simple, everyday language.
 ### Backend Architecture
 - **Server Framework**: Express.js on Node.js with TypeScript, using ESM modules. `tsx` for dev, esbuild for prod.
 - **API Design**: RESTful API under `/api` for authentication, movie browsing (with pagination up to 30 videos per page, search, genre filtering with 15 genres), user-specific "My List" management, and admin functionalities. Specific endpoints for `movies`, `my-list`, `auth`, `admin`, and `payments`.
-- **Payment Integration**: Integrates with RaksmeyPay for both $1/video purchases and $2/month subscriptions.
+- **Payment Integration**: Integrates with RaksmeyPay for a $2/month pay-per-view subscription model.
   - **Provider Selection**: Automatically detects `RAKSMEYPAY_PROFILE_ID` (merchant_id) and `RAKSMEYPAY_PROFILE_KEY` (profile_key) environment variables. With credentials → uses `RealRaksmeyPayProvider` (production). Without credentials → uses `MockRaksmeyPayProvider` (development). Cannot be manipulated at runtime.
-  - **Video Purchase Flow**:
-    1. **Generate Checkout URL**: Backend creates RaksmeyPay checkout URL with signature: `https://raksmeypay.com/payment/request/{merchant_id}?transaction_id={ref}&amount=1&success_url={callback}&remark={description}&hash={sha1}`. Returns both checkoutUrl (primary) and KHQR code (display) to frontend.
-    2. **Handle Video Callback**: At `/api/payments/video-callback`, RaksmeyPay redirects after payment with `success_time`, `success_hash`, `bakong_hash`, `transaction_id`, `movieId`. Backend validates signature using `validateCallback()` before completing purchase.
-    3. **Poll Verification**: Frontend polls `/api/videos/:movieId/verify-purchase` every 3 seconds. Endpoint checks: (1) video already purchased, (2) transaction status completed, (3) RaksmeyPay API verification. First match returns success.
-    4. **Success Animation**: On completion, modal shows green checkmark animation, 5-second countdown, auto-closes and starts movie playback.
-  - **Subscription Flow**: Same 3-step pattern at `/api/payments/callback` for $2/month recurring subscriptions.
-  - **Security**: SHA1 signature validation with `validateCallback()` at callback stage, 180-second token expiration, transaction ownership verification, duplicate purchase prevention, idempotent processing.
+  - **Payment Flow (3 Steps)**:
+    1. **Generate Payment URL**: Backend builds GET request URL: `https://raksmeypay.com/payment/request/{merchant_id}?transaction_id={timestamp}&amount=2&success_url={encoded_callback}&remark={description}&hash={sha1}`. Hash formula: `SHA1(profile_key + transaction_id + amount + success_url + remark)`. Frontend displays this URL in iframe modal with QR code.
+    2. **Handle Success Callback**: After payment, RaksmeyPay redirects to success_url with parameters: `success_time`, `success_amount`, `bakong_hash`, `success_hash`, `transaction_id`. Backend validates hash: `SHA1(profile_key + success_time + success_amount + bakong_hash + transaction_id)`. Validates 180-second token expiration.
+    3. **Verify Payment Status**: Backend calls verification API: `POST https://raksmeypay.com/api/payment/verify/{merchant_id}` with `transaction_id` and `hash = SHA1(profile_key + transaction_id)`. Validates `payment_status == "SUCCESS"` and amount matches before activating subscription.
+  - **Security**: SHA1 signature validation at both callback and verification stages, 180-second token expiration, amount verification, transaction ownership checks, idempotent processing. Mock endpoint has triple-layer protection (NODE_ENV + dev secret + ownership).
 - **Data Storage**: PostgreSQL (Neon serverless) via Drizzle ORM is the primary storage, with an in-memory fallback for development. Schema defined in `shared/schema.ts` includes `movies`, `users`, and `my_list` tables, with flags like `isHeroBanner`, `isTrending`, `isNewAndPopular`, and `videoEmbedUrl`. Database seeding only occurs on first installation to protect existing data.
 - **Development Features**: Request/response logging, Vite integration, hot module replacement, and Replit-specific error overlay.
 
