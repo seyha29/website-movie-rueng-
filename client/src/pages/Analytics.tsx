@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Users, DollarSign, TrendingUp, TrendingDown, Eye, Clock, Film, AlertCircle, Activity, ChevronUp, ChevronDown, CreditCard, CheckCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -68,6 +69,10 @@ export default function Analytics() {
 
   const { data: recentActivity } = useQuery<any[]>({
     queryKey: ["/api/admin/analytics/recent-activity"],
+  });
+
+  const { data: allMovies } = useQuery<any[]>({
+    queryKey: ["/api/movies"],
   });
 
   const COLORS = ['#f97316', '#fb923c', '#fdba74', '#fed7aa', '#ffedd5', '#fb923c', '#ea580c', '#c2410c'];
@@ -579,17 +584,21 @@ export default function Analytics() {
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="movieId">Movie ID</Label>
-                    <Input
-                      id="movieId"
-                      type="number"
-                      placeholder="e.g., 5"
-                      value={movieId}
-                      onChange={(e) => setMovieId(e.target.value)}
-                      data-testid="input-movie-id"
-                    />
+                    <Label htmlFor="movieId">Select Movie</Label>
+                    <Select value={movieId} onValueChange={setMovieId}>
+                      <SelectTrigger data-testid="select-movie">
+                        <SelectValue placeholder="Choose a movie..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {allMovies?.map((movie: any) => (
+                          <SelectItem key={movie.id} value={movie.id.toString()}>
+                            {movie.title} (ID: {movie.id})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <p className="text-xs text-muted-foreground">
-                      The ID of the movie the user purchased
+                      Select the movie the user purchased
                     </p>
                   </div>
                   <Button
