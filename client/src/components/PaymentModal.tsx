@@ -384,15 +384,22 @@ export function PaymentModal({
       >
         <DialogHeader>
           <DialogTitle className="text-2xl font-moul">
-            {(khqrString || checkoutUrl) ? "Scan QR Code to Pay" : (isVideoMode ? `Purchase "${movieTitle}"` : "Subscribe to Watch")}
+            {checkoutUrl 
+              ? "Payment in Progress" 
+              : khqrString 
+                ? "Scan QR Code to Pay" 
+                : (isVideoMode ? `Purchase "${movieTitle}"` : "Subscribe to Watch")
+            }
           </DialogTitle>
           <DialogDescription className="text-base">
-            {(khqrString || checkoutUrl) 
-              ? "Scan the QR code below with your mobile banking app to complete payment."
-              : (isVideoMode 
-                  ? `Pay $1 to watch this movie. It will be automatically added to your list.`
-                  : "Get unlimited access to all movies with our monthly subscription."
-                )
+            {checkoutUrl 
+              ? "Complete your payment in the new browser tab."
+              : khqrString 
+                ? "Scan the QR code below with your mobile banking app to complete payment."
+                : (isVideoMode 
+                    ? `Pay $1 to watch this movie. It will be automatically added to your list.`
+                    : "Get unlimited access to all movies with our monthly subscription."
+                  )
             }
           </DialogDescription>
         </DialogHeader>
@@ -426,57 +433,41 @@ export function PaymentModal({
             </div>
           ) : checkoutUrl ? (
             /* RaksmeyPay Checkout - Payment page opened in new tab */
-            <div className="flex-1 flex flex-col items-center justify-center py-4">
-              {/* Show KHQR QR code if available as backup */}
-              {khqrString && (
-                <div className="relative bg-white p-4 rounded-xl shadow-lg mb-4">
-                  <img 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(khqrString)}`}
-                    alt="Payment QR Code"
-                    className="w-[220px] h-[220px]"
-                    data-testid="img-qr-code"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="bg-white p-1.5 rounded-lg shadow-md">
-                      <img 
-                        src="https://www.bakongapp.com/wp-content/uploads/2023/07/bakong-logo.png"
-                        alt="Bakong"
-                        className="w-10 h-10 object-contain"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
+            <div className="flex-1 flex flex-col items-center justify-center py-6">
+              {/* Visual indicator that payment is in progress */}
+              <div className="w-24 h-24 bg-orange-500/20 rounded-full flex items-center justify-center mb-6">
+                <Loader2 className="w-12 h-12 text-orange-500 animate-spin" />
+              </div>
+              
+              <h3 className="text-xl font-bold mb-2 text-center">Complete Payment in Browser Tab</h3>
+              <p className="text-sm text-muted-foreground text-center max-w-xs mb-4">
+                A new tab has opened with the RaksmeyPay payment page. Please complete your payment there.
+              </p>
               
               {/* Countdown Timer */}
-              <div className="text-center mb-3">
-                <div className="text-xl font-bold text-orange-500">
+              <div className="text-center mb-4">
+                <div className="text-2xl font-bold text-orange-500">
                   {Math.floor(paymentCountdown / 60)}:{(paymentCountdown % 60).toString().padStart(2, '0')}
                 </div>
                 <p className="text-xs text-muted-foreground">Time remaining to complete payment</p>
               </div>
               
-              <div className="text-center space-y-3">
-                <div className="space-y-1">
-                  <h3 className="text-base font-bold">Complete Payment in New Tab</h3>
-                  <p className="text-xs text-muted-foreground max-w-xs">
-                    RaksmeyPay payment page opened. Complete payment there or scan the QR code above.
-                  </p>
-                </div>
-                
-                <div className="flex items-center justify-center gap-2 text-sm text-green-500">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Checking payment... (Attempt {pollAttempt}/200)</span>
-                </div>
-                
+              <div className="flex items-center justify-center gap-2 text-sm text-green-500 mb-4">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Waiting for payment... (Attempt {pollAttempt}/200)</span>
+              </div>
+              
+              <div className="bg-muted/50 rounded-lg p-3 max-w-xs text-center mb-4">
+                <p className="text-xs text-muted-foreground">
+                  After completing payment, this window will automatically detect it and unlock your movie.
+                </p>
+              </div>
+              
+              <div className="flex gap-2">
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={() => window.open(checkoutUrl, '_blank')}
-                  className="mb-2"
                 >
                   Re-open Payment Page
                 </Button>
@@ -487,7 +478,7 @@ export function PaymentModal({
                   onClick={() => handleClosePayment()}
                   data-testid="button-close-payment"
                 >
-                  <X className="w-4 h-4 mr-2" />
+                  <X className="w-4 h-4 mr-1" />
                   Cancel
                 </Button>
               </div>
