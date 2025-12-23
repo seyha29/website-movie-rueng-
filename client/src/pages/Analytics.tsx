@@ -71,9 +71,10 @@ export default function Analytics() {
     queryKey: ["/api/admin/analytics/recent-activity"],
   });
 
-  const { data: allMovies } = useQuery<any[]>({
-    queryKey: ["/api/movies"],
+  const { data: moviesData } = useQuery<{ movies: any[], total: number }>({
+    queryKey: ["/api/movies?limit=1000"],
   });
+  const allMovies = moviesData?.movies || [];
 
   const COLORS = ['#f97316', '#fb923c', '#fdba74', '#fed7aa', '#ffedd5', '#fb923c', '#ea580c', '#c2410c'];
 
@@ -590,7 +591,7 @@ export default function Analytics() {
                         <SelectValue placeholder="Choose a movie..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {allMovies?.map((movie: any) => (
+                        {allMovies.map((movie: any) => (
                           <SelectItem key={movie.id} value={movie.id.toString()}>
                             {movie.title} (ID: {movie.id})
                           </SelectItem>
