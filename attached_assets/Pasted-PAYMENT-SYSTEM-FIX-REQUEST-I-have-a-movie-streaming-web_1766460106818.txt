@@ -1,0 +1,129 @@
+PAYMENT SYSTEM FIX REQUEST
+I have a movie streaming website with RaksemeyPay payment integration. The payment system has an issue where users pay via QR code but the payment is not detected automatically. The QR code continues showing and doesn't disappear after successful payment.
+Current Problem:
+
+User scans QR code with banking app (ABA/ACLEDA/Wing)
+User completes payment successfully
+Frontend keeps showing QR code (doesn't detect payment)
+After 5-10 minutes, QR expires and shows "Buy Now" again
+User cannot watch the movie even after paying
+
+What Should Happen:
+
+User scans QR and pays
+Frontend polls /api/videos/:movieId/verify-purchase every 3 seconds
+Backend calls RaksemeyPay API to check payment status
+When payment confirmed, QR disappears and shows success message
+User gets immediate access to movie
+
+Files to Fix:
+1. Fix /api/videos/:movieId/verify-purchase endpoint in server/index.ts
+Add better logging and error handling. The endpoint should:
+
+Log each verification attempt clearly
+Handle RaksemeyPay API responses that return status: 0 (eventual consistency)
+Properly record video purchase when payment is completed
+Return clear status to frontend
+
+2. Fix polling in client/src/components/PaymentModal.tsx
+Improve the polling useEffect (around line 141-188) to:
+
+Add console.log statements for debugging
+Show poll attempt number (e.g., "Attempt 1/200")
+Log the verification response
+Handle errors gracefully without stopping polls
+
+3. Extend QR code timer in PaymentModal.tsx
+Change paymentCountdown from 300 seconds (5 minutes) to 600 seconds (10 minutes):
+
+Line ~45: const [paymentCountdown, setPaymentCountdown] = useState(600);
+Line ~101: setPaymentCountdown(600);
+
+4. Add comprehensive logging to callback endpoint
+In server/index.ts, the /api/payments/video-callback endpoint (around line 570) needs:
+
+Log when callback is received
+Log query parameters
+Log transaction lookup result
+Log signature validation result
+Log when purchase is recorded
+
+Key Code Locations:
+server/index.ts:
+- Line ~570: /api/payments/video-callback endpoint
+- Line ~672: /api/videos/:movieId/verify-purchase endpoint
+
+client/src/components/PaymentModal.tsx:
+- Line ~45: paymentCountdown state
+- Line ~101: reset countdown in useEffect
+- Line ~141-188: polling useEffect
+
+server/payment-provider.ts:
+- RealRaksmeyPayProvider.verifyPayment() method
+
+server/payment-service.ts:
+- PaymentService.verifyVideoPurchase() method
+Expected Logs After Fix:
+Server logs:
+[Video Verify] START - User: xxx, Movie: xxx, Ref: TXNxxx
+[Video Verify] Transaction status: pending
+[RaksemeyPay] Verifying payment TXNxxx...
+[RaksemeyPay] Verification response: { status: 'SUCCESS', payment_amount: '1.00' }
+[Video Verify] Recording purchase for completed transaction
+[Video Verify] ✅ Purchase recorded
+Browser console:
+[Polling] Starting payment verification polling...
+[Polling] Attempt 1/200
+[Polling] Verifying video purchase: TXNxxx
+[Polling] Response: { isPurchased: true, status: 'completed' }
+[Polling] ✅ PAYMENT COMPLETED!
+Environment Variables to Check:
+Make sure these are set in .env:
+RAKSMEYPAY_PROFILE_ID=5eebfa4ea9e0f54a55bd13e19e3fae84
+RAKSMEYPAY_PROFILE_KEY=0d99342d0ca34efc1474c74b50088f7a7da602e1168d664b2b47a41a8e2b14b3301d2abc80540c77
+BAKONG_ACCOUNT_ID=cham_toem2@aclb
+REPLIT_DEV_DOMAIN=<your-replit-domain>.replit.dev
+Testing:
+After fixing, test by:
+
+Creating a payment (click "Buy Movie")
+Check server logs show: [RaksemeyPay] Created payment...
+Check browser console shows: [Polling] Starting payment verification polling...
+Use RaksemeyPay test credentials to simulate payment
+Watch logs detect the payment within 3-6 seconds
+QR should disappear and show success screen
+
+Important Notes:
+
+DO NOT change the payment flow logic in PaymentService or RealRaksmeyPayProvider
+DO NOT modify database schema
+ONLY add logging and improve error handling
+Keep the 3-second polling interval
+The polling should continue for up to 10 minutes (200 attempts × 3 seconds)
+
+Please fix these issues while maintaining all existing functionality. Focus on improving logging, error handling, and timing issues.
+
+Alternative Shorter Prompt (If AI has context limits):
+Fix payment detection issue in my movie streaming site:
+
+PROBLEM: User pays via QR code but frontend doesn't detect it. QR keeps showing.
+
+FIX NEEDED:
+1. server/index.ts line ~672: Add logging to /api/videos/:movieId/verify-purchase
+2. PaymentModal.tsx line ~141: Add console.logs to polling useEffect
+3. PaymentModal.tsx line ~45: Change paymentCountdown from 300 to 600
+4. server/index.ts line ~570: Add logging to /api/payments/video-callback
+
+Add detailed console.log and console.error statements to track:
+- Each polling attempt (Attempt X/200)
+- RaksemeyPay API responses
+- Payment status changes
+- Purchase recording
+
+Expected logs:
+[Polling] Attempt 1/200
+[Video Verify] Transaction status: pending
+[RaksemeyPay] Verification response: {...}
+[Video Verify] ✅ Purchase recorded
+
+Keep all existing logic, just add logging for debugging.
