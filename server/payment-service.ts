@@ -31,11 +31,9 @@ export class PaymentService {
     });
 
     // 4. Initiate payment with provider
-    // Use production domain (REPLIT_DOMAINS) first, then dev domain for callbacks
-    const productionDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
+    // Use Replit dev domain for callback (RaksemeyPay needs publicly accessible URL)
     const baseUrl = process.env.BASE_URL || 
-                    (productionDomain ? `https://${productionDomain}` : 
-                    (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000'));
+                    (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000');
     const callbackUrl = `${baseUrl}/api/payments/callback`;
     
     console.log(`[Payment] Using callback URL: ${callbackUrl}`);
@@ -97,11 +95,8 @@ export class PaymentService {
     });
 
     // 4. Initiate payment with provider
-    // Use production domain (REPLIT_DOMAINS) first, then dev domain for callbacks
-    const productionDomain = process.env.REPLIT_DOMAINS?.split(',')[0];
     const baseUrl = process.env.BASE_URL || 
-                    (productionDomain ? `https://${productionDomain}` : 
-                    (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000'));
+                    (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:5000');
     const callbackUrl = `${baseUrl}/api/payments/video-callback?movieId=${encodeURIComponent(movieId)}`;
     
     console.log(`[Video Payment] Using callback URL: ${callbackUrl}, Amount: $${videoPurchaseAmount}`);
