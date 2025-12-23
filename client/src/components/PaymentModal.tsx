@@ -399,15 +399,56 @@ export function PaymentModal({
                   <span>Waiting for payment...</span>
                 </div>
                 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleClosePayment}
-                  data-testid="button-close-payment"
-                >
-                  <X className="w-4 h-4 mr-2" />
-                  Cancel
-                </Button>
+                <div className="flex gap-2 justify-center">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={async () => {
+                      if (isVideoMode && movieId && paymentRefRef.current) {
+                        try {
+                          const response = await fetch(`/api/videos/${movieId}/verify-purchase`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ paymentRef: paymentRefRef.current }),
+                            credentials: 'include',
+                          });
+                          if (response.ok) {
+                            const data = await response.json();
+                            if (data.isPurchased || data.status === 'completed') {
+                              handlePaymentCompleted();
+                            } else {
+                              toast({
+                                title: "Payment Not Found",
+                                description: "We haven't received your payment yet. Please wait a moment and try again.",
+                                variant: "destructive",
+                              });
+                            }
+                          }
+                        } catch (error) {
+                          toast({
+                            title: "Verification Failed",
+                            description: "Please try again in a moment.",
+                            variant: "destructive",
+                          });
+                        }
+                      }
+                    }}
+                    data-testid="button-ive-paid"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    I've Paid
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClosePayment}
+                    data-testid="button-close-payment"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Cancel
+                  </Button>
+                </div>
               </div>
             </div>
           ) : khqrString ? (
@@ -449,17 +490,51 @@ export function PaymentModal({
                   </p>
                 </div>
                 
-                <div className="text-center text-sm text-muted-foreground bg-muted/50 rounded-lg p-3 max-w-xs">
-                  <p className="font-medium mb-1">After scanning and paying:</p>
-                  <p>Your payment will be detected automatically within 30 seconds.</p>
-                </div>
-                
                 <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Checking for payment...</span>
+                  <span>Waiting for payment...</span>
                 </div>
                 
-                <div className="flex justify-center mt-3">
+                <div className="flex gap-2 justify-center">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={async () => {
+                      if (isVideoMode && movieId && paymentRefRef.current) {
+                        try {
+                          const response = await fetch(`/api/videos/${movieId}/verify-purchase`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ paymentRef: paymentRefRef.current }),
+                            credentials: 'include',
+                          });
+                          if (response.ok) {
+                            const data = await response.json();
+                            if (data.isPurchased || data.status === 'completed') {
+                              handlePaymentCompleted();
+                            } else {
+                              toast({
+                                title: "Payment Not Found",
+                                description: "We haven't received your payment yet. Please wait a moment and try again.",
+                                variant: "destructive",
+                              });
+                            }
+                          }
+                        } catch (error) {
+                          toast({
+                            title: "Verification Failed",
+                            description: "Please try again in a moment.",
+                            variant: "destructive",
+                          });
+                        }
+                      }
+                    }}
+                    data-testid="button-ive-paid-khqr"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    I've Paid
+                  </Button>
+                  
                   <Button
                     variant="outline"
                     size="sm"

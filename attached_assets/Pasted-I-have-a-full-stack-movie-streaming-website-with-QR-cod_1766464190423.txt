@@ -1,0 +1,70 @@
+I have a full-stack movie streaming website with QR-code payments.
+Users can pay successfully via QR (RaksmeyPay / Bakong), but my system does NOT auto-confirm the payment.
+
+CURRENT PROBLEM:
+- Payment is completed externally
+- My app never detects payment success
+- QR code stays visible for 5 minutes
+- Timer ends and shows “Buy Now” again
+- Movie is never unlocked
+
+TECH STACK:
+- Backend: Node.js + Express
+- Frontend: React
+- Database: PostgreSQL
+- Payment Gateway: RaksmeyPay (QR / Bakong)
+
+WHAT I NEED YOU TO FIX AND IMPLEMENT:
+
+BACKEND (CRITICAL):
+1. Create or use a `payments` table with:
+   - id
+   - user_id
+   - movie_id
+   - invoice_id
+   - amount
+   - status (PENDING, PAID, FAILED)
+   - created_at
+
+2. When a QR code is generated:
+   - Save a payment record with status = PENDING
+   - Store invoice_id
+
+3. Create this endpoint:
+   GET /api/payments/verify/:invoiceId
+
+4. This endpoint must:
+   - Call RaksmeyPay payment verification API from BACKEND ONLY
+   - Use secret keys from environment variables
+   - If status = SUCCESS:
+     - Update payment status to PAID
+     - Grant movie access to the user in database
+     - Return { paid: true }
+   - Otherwise return { paid: false }
+
+5. Movie access must be enforced by backend (not frontend only).
+
+FRONTEND (CRITICAL):
+1. When QR code is displayed:
+   - Start polling backend every 3–5 seconds
+   - Call /api/payments/verify/:invoiceId
+
+2. As soon as payment is confirmed:
+   - Stop polling immediately
+   - Hide QR code and countdown timer
+   - Show a clear “Payment Successful” message with a checkmark
+   - Unlock and display the movie player immediately
+
+3. The timer must NOT control payment success.
+   - Payment success must override timer expiration.
+
+SECURITY RULES:
+- Never call RaksmeyPay API directly from frontend
+- Never expose secret keys in frontend
+- Use process.env for all payment credentials
+
+PLEASE GENERATE:
+- Express backend route code
+- React frontend polling logic
+- Database update logic
+- Short explanation of the fixed payment flow
