@@ -1,11 +1,10 @@
 import { type User, type InsertUser, type Movie, type InsertMovie, type MyList, type InsertMyList, type SubscriptionPlan, type UserSubscription, type InsertUserSubscription, type PaymentTransaction, type InsertPaymentTransaction, type MovieView, type InsertMovieView, type VideoPurchase, type InsertVideoPurchase, type AdBanner, type InsertAdBanner, users, movies, myList, subscriptionPlans, userSubscriptions, paymentTransactions, movieViews, videoPurchases, adBanners } from "@shared/schema";
 import { randomUUID } from "crypto";
-import { drizzle } from "drizzle-orm/neon-serverless";
-import { Pool, neonConfig } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/node-postgres";
+import pg from "pg";
 import { eq, ilike, or, sql, and } from "drizzle-orm";
-import ws from "ws";
 
-neonConfig.webSocketConstructor = ws;
+const { Pool } = pg;
 
 // Type for user updates that includes session management fields
 type UserUpdateData = Partial<InsertUser> & { currentSessionId?: string | null };
@@ -667,6 +666,7 @@ export class MemStorage implements IStorage {
       videoEmbedUrl: insertMovie.videoEmbedUrl || null,
       trailerUrl: insertMovie.trailerUrl || null,
       isFree: insertMovie.isFree || 0,
+      price: insertMovie.price || "1.00",
       isTrending: insertMovie.isTrending || 0,
       isNewAndPopular: insertMovie.isNewAndPopular || 0,
       isHeroBanner: insertMovie.isHeroBanner || 0,

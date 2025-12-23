@@ -1,13 +1,12 @@
 import { storage } from "./storage";
 import type { InsertMovie, InsertUser, InsertSubscriptionPlan } from "@shared/schema";
-import { drizzle } from "drizzle-orm/neon-serverless";
-import { Pool, neonConfig } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/node-postgres";
+import pg from "pg";
 import { users, subscriptionPlans } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import ws from "ws";
 import bcrypt from "bcrypt";
 
-neonConfig.webSocketConstructor = ws;
+const { Pool } = pg;
 
 export async function seedData() {
   // CRITICAL: Only seed data on FIRST INSTALLATION
