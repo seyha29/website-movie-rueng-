@@ -172,7 +172,7 @@ app.use((req, res, next) => {
   /* =========================
      🔥 CORRECT REPLIT PORT
   ========================= */
-  const PORT = Number(process.env.PORT) || 5000;
+  const PORT = Number(process.env.PORT) || 3000;
 
   server.listen(
     {
