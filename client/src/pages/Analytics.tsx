@@ -21,8 +21,8 @@ export default function Analytics() {
   const confirmPaymentMutation = useMutation({
     mutationFn: async () => {
       const response = await apiRequest("POST", "/api/admin/confirm-khqr-payment", {
-        transactionId,
-        movieId: parseInt(movieId),
+        paymentRef: transactionId,
+        movieId: movieId,
       });
       if (!response.ok) {
         const error = await response.json();
