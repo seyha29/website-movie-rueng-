@@ -36,10 +36,12 @@ export function PaymentModal({
   const paymentType = isVideoMode ? 'video purchase' : 'monthly subscription';
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [countdown, setCountdown] = useState(5);
-  const [paymentCountdown, setPaymentCountdown] = useState(300); // 5 minutes in seconds
+  const [paymentCountdown, setPaymentCountdown] = useState(600); // 10 minutes in seconds
+  const [pollAttempt, setPollAttempt] = useState(0);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const paymentRefRef = useRef<string | null>(null);
   const paymentCountdownRef = useRef<NodeJS.Timeout | null>(null);
+  const paymentWindowRef = useRef<Window | null>(null);
 
   const initiatePaymentMutation = useMutation({
     mutationFn: async () => {
@@ -58,20 +60,37 @@ export function PaymentModal({
       // Save paymentRef for polling
       if (data.paymentRef) {
         paymentRefRef.current = data.paymentRef;
+        console.log('[Payment] Payment ref saved:', data.paymentRef);
       }
       
       // Prioritize checkoutUrl for verifiable payments through RaksmeyPay
       if (data.checkoutUrl) {
-        console.log('[Payment] Displaying RaksmeyPay checkout:', data.checkoutUrl);
+        console.log('[Payment] RaksmeyPay checkout URL received');
         setCheckoutUrl(data.checkoutUrl);
-        // Also save KHQR if available (for display option)
+        
+        // Redirect the pre-opened window to RaksmeyPay checkout
+        if (paymentWindowRef.current) {
+          console.log('[Payment] Redirecting pre-opened window to RaksmeyPay...');
+          paymentWindowRef.current.location.href = data.checkoutUrl;
+        } else {
+          // Fallback: try to open directly (may be blocked)
+          console.log('[Payment] No pre-opened window, trying direct open...');
+          window.open(data.checkoutUrl, '_blank');
+        }
+        
+        // Also save KHQR if available (for display in modal as backup)
         if (data.khqrString) {
           setKhqrString(data.khqrString);
         }
         return;
       }
       
-      // Fallback to KHQR if no checkout URL
+      // Fallback to KHQR if no checkout URL - close the blank window
+      if (paymentWindowRef.current) {
+        paymentWindowRef.current.close();
+        paymentWindowRef.current = null;
+      }
+      
       if (data.khqrString) {
         console.log('[Payment] Displaying Bakong KHQR code');
         setKhqrString(data.khqrString);
@@ -137,6 +156,11 @@ export function PaymentModal({
       }
     },
     onError: (error: any) => {
+      // Close the pre-opened window on error
+      if (paymentWindowRef.current) {
+        paymentWindowRef.current.close();
+        paymentWindowRef.current = null;
+      }
       toast({
         title: "Payment Error",
         description: error.message || "Failed to initiate payment. Please try again.",
@@ -146,19 +170,30 @@ export function PaymentModal({
   });
 
   const handlePayNow = () => {
+    // Pre-open a blank tab synchronously (under user gesture) to avoid popup blockers
+    paymentWindowRef.current = window.open('about:blank', '_blank');
     initiatePaymentMutation.mutate();
   };
 
-  const handleClosePayment = () => {
+  const handleClosePayment = (nextOpen?: boolean) => {
+    // Only run cleanup when closing (nextOpen === false or undefined for explicit close)
+    if (nextOpen === true) return;
+    
     // Clear polling interval
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
       pollingRef.current = null;
     }
+    // Close pre-opened payment window if still open
+    if (paymentWindowRef.current) {
+      paymentWindowRef.current.close();
+      paymentWindowRef.current = null;
+    }
     setCheckoutUrl(null);
     setKhqrString(null);
     setPaymentSuccess(false);
     setCountdown(5);
+    setPollAttempt(0); // Reset poll attempt counter for next payment session
     paymentRefRef.current = null;
     onOpenChange(false);
   };
@@ -193,7 +228,8 @@ export function PaymentModal({
   // Reset payment countdown when modal opens
   useEffect(() => {
     if (open) {
-      setPaymentCountdown(300); // Reset to 5 minutes
+      setPaymentCountdown(600); // Reset to 10 minutes
+      setPollAttempt(0); // Reset poll attempt counter
     }
   }, [open]);
 
@@ -244,45 +280,82 @@ export function PaymentModal({
   // Poll for payment status when QR code is showing
   useEffect(() => {
     if ((khqrString || checkoutUrl) && !paymentSuccess) {
+      console.log('[Polling] Starting payment verification polling...');
+      console.log('[Polling] Payment ref:', paymentRefRef.current);
+      let attemptCount = 0;
+      const maxAttempts = 200; // 200 attempts × 3 seconds = 10 minutes
+      
       // Poll every 3 seconds to verify payment and complete purchase
       pollingRef.current = setInterval(async () => {
+        attemptCount++;
+        setPollAttempt(attemptCount);
+        
         try {
           // For video mode, verify the payment with RaksemeyPay and complete purchase
           if (isVideoMode && movieId && paymentRefRef.current) {
+            console.log(`[Polling] Attempt ${attemptCount}/${maxAttempts} - Verifying video purchase: ${paymentRefRef.current}`);
+            
             const response = await fetch(`/api/videos/${movieId}/verify-purchase`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ paymentRef: paymentRefRef.current }),
               credentials: 'include',
             });
+            
             if (response.ok) {
               const data = await response.json();
+              console.log(`[Polling] Response:`, data);
+              
               if (data.isPurchased || data.status === 'completed') {
+                console.log('[Polling] ✅ PAYMENT COMPLETED!');
                 handlePaymentCompleted();
+              } else {
+                console.log(`[Polling] Status: ${data.status} - continuing to poll...`);
               }
+            } else {
+              const errorData = await response.json().catch(() => ({}));
+              console.error(`[Polling] Error response:`, response.status, errorData);
             }
           } else if (!isVideoMode) {
             // For subscription mode, verify with payment ref
             if (paymentRefRef.current) {
+              console.log(`[Polling] Attempt ${attemptCount}/${maxAttempts} - Verifying subscription: ${paymentRefRef.current}`);
+              
               const response = await fetch(`/api/payments/verify/${paymentRefRef.current}`, {
                 method: 'POST',
                 credentials: 'include',
               });
+              
               if (response.ok) {
                 const data = await response.json();
+                console.log(`[Polling] Response:`, data);
+                
                 if (data.status === 'completed') {
+                  console.log('[Polling] ✅ PAYMENT COMPLETED!');
                   handlePaymentCompleted();
+                } else {
+                  console.log(`[Polling] Status: ${data.status} - continuing to poll...`);
                 }
               }
             }
           }
+          
+          // Stop polling after max attempts
+          if (attemptCount >= maxAttempts) {
+            console.log('[Polling] Max attempts reached, stopping...');
+            if (pollingRef.current) {
+              clearInterval(pollingRef.current);
+              pollingRef.current = null;
+            }
+          }
         } catch (error) {
-          console.error('Error polling payment status:', error);
+          console.error(`[Polling] Attempt ${attemptCount}/${maxAttempts} - Error:`, error);
         }
       }, 3000);
       
       return () => {
         if (pollingRef.current) {
+          console.log('[Polling] Stopping payment verification polling...');
           clearInterval(pollingRef.current);
           pollingRef.current = null;
         }
@@ -352,9 +425,9 @@ export function PaymentModal({
               </Button>
             </div>
           ) : checkoutUrl ? (
-            /* RaksmeyPay Checkout - Show QR code and checkout button */
+            /* RaksmeyPay Checkout - Payment page opened in new tab */
             <div className="flex-1 flex flex-col items-center justify-center py-4">
-              {/* Show KHQR QR code if available */}
+              {/* Show KHQR QR code if available as backup */}
               {khqrString && (
                 <div className="relative bg-white p-4 rounded-xl shadow-lg mb-4">
                   <img 
@@ -388,21 +461,30 @@ export function PaymentModal({
               
               <div className="text-center space-y-3">
                 <div className="space-y-1">
-                  <h3 className="text-base font-bold">Scan QR Code to Pay</h3>
+                  <h3 className="text-base font-bold">Complete Payment in New Tab</h3>
                   <p className="text-xs text-muted-foreground max-w-xs">
-                    Scan with any Bakong banking app (ABA, ACLEDA, Wing, etc.)
+                    RaksmeyPay payment page opened. Complete payment there or scan the QR code above.
                   </p>
                 </div>
                 
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center justify-center gap-2 text-sm text-green-500">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Waiting for payment...</span>
+                  <span>Checking payment... (Attempt {pollAttempt}/200)</span>
                 </div>
+                
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => window.open(checkoutUrl, '_blank')}
+                  className="mb-2"
+                >
+                  Re-open Payment Page
+                </Button>
                 
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleClosePayment}
+                  onClick={() => handleClosePayment()}
                   data-testid="button-close-payment"
                 >
                   <X className="w-4 h-4 mr-2" />
@@ -463,7 +545,7 @@ export function PaymentModal({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleClosePayment}
+                    onClick={() => handleClosePayment()}
                     data-testid="button-close-payment"
                   >
                     <X className="w-4 h-4 mr-2" />
