@@ -347,71 +347,17 @@ export function PaymentModal({
                 {isVideoMode ? "Play Now" : "Start Watching"}
               </Button>
             </div>
-          ) : checkoutUrl ? (
-            /* RaksmeyPay Checkout URL - Open in new window */
+          ) : (khqrString || checkoutUrl) ? (
             <div className="flex-1 flex flex-col items-center justify-center py-4">
-              <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6">
-                <svg className="w-12 h-12 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg>
-              </div>
-              
-              {/* 5-Minute Countdown Timer */}
-              <div className="text-center mb-4">
-                <div className="text-2xl font-bold text-orange-500">
-                  {Math.floor(paymentCountdown / 60)}:{(paymentCountdown % 60).toString().padStart(2, '0')}
-                </div>
-                <p className="text-xs text-muted-foreground">Time remaining to complete payment</p>
-              </div>
-              
-              <div className="text-center space-y-4">
-                <div className="space-y-2">
-                  <h3 className="text-lg font-bold">Pay with RaksmeyPay</h3>
-                  <p className="text-sm text-muted-foreground max-w-md">
-                    Click the button below to open RaksmeyPay and complete your payment securely.
-                  </p>
-                </div>
-                
-                <Button
-                  size="lg"
-                  className="w-full max-w-xs"
-                  onClick={() => window.open(checkoutUrl, '_blank')}
-                  data-testid="button-open-raksmeypay"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                  Open RaksmeyPay
-                </Button>
-                
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Waiting for payment confirmation...</span>
-                </div>
-                
-                <div className="flex justify-center mt-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleClosePayment}
-                    data-testid="button-close-payment"
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ) : khqrString ? (
-            /* KHQR String - Show scannable QR code */
-            <div className="flex-1 flex flex-col items-center justify-center py-4">
+              {/* QR Code with Bakong Logo */}
               <div className="relative bg-white p-4 rounded-xl shadow-lg mb-4">
                 <img 
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(khqrString)}`}
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(khqrString || checkoutUrl || '')}`}
                   alt="Payment QR Code"
                   className="w-[280px] h-[280px]"
                   data-testid="img-qr-code"
                 />
+                {/* Bakong Logo Overlay */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="bg-white p-2 rounded-lg shadow-md">
                     <img 
@@ -426,6 +372,7 @@ export function PaymentModal({
                 </div>
               </div>
               
+              {/* 5-Minute Countdown Timer */}
               <div className="text-center mb-4">
                 <div className="text-2xl font-bold text-orange-500">
                   {Math.floor(paymentCountdown / 60)}:{(paymentCountdown % 60).toString().padStart(2, '0')}

@@ -1,10 +1,11 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import { Pool, neonConfig } from "@neondatabase/serverless";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import ws from "ws";
 import bcrypt from "bcrypt";
 
-const { Pool } = pg;
+neonConfig.webSocketConstructor = ws;
 
 async function createAdminAccounts() {
   if (!process.env.DATABASE_URL) {
