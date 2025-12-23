@@ -171,7 +171,10 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
     const checkoutUrl = `${this.paymentBaseUrl}?${checkoutParams.toString()}`;
     
     // Generate actual Bakong KHQR code for banking apps to scan
-    const khqrResult = KHQR.generate({
+    // Expiration time is required for dynamic KHQR (with amount)
+    const expirationTime = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes from now
+    
+    const khqrPayload = {
       tag: TAG.INDIVIDUAL,
       accountID: this.bakongAccountId,
       merchantName: this.merchantName,
@@ -179,12 +182,19 @@ export class RealRaksmeyPayProvider implements PaymentProvider {
       amount: params.amount,
       currency: params.currency === 'USD' ? CURRENCY.USD : CURRENCY.KHR,
       countryCode: COUNTRY.KH,
+      expirationTime: expirationTime,
       additionalData: {
         billNumber: transactionId.toString(),
         storeLabel: 'RUENG Movies',
         terminalLabel: `TXN-${transactionId}`,
       },
-    });
+    };
+    
+    console.log('[KHQR] Generating with payload:', JSON.stringify(khqrPayload, null, 2));
+    
+    const khqrResult = KHQR.generate(khqrPayload);
+    
+    console.log('[KHQR] Generation result:', JSON.stringify(khqrResult, null, 2));
     
     const khqrString = khqrResult.data?.qr || null;
     
