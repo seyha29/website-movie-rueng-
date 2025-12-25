@@ -6,14 +6,17 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { paymentResultLabels } from "@/lib/translations";
 
 export default function PaymentResult() {
   const [, params] = useRoute("/payments/result");
   const [,setLocation] = useWouterLocation();
   const queryClient = useQueryClient();
   const [isProcessing, setIsProcessing] = useState(true);
+  const { language } = useLanguage();
+  const t = paymentResultLabels;
 
-  // Parse query parameters from URL
   const urlParams = new URLSearchParams(window.location.search);
   const status = urlParams.get('status');
   const ref = urlParams.get('ref');
@@ -21,16 +24,13 @@ export default function PaymentResult() {
 
   useEffect(() => {
     if (status === 'success') {
-      // Refetch subscription status after successful payment
       queryClient.invalidateQueries({ queryKey: ['/api/subscription/status'] });
       queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
       
-      // Stop processing after 1 second to show success message
       setTimeout(() => {
         setIsProcessing(false);
       }, 1000);
     } else {
-      // For errors, show immediately
       setIsProcessing(false);
     }
   }, [status, queryClient]);
@@ -52,10 +52,10 @@ export default function PaymentResult() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                Processing Payment
+                {t.processingPayment[language]}
               </CardTitle>
               <CardDescription>
-                Please wait while we confirm your payment...
+                {t.pleaseWait[language]}
               </CardDescription>
             </CardHeader>
           </Card>
@@ -74,19 +74,19 @@ export default function PaymentResult() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-green-500">
                 <CheckCircle2 className="h-6 w-6" />
-                Payment Successful!
+                {t.paymentSuccessful[language]}
               </CardTitle>
               <CardDescription>
-                Your subscription has been activated
+                {t.subscriptionActivated[language]}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                Thank you for subscribing! You now have unlimited access to all movies for 30 days.
+                {t.thankYou[language]}
               </p>
               {ref && (
                 <p className="text-xs text-muted-foreground bg-muted/30 p-3 rounded-md font-mono">
-                  Payment Reference: {ref}
+                  {t.paymentReference[language]} {ref}
                 </p>
               )}
             </CardContent>
@@ -96,7 +96,7 @@ export default function PaymentResult() {
                 onClick={handleContinue}
                 data-testid="button-continue"
               >
-                Start Watching
+                {t.startWatching[language]}
               </Button>
             </CardFooter>
           </Card>
@@ -105,18 +105,18 @@ export default function PaymentResult() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-destructive">
                 <XCircle className="h-6 w-6" />
-                Payment Failed
+                {t.paymentFailed[language]}
               </CardTitle>
               <CardDescription>
-                There was an issue processing your payment
+                {t.issueProcessing[language]}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                {message ? decodeURIComponent(message) : 'An unexpected error occurred. Please try again.'}
+                {message ? decodeURIComponent(message) : t.unexpectedError[language]}
               </p>
               <p className="text-xs text-muted-foreground">
-                If you continue to experience issues, please contact support.
+                {t.contactSupport[language]}
               </p>
             </CardContent>
             <CardFooter className="flex gap-2">
@@ -126,14 +126,14 @@ export default function PaymentResult() {
                 onClick={handleTryAgain}
                 data-testid="button-try-again"
               >
-                Try Again
+                {t.tryAgain[language]}
               </Button>
               <Button 
                 className="flex-1"
                 onClick={() => setLocation('/')}
                 data-testid="button-home"
               >
-                Go Home
+                {t.goHome[language]}
               </Button>
             </CardFooter>
           </Card>

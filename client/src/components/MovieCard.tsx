@@ -2,6 +2,8 @@ import { Play, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { movieCardLabels } from "@/lib/translations";
 
 interface MovieCardProps {
   id: string;
@@ -26,6 +28,8 @@ export default function MovieCard({
   onShowDetails,
 }: MovieCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const { language } = useLanguage();
+  const t = movieCardLabels;
 
   return (
     <div
@@ -84,7 +88,7 @@ export default function MovieCard({
             data-testid="button-play"
           >
             <Play className="h-3 w-3 mr-1" />
-            Play
+            {t.play[language]}
           </Button>
           <Button
             size="icon"

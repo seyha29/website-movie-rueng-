@@ -5,6 +5,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, X, CheckCircle } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { paymentLabels } from "@/lib/translations";
 
 interface PaymentModalProps {
   open: boolean;
@@ -30,6 +32,8 @@ export function PaymentModal({
   const [khqrString, setKhqrString] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { language } = useLanguage();
+  const t = paymentLabels;
 
   const isVideoMode = mode === 'video' && movieId;
   const paymentAmount = isVideoMode ? `$${moviePrice}` : '$2';
@@ -307,14 +311,14 @@ export function PaymentModal({
       >
         <DialogHeader>
           <DialogTitle className="text-2xl font-moul">
-            {(khqrString || checkoutUrl) ? "Scan QR Code to Pay" : (isVideoMode ? `Purchase "${movieTitle}"` : "Subscribe to Watch")}
+            {(khqrString || checkoutUrl) ? t.scanQrToPay[language] : (isVideoMode ? `${t.purchaseMovie[language]} "${movieTitle}"` : t.subscribeToWatch[language])}
           </DialogTitle>
           <DialogDescription className="text-base">
             {(khqrString || checkoutUrl) 
-              ? "Scan the QR code below with your mobile banking app to complete payment."
+              ? t.scanQrDescription[language]
               : (isVideoMode 
-                  ? `Pay $1 to watch this movie. It will be automatically added to your list.`
-                  : "Get unlimited access to all movies with our monthly subscription."
+                  ? t.payToWatch[language]
+                  : t.unlimitedAccess[language]
                 )
             }
           </DialogDescription>
@@ -327,14 +331,14 @@ export function PaymentModal({
               <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6">
                 <CheckCircle className="w-12 h-12 text-green-500" />
               </div>
-              <h3 className="text-2xl font-bold text-green-500 mb-2">Payment Successful!</h3>
+              <h3 className="text-2xl font-bold text-green-500 mb-2">{t.paymentSuccessful[language]}</h3>
               <p className="text-muted-foreground mb-4">
                 {isVideoMode 
-                  ? `You can now watch "${movieTitle}".`
-                  : "You now have unlimited access to all movies for 1 month."}
+                  ? t.canWatchNow[language]
+                  : t.unlimitedAccessMonth[language]}
               </p>
               <p className="text-sm text-muted-foreground">
-                Closing in <span className="font-bold text-primary">{countdown}</span> seconds...
+                {t.closingIn[language]} <span className="font-bold text-primary">{countdown}</span> {t.seconds[language]}
               </p>
               <Button
                 className="mt-6"
@@ -344,7 +348,7 @@ export function PaymentModal({
                 }}
                 data-testid="button-play-now"
               >
-                {isVideoMode ? "Play Now" : "Start Watching"}
+                {isVideoMode ? t.playNow[language] : t.startWatching[language]}
               </Button>
             </div>
           ) : checkoutUrl ? (
@@ -361,14 +365,14 @@ export function PaymentModal({
                 <div className="text-2xl font-bold text-orange-500">
                   {Math.floor(paymentCountdown / 60)}:{(paymentCountdown % 60).toString().padStart(2, '0')}
                 </div>
-                <p className="text-xs text-muted-foreground">Time remaining to complete payment</p>
+                <p className="text-xs text-muted-foreground">{t.timeRemaining[language]}</p>
               </div>
               
               <div className="text-center space-y-4">
                 <div className="space-y-2">
-                  <h3 className="text-lg font-bold">Pay with RaksmeyPay</h3>
+                  <h3 className="text-lg font-bold">{t.payWithRaksmeypay[language]}</h3>
                   <p className="text-sm text-muted-foreground max-w-md">
-                    Click the button below to open RaksmeyPay and complete your payment securely.
+                    {t.clickToOpenRaksmeypay[language]}
                   </p>
                 </div>
                 
@@ -381,12 +385,12 @@ export function PaymentModal({
                   <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
-                  Open RaksmeyPay
+                  {t.openRaksmeypay[language]}
                 </Button>
                 
                 <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Waiting for payment confirmation...</span>
+                  <span>{t.waitingForConfirmation[language]}</span>
                 </div>
                 
                 <div className="flex justify-center mt-3">
@@ -397,7 +401,7 @@ export function PaymentModal({
                     data-testid="button-close-payment"
                   >
                     <X className="w-4 h-4 mr-2" />
-                    Cancel
+                    {t.cancel[language]}
                   </Button>
                 </div>
               </div>
@@ -430,20 +434,20 @@ export function PaymentModal({
                 <div className="text-2xl font-bold text-orange-500">
                   {Math.floor(paymentCountdown / 60)}:{(paymentCountdown % 60).toString().padStart(2, '0')}
                 </div>
-                <p className="text-xs text-muted-foreground">Time remaining to complete payment</p>
+                <p className="text-xs text-muted-foreground">{t.timeRemaining[language]}</p>
               </div>
               
               <div className="text-center space-y-3">
                 <div className="space-y-1">
-                  <h3 className="text-lg font-bold">Scan with Banking App</h3>
+                  <h3 className="text-lg font-bold">{t.scanWithBankingApp[language]}</h3>
                   <p className="text-sm text-muted-foreground max-w-md">
-                    Scan this Bakong KHQR code with ABA, ACLEDA, Wing, or any Bakong-supported banking app to pay directly.
+                    {t.scanBakongDescription[language]}
                   </p>
                 </div>
                 
                 <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Waiting for payment confirmation...</span>
+                  <span>{t.waitingForConfirmation[language]}</span>
                 </div>
                 
                 <div className="flex justify-center mt-3">
@@ -454,7 +458,7 @@ export function PaymentModal({
                     data-testid="button-close-payment"
                   >
                     <X className="w-4 h-4 mr-2" />
-                    Cancel
+                    {t.cancel[language]}
                   </Button>
                 </div>
               </div>
@@ -466,16 +470,16 @@ export function PaymentModal({
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-xl font-bold">
-                  {isVideoMode ? movieTitle : "Monthly Subscription"}
+                  {isVideoMode ? movieTitle : t.monthlySubscription[language]}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  {isVideoMode ? "Pay per view" : "Unlimited access for 30 days"}
+                  {isVideoMode ? t.payPerView[language] : t.unlimitedFor30Days[language]}
                 </p>
               </div>
               <div className="text-right">
                 <div className="text-3xl font-bold text-primary">{paymentAmount}</div>
                 <div className="text-sm text-muted-foreground">
-                  {isVideoMode ? "/video" : "/month"}
+                  {isVideoMode ? t.perVideo[language] : t.perMonth[language]}
                 </div>
               </div>
             </div>
@@ -487,19 +491,19 @@ export function PaymentModal({
                     <svg className="w-4 h-4 mr-2 text-primary" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    <span>Instant access to this movie</span>
+                    <span>{t.instantAccess[language]}</span>
                   </div>
                   <div className="flex items-center text-sm">
                     <svg className="w-4 h-4 mr-2 text-primary" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    <span>Auto-added to My List</span>
+                    <span>{t.autoAddedToList[language]}</span>
                   </div>
                   <div className="flex items-center text-sm">
                     <svg className="w-4 h-4 mr-2 text-primary" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    <span>Watch unlimited times</span>
+                    <span>{t.watchUnlimitedTimes[language]}</span>
                   </div>
                 </>
               ) : (
@@ -508,25 +512,25 @@ export function PaymentModal({
                     <svg className="w-4 h-4 mr-2 text-primary" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    <span>Unlimited access to all movies</span>
+                    <span>{t.unlimitedAllMovies[language]}</span>
                   </div>
                   <div className="flex items-center text-sm">
                     <svg className="w-4 h-4 mr-2 text-primary" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    <span>HD quality streaming</span>
+                    <span>{t.hdQuality[language]}</span>
                   </div>
                   <div className="flex items-center text-sm">
                     <svg className="w-4 h-4 mr-2 text-primary" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    <span>Watch on any device</span>
+                    <span>{t.watchOnAnyDevice[language]}</span>
                   </div>
                   <div className="flex items-center text-sm">
                     <svg className="w-4 h-4 mr-2 text-primary" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    <span>Cancel anytime</span>
+                    <span>{t.cancelAnytime[language]}</span>
                   </div>
                 </>
               )}
@@ -538,7 +542,7 @@ export function PaymentModal({
             <div className="rounded-md border border-border bg-muted/50 p-4">
               <div className="flex items-center justify-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Processing your payment...</span>
+                <span className="text-sm">{t.processingPayment[language]}</span>
               </div>
             </div>
               )}
@@ -552,7 +556,7 @@ export function PaymentModal({
               disabled={initiatePaymentMutation.isPending || isProcessing}
               data-testid="button-cancel-payment"
             >
-              Cancel
+              {t.cancel[language]}
             </Button>
             <Button
               className="flex-1"
@@ -566,7 +570,7 @@ export function PaymentModal({
                   {isProcessing ? 'Processing...' : 'Starting...'}
                 </>
               ) : (
-                `Pay ${paymentAmount} Now`
+                `${t.payNow[language]} ${paymentAmount}`
               )}
             </Button>
               </div>

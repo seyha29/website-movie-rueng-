@@ -1,6 +1,8 @@
 import { Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { heroLabels } from "@/lib/translations";
 
 interface HeroSectionProps {
   title: string;
@@ -23,6 +25,9 @@ export default function HeroSection({
   genres,
   onPlay,
 }: HeroSectionProps) {
+  const { language } = useLanguage();
+  const t = heroLabels;
+
   return (
     <div className="relative min-h-[70vh] sm:min-h-[85vh] flex items-end" data-testid="section-hero">
       <img
@@ -64,7 +69,7 @@ export default function HeroSection({
           <div className="flex items-center gap-2 sm:gap-3">
             <Button size="sm" className="gap-2 text-xs sm:text-sm sm:min-h-10" onClick={onPlay} data-testid="button-hero-play">
               <Play className="h-4 w-4 sm:h-5 sm:w-5" />
-              Play Now
+              {t.playNow[language]}
             </Button>
           </div>
         </div>

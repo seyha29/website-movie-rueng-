@@ -172,3 +172,88 @@ export const movieDetailLabels = {
   relatedTitles: { km: "ភាពយន្តស្រដៀងគ្នា", en: "Related Titles" },
   moreFilms: { km: "ភាពយន្តបន្ថែម", en: "More Films" }
 };
+
+export const paymentLabels = {
+  scanQrToPay: { km: "ស្កេន QR ដើម្បីបង់ប្រាក់", en: "Scan QR Code to Pay" },
+  purchaseMovie: { km: "ទិញភាពយន្ត", en: "Purchase" },
+  subscribeToWatch: { km: "ជាវដើម្បីមើល", en: "Subscribe to Watch" },
+  scanQrDescription: { km: "ស្កេន QR ខាងក្រោមដោយប្រើកម្មវិធីធនាគារដើម្បីបញ្ចប់ការបង់ប្រាក់។", en: "Scan the QR code below with your mobile banking app to complete payment." },
+  payToWatch: { km: "បង់ប្រាក់ដើម្បីមើលភាពយន្តនេះ។ វានឹងត្រូវបានបន្ថែមក្នុងបញ្ជីរបស់អ្នកដោយស្វ័យប្រវត្តិ។", en: "Pay to watch this movie. It will be automatically added to your list." },
+  unlimitedAccess: { km: "ទទួលបានការចូលប្រើភាពយន្តទាំងអស់ដោយគ្មានដែនកំណត់ជាមួយការជាវប្រចាំខែរបស់យើង។", en: "Get unlimited access to all movies with our monthly subscription." },
+  paymentSuccessful: { km: "ការបង់ប្រាក់បានជោគជ័យ!", en: "Payment Successful!" },
+  canWatchNow: { km: "អ្នកអាចមើលភាពយន្តនេះឥឡូវនេះ។", en: "You can now watch this movie." },
+  unlimitedAccessMonth: { km: "អ្នកមានសិទ្ធិចូលប្រើភាពយន្តទាំងអស់រយៈពេល ១ ខែ។", en: "You now have unlimited access to all movies for 1 month." },
+  closingIn: { km: "បិទក្នុងរយៈពេល", en: "Closing in" },
+  seconds: { km: "វិនាទី...", en: "seconds..." },
+  playNow: { km: "មើលឥឡូវ", en: "Play Now" },
+  startWatching: { km: "ចាប់ផ្តើមមើល", en: "Start Watching" },
+  payWithRaksmeypay: { km: "បង់ជាមួយ RaksmeyPay", en: "Pay with RaksmeyPay" },
+  clickToOpenRaksmeypay: { km: "ចុចប៊ូតុងខាងក្រោមដើម្បីបើក RaksmeyPay ហើយបញ្ចប់ការបង់ប្រាក់របស់អ្នកដោយសុវត្ថិភាព។", en: "Click the button below to open RaksmeyPay and complete your payment securely." },
+  openRaksmeypay: { km: "បើក RaksmeyPay", en: "Open RaksmeyPay" },
+  waitingForConfirmation: { km: "កំពុងរង់ចាំការបញ្ជាក់ការបង់ប្រាក់...", en: "Waiting for payment confirmation..." },
+  cancel: { km: "បោះបង់", en: "Cancel" },
+  scanWithBankingApp: { km: "ស្កេនដោយកម្មវិធីធនាគារ", en: "Scan with Banking App" },
+  scanBakongDescription: { km: "ស្កេន Bakong KHQR នេះដោយប្រើ ABA, ACLEDA, Wing ឬកម្មវិធីធនាគារដែលគាំទ្រ Bakong ដើម្បីបង់ប្រាក់ដោយផ្ទាល់។", en: "Scan this Bakong KHQR code with ABA, ACLEDA, Wing, or any Bakong-supported banking app to pay directly." },
+  monthlySubscription: { km: "ការជាវប្រចាំខែ", en: "Monthly Subscription" },
+  payPerView: { km: "បង់ក្នុងមួយការមើល", en: "Pay per view" },
+  unlimitedFor30Days: { km: "ការចូលប្រើគ្មានដែនកំណត់រយៈពេល 30 ថ្ងៃ", en: "Unlimited access for 30 days" },
+  perVideo: { km: "/វីដេអូ", en: "/video" },
+  perMonth: { km: "/ខែ", en: "/month" },
+  instantAccess: { km: "ចូលប្រើភាពយន្តនេះភ្លាមៗ", en: "Instant access to this movie" },
+  autoAddedToList: { km: "បន្ថែមក្នុងបញ្ជីរបស់ខ្ញុំដោយស្វ័យប្រវត្តិ", en: "Auto-added to My List" },
+  watchUnlimitedTimes: { km: "មើលបានគ្មានដែនកំណត់", en: "Watch unlimited times" },
+  unlimitedAllMovies: { km: "ការចូលប្រើភាពយន្តទាំងអស់គ្មានដែនកំណត់", en: "Unlimited access to all movies" },
+  hdQuality: { km: "ការផ្សាយដែលមានគុណភាពខ្ពស់ HD", en: "HD quality streaming" },
+  watchOnAnyDevice: { km: "មើលនៅលើឧបករណ៍ណាមួយ", en: "Watch on any device" },
+  cancelAnytime: { km: "បោះបង់បានគ្រប់ពេល", en: "Cancel anytime" },
+  processingPayment: { km: "កំពុងដំណើរការការបង់ប្រាក់របស់អ្នក...", en: "Processing your payment..." },
+  payNow: { km: "បង់ប្រាក់ឥឡូវ", en: "Pay Now" },
+  timeRemaining: { km: "ពេលវេលាដែលនៅសល់ដើម្បីបញ្ចប់ការបង់ប្រាក់", en: "Time remaining to complete payment" },
+  paymentExpired: { km: "ការបង់ប្រាក់បានផុតកំណត់", en: "Payment Expired" },
+  qrExpired: { km: "QR code បានផុតកំណត់។ សូមព្យាយាមម្តងទៀត។", en: "The QR code has expired. Please try again." }
+};
+
+export const paymentResultLabels = {
+  processingPayment: { km: "កំពុងដំណើរការការបង់ប្រាក់", en: "Processing Payment" },
+  pleaseWait: { km: "សូមរង់ចាំខណៈពេលយើងកំពុងបញ្ជាក់ការបង់ប្រាក់របស់អ្នក...", en: "Please wait while we confirm your payment..." },
+  paymentSuccessful: { km: "ការបង់ប្រាក់បានជោគជ័យ!", en: "Payment Successful!" },
+  subscriptionActivated: { km: "ការជាវរបស់អ្នកត្រូវបានធ្វើសកម្ម", en: "Your subscription has been activated" },
+  thankYou: { km: "សូមអរគុណសម្រាប់ការជាវ! អ្នកមានសិទ្ធិចូលប្រើភាពយន្តទាំងអស់រយៈពេល 30 ថ្ងៃ។", en: "Thank you for subscribing! You now have unlimited access to all movies for 30 days." },
+  paymentReference: { km: "លេខយោងការបង់ប្រាក់:", en: "Payment Reference:" },
+  startWatching: { km: "ចាប់ផ្តើមមើល", en: "Start Watching" },
+  paymentFailed: { km: "ការបង់ប្រាក់បានបរាជ័យ", en: "Payment Failed" },
+  issueProcessing: { km: "មានបញ្ហាក្នុងការដំណើរការការបង់ប្រាក់របស់អ្នក", en: "There was an issue processing your payment" },
+  unexpectedError: { km: "មានកំហុសដែលមិនបានរំពឹងទុក។ សូមព្យាយាមម្តងទៀត។", en: "An unexpected error occurred. Please try again." },
+  contactSupport: { km: "ប្រសិនបើអ្នកនៅតែជួបបញ្ហា សូមទាក់ទងផ្នែកជំនួយ។", en: "If you continue to experience issues, please contact support." },
+  tryAgain: { km: "ព្យាយាមម្តងទៀត", en: "Try Again" },
+  goHome: { km: "ទៅទំព័រដើម", en: "Go Home" }
+};
+
+export const notFoundLabels = {
+  pageNotFound: { km: "រកមិនឃើញទំព័រ 404", en: "404 Page Not Found" },
+  pageNotExist: { km: "ទំព័រនេះមិនមានទេ។", en: "This page does not exist." },
+  goBackHome: { km: "ត្រលប់ទៅទំព័រដើម", en: "Go back home" }
+};
+
+export const heroLabels = {
+  playNow: { km: "មើលឥឡូវ", en: "Play Now" }
+};
+
+export const movieCardLabels = {
+  play: { km: "មើល", en: "Play" }
+};
+
+export const movieModalLabels = {
+  play: { km: "មើល", en: "Play" },
+  myList: { km: "បញ្ជីខ្ញុំ", en: "My List" },
+  cast: { km: "តារាសម្តែង", en: "Cast" },
+  director: { km: "អ្នកដឹកនាំ", en: "Director" }
+};
+
+export const commonLabels = {
+  back: { km: "ត្រលប់", en: "Back" },
+  loading: { km: "កំពុងផ្ទុក...", en: "Loading..." },
+  error: { km: "កំហុស", en: "Error" },
+  success: { km: "ជោគជ័យ", en: "Success" },
+  lastUpdated: { km: "ធ្វើបច្ចុប្បន្នភាពចុងក្រោយ:", en: "Last updated:" }
+};

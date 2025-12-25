@@ -2,6 +2,8 @@ import { X, Play, Plus, ThumbsUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { movieModalLabels } from "@/lib/translations";
 import adBanner1 from "@assets/TAPTAP2-728x180-3_1764365836520.gif";
 import adBanner2 from "@assets/DAFABET-728x180-1_1764365836521.gif";
 
@@ -24,10 +26,12 @@ interface MovieDetailModalProps {
 }
 
 export default function MovieDetailModal({ isOpen, onClose, movie, onPlay }: MovieDetailModalProps) {
+  const { language } = useLanguage();
+  const t = movieModalLabels;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl p-0 gap-0 bg-card overflow-hidden max-h-[90vh] overflow-y-auto" data-testid="modal-movie-detail">
-        {/* Ad Banner 1 - Top */}
         <a 
           href="https://taptapthai.com" 
           target="_blank" 
@@ -64,11 +68,11 @@ export default function MovieDetailModal({ isOpen, onClose, movie, onPlay }: Mov
             <div className="flex items-center gap-2 flex-wrap">
               <Button size="sm" onClick={onPlay} data-testid="button-modal-play">
                 <Play className="h-4 w-4 mr-1" />
-                Play
+                {t.play[language]}
               </Button>
               <Button size="sm" variant="secondary" data-testid="button-modal-add-list">
                 <Plus className="h-4 w-4 mr-1" />
-                My List
+                {t.myList[language]}
               </Button>
               <Button size="icon" variant="secondary" className="h-8 w-8" data-testid="button-modal-like">
                 <ThumbsUp className="h-4 w-4" />
@@ -95,17 +99,16 @@ export default function MovieDetailModal({ isOpen, onClose, movie, onPlay }: Mov
 
           <div className="grid grid-cols-2 gap-4 pt-3 border-t border-border">
             <div>
-              <h3 className="text-xs font-semibold text-muted-foreground mb-1" data-testid="text-modal-cast-label">Cast</h3>
+              <h3 className="text-xs font-semibold text-muted-foreground mb-1" data-testid="text-modal-cast-label">{t.cast[language]}</h3>
               <p className="text-xs line-clamp-2" data-testid="text-modal-cast">{movie.cast.join(", ")}</p>
             </div>
             <div>
-              <h3 className="text-xs font-semibold text-muted-foreground mb-1" data-testid="text-modal-director-label">Director</h3>
+              <h3 className="text-xs font-semibold text-muted-foreground mb-1" data-testid="text-modal-director-label">{t.director[language]}</h3>
               <p className="text-xs" data-testid="text-modal-director">{movie.director}</p>
             </div>
           </div>
         </DialogHeader>
 
-        {/* Ad Banner 2 - Bottom */}
         <a 
           href="https://dafabet.com" 
           target="_blank" 
