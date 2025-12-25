@@ -18,9 +18,10 @@ function getEmbedUrl(url: string): string {
 
   let processedUrl = "";
 
+  // YouTube URLs
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
     let videoId = '';
-    
+
     if (url.includes('/embed/')) {
       const match = url.match(/\/embed\/([a-zA-Z0-9_-]+)/);
       videoId = match ? match[1] : '';
@@ -37,21 +38,17 @@ function getEmbedUrl(url: string): string {
       const match = url.match(/([a-zA-Z0-9_-]{11})/);
       videoId = match ? match[1] : '';
     }
-    
+
     if (videoId) {
       processedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&enablejsapi=1`;
     }
   }
+  // Vimeo URLs
   else if (url.includes('vimeo.com')) {
-    const vimeoParams = 'autoplay=1&badge=0&title=0&byline=0&portrait=0&controls=1&dnt=1';
-    
+    const vimeoParams = 'autoplay=1&badge=0&title=0&byline=0&portrait=0&controls=0&dnt=1';
     if (url.includes('player.vimeo.com/video/')) {
       if (url.includes('?')) {
-        if (!url.includes('autoplay=')) {
-          processedUrl = url + '&autoplay=1';
-        } else {
-          processedUrl = url;
-        }
+        processedUrl = url.includes('autoplay=') ? url : url + '&autoplay=1';
       } else {
         processedUrl = url + '?' + vimeoParams;
       }
@@ -63,19 +60,11 @@ function getEmbedUrl(url: string): string {
       }
     }
   }
+  // Cloudflare Stream
   else if (url.includes('cloudflarestream.com') || url.includes('videodelivery.net')) {
     const cfParams = 'autoplay=true&muted=false&controls=true';
-    
     if (url.includes('/iframe')) {
-      if (url.includes('?')) {
-        if (!url.includes('autoplay=')) {
-          processedUrl = url + '&autoplay=true';
-        } else {
-          processedUrl = url;
-        }
-      } else {
-        processedUrl = url + '?' + cfParams;
-      }
+      processedUrl = url.includes('?') ? (url.includes('autoplay=') ? url : url + '&autoplay=true') : url + '?' + cfParams;
     } else {
       const cfRegex = /(?:cloudflarestream\.com|videodelivery\.net)\/([a-zA-Z0-9]+)/;
       const match = url.match(cfRegex);
@@ -89,21 +78,15 @@ function getEmbedUrl(url: string): string {
       }
     }
   }
+  // Bunny CDN / other iframe
   else if (url.includes('bunnycdn') || url.includes('b-cdn.net') || url.includes('iframe.mediadelivery.net')) {
-    if (url.includes('?')) {
-      if (!url.includes('autoplay=')) {
-        processedUrl = url + '&autoplay=true';
-      } else {
-        processedUrl = url;
-      }
-    } else {
-      processedUrl = url + '?autoplay=true';
-    }
+    const params = 'autoplay=true';
+    processedUrl = url.includes('?') ? (url.includes('autoplay=') ? url : url + '&autoplay=true') : url + '?' + params;
   }
+  // Generic embed
   else if (url.includes('/embed/') || url.includes('player.') || url.includes('/iframe')) {
     processedUrl = url.includes('?') ? `${url}&autoplay=1` : `${url}?autoplay=1`;
-  }
-  else {
+  } else {
     processedUrl = url;
   }
 
@@ -117,26 +100,20 @@ export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, hasPu
 
   const toggleBrowserFullscreen = async () => {
     if (!containerRef.current) return;
-
     try {
       if (!document.fullscreenElement) {
         await containerRef.current.requestFullscreen();
         setIsBrowserFullscreen(true);
-        
+
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         if (isMobile && 'screen' in window && 'orientation' in window.screen) {
-          try {
-            await (window.screen.orientation as any).lock('landscape').catch(() => {});
-          } catch (e) {}
+          try { await (window.screen.orientation as any).lock('landscape').catch(() => {}); } catch(e) {}
         }
       } else {
         await document.exitFullscreen();
         setIsBrowserFullscreen(false);
-        
         if ('screen' in window && 'orientation' in window.screen) {
-          try {
-            (window.screen.orientation as any).unlock();
-          } catch (e) {}
+          try { (window.screen.orientation as any).unlock(); } catch(e) {}
         }
       }
     } catch (error) {
@@ -145,68 +122,46 @@ export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, hasPu
   };
 
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsBrowserFullscreen(!!document.fullscreenElement);
-    };
-
+    const handleFullscreenChange = () => setIsBrowserFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && onClose) {
-        e.preventDefault();
-        e.stopPropagation();
-        onClose();
+        e.preventDefault(); e.stopPropagation(); onClose();
       }
     };
-
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
   useEffect(() => {
     return () => {
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(() => {});
-      }
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
       if ('screen' in window && 'orientation' in window.screen) {
-        try {
-          (window.screen.orientation as any).unlock();
-        } catch (e) {}
+        try { (window.screen.orientation as any).unlock(); } catch(e) {}
       }
     };
   }, []);
 
   return (
-    <div 
-      className="fixed inset-0 bg-black z-50 flex flex-col"
-      data-testid="player-video"
-    >
-      <div 
-        ref={containerRef}
-        className="relative bg-black overflow-hidden w-full h-full flex flex-col"
-      >
+    <div className="fixed inset-0 bg-black z-50 flex flex-col" data-testid="player-video">
+      <div ref={containerRef} className="relative bg-black overflow-hidden w-full h-full flex flex-col">
         <div className="relative w-full h-full flex-1 bg-black">
           {embedUrl ? (
             <iframe
               src={embedUrl}
               title={title}
               className="w-full h-full"
-              style={{ colorScheme: 'normal' }}
+              style={{ colorScheme: 'normal', border: 'none', aspectRatio: '16/9' }}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
               allowFullScreen
               data-testid="iframe-video"
             />
           ) : (
-            <div 
-              className="w-full h-full bg-cover bg-center flex items-center justify-center"
-              style={{ backgroundImage: `url(${posterUrl})` }}
-            >
+            <div className="w-full h-full bg-cover bg-center flex items-center justify-center" style={{ backgroundImage: `url(${posterUrl})` }}>
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                 <div className="text-center text-white">
                   <p className="text-xl mb-2">{title}</p>
@@ -215,39 +170,20 @@ export default function VideoPlayer({ title, videoUrl, posterUrl, onClose, hasPu
               </div>
             </div>
           )}
-          
+
           <div className="absolute top-0 left-0 right-0 p-4 flex items-center justify-between z-10 bg-gradient-to-b from-black/70 to-transparent">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-white hover:bg-white/20 gap-2"
-              onClick={onClose}
-              data-testid="button-back-player"
-            >
+            <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 gap-2" onClick={onClose} data-testid="button-back-player">
               <ArrowLeft className="h-5 w-5" />
               <span className="text-sm font-medium">Back</span>
             </Button>
-            
+
             <h3 className="text-white text-sm font-medium truncate flex-1 text-center px-4">{title}</h3>
-            
+
             <div className="flex items-center gap-2">
-              <Button
-                size="icon"
-                variant="ghost"
-                className="text-white hover:bg-white/20 h-9 w-9"
-                onClick={toggleBrowserFullscreen}
-                data-testid="button-fullscreen"
-                title="Enter browser fullscreen"
-              >
+              <Button size="icon" variant="ghost" className="text-white hover:bg-white/20 h-9 w-9" onClick={toggleBrowserFullscreen} data-testid="button-fullscreen" title="Enter browser fullscreen">
                 <Maximize className="h-5 w-5" />
               </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="text-white hover:bg-white/20 h-9 w-9"
-                onClick={onClose}
-                data-testid="button-close-player"
-              >
+              <Button size="icon" variant="ghost" className="text-white hover:bg-white/20 h-9 w-9" onClick={onClose} data-testid="button-close-player">
                 <X className="h-5 w-5" />
               </Button>
             </div>
