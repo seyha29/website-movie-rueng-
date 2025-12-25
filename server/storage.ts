@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Movie, type InsertMovie, type MyList, type InsertMyList, type SubscriptionPlan, type UserSubscription, type InsertUserSubscription, type PaymentTransaction, type InsertPaymentTransaction, type MovieView, type InsertMovieView, type VideoPurchase, type InsertVideoPurchase, type AdBanner, type InsertAdBanner, users, movies, myList, subscriptionPlans, userSubscriptions, paymentTransactions, movieViews, videoPurchases, adBanners } from "@shared/schema";
+import { type User, type InsertUser, type Movie, type InsertMovie, type MyList, type InsertMyList, type SubscriptionPlan, type UserSubscription, type InsertUserSubscription, type PaymentTransaction, type InsertPaymentTransaction, type MovieView, type InsertMovieView, type VideoPurchase, type InsertVideoPurchase, type AdBanner, type InsertAdBanner, type SecurityViolation, type InsertSecurityViolation, type UserBan, type InsertUserBan, type DailyWatchTime, type InsertDailyWatchTime, users, movies, myList, subscriptionPlans, userSubscriptions, paymentTransactions, movieViews, videoPurchases, adBanners, securityViolations, userBans, dailyWatchTime, videoAccessTokens } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -85,6 +85,29 @@ export interface IStorage {
   createAdBanner(banner: InsertAdBanner): Promise<AdBanner>;
   updateAdBanner(id: string, banner: Partial<InsertAdBanner>): Promise<AdBanner | undefined>;
   deleteAdBanner(id: string): Promise<boolean>;
+
+  // Security methods
+  createSecurityViolation(violation: InsertSecurityViolation): Promise<SecurityViolation>;
+  getUserViolationCount(userId: string, violationType: string, hoursBack: number): Promise<number>;
+  getUserViolations(userId: string, limit: number): Promise<SecurityViolation[]>;
+  getAllViolations(limit: number): Promise<SecurityViolation[]>;
+  
+  // Ban methods
+  createUserBan(ban: InsertUserBan): Promise<UserBan>;
+  getActiveUserBan(userId: string): Promise<UserBan | undefined>;
+  deactivateUserBan(id: string): Promise<void>;
+  deactivateAllUserBans(userId: string): Promise<void>;
+  getAllBans(limit: number): Promise<UserBan[]>;
+  
+  // Watch time methods
+  getDailyWatchTime(userId: string, date: string): Promise<DailyWatchTime | undefined>;
+  updateDailyWatchTime(userId: string, date: string, secondsWatched: number): Promise<void>;
+  incrementPlayAttempts(userId: string, date: string): Promise<void>;
+  
+  // Video token methods
+  createVideoAccessToken(data: { userId: string; movieId: string; token: string; ipAddress?: string; userAgent?: string; expiresAt: number }): Promise<void>;
+  getVideoAccessToken(token: string): Promise<{ userId: string; movieId: string; token: string; ipAddress?: string; expiresAt: number; used: number } | undefined>;
+  markVideoTokenUsed(token: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -517,6 +540,143 @@ export class DatabaseStorage implements IStorage {
     const result = await this.db.delete(adBanners).where(eq(adBanners.id, id));
     return result.rowCount !== null && result.rowCount > 0;
   }
+
+  // Security methods
+  async createSecurityViolation(violation: InsertSecurityViolation): Promise<SecurityViolation> {
+    const result = await this.db.insert(securityViolations).values(violation).returning();
+    return result[0];
+  }
+
+  async getUserViolationCount(userId: string, violationType: string, hoursBack: number): Promise<number> {
+    const cutoff = Math.floor(Date.now() / 1000) - (hoursBack * 3600);
+    const result = await this.db.select({ count: sql<number>`count(*)::int` })
+      .from(securityViolations)
+      .where(and(
+        eq(securityViolations.userId, userId),
+        eq(securityViolations.violationType, violationType),
+        sql`${securityViolations.createdAt} > ${cutoff}`
+      ));
+    return result[0].count;
+  }
+
+  async getUserViolations(userId: string, limit: number): Promise<SecurityViolation[]> {
+    return await this.db.select().from(securityViolations)
+      .where(eq(securityViolations.userId, userId))
+      .orderBy(sql`${securityViolations.createdAt} DESC`)
+      .limit(limit);
+  }
+
+  async getAllViolations(limit: number): Promise<SecurityViolation[]> {
+    return await this.db.select().from(securityViolations)
+      .orderBy(sql`${securityViolations.createdAt} DESC`)
+      .limit(limit);
+  }
+
+  // Ban methods
+  async createUserBan(ban: InsertUserBan): Promise<UserBan> {
+    const result = await this.db.insert(userBans).values(ban).returning();
+    return result[0];
+  }
+
+  async getActiveUserBan(userId: string): Promise<UserBan | undefined> {
+    const result = await this.db.select().from(userBans)
+      .where(and(
+        eq(userBans.userId, userId),
+        eq(userBans.isActive, 1)
+      ))
+      .orderBy(sql`${userBans.bannedAt} DESC`)
+      .limit(1);
+    return result[0];
+  }
+
+  async deactivateUserBan(id: string): Promise<void> {
+    await this.db.update(userBans).set({ isActive: 0 }).where(eq(userBans.id, id));
+  }
+
+  async deactivateAllUserBans(userId: string): Promise<void> {
+    await this.db.update(userBans).set({ isActive: 0 }).where(eq(userBans.userId, userId));
+  }
+
+  async getAllBans(limit: number): Promise<UserBan[]> {
+    return await this.db.select().from(userBans)
+      .orderBy(sql`${userBans.bannedAt} DESC`)
+      .limit(limit);
+  }
+
+  // Watch time methods
+  async getDailyWatchTime(userId: string, date: string): Promise<DailyWatchTime | undefined> {
+    const result = await this.db.select().from(dailyWatchTime)
+      .where(and(
+        eq(dailyWatchTime.userId, userId),
+        eq(dailyWatchTime.date, date)
+      ))
+      .limit(1);
+    return result[0];
+  }
+
+  async updateDailyWatchTime(userId: string, date: string, secondsWatched: number): Promise<void> {
+    const existing = await this.getDailyWatchTime(userId, date);
+    if (existing) {
+      await this.db.update(dailyWatchTime)
+        .set({ 
+          totalSeconds: existing.totalSeconds + secondsWatched,
+          lastUpdated: Math.floor(Date.now() / 1000)
+        })
+        .where(eq(dailyWatchTime.id, existing.id));
+    } else {
+      await this.db.insert(dailyWatchTime).values({
+        userId,
+        date,
+        totalSeconds: secondsWatched,
+        playAttempts: 0
+      });
+    }
+  }
+
+  async incrementPlayAttempts(userId: string, date: string): Promise<void> {
+    const existing = await this.getDailyWatchTime(userId, date);
+    if (existing) {
+      await this.db.update(dailyWatchTime)
+        .set({ 
+          playAttempts: existing.playAttempts + 1,
+          lastUpdated: Math.floor(Date.now() / 1000)
+        })
+        .where(eq(dailyWatchTime.id, existing.id));
+    } else {
+      await this.db.insert(dailyWatchTime).values({
+        userId,
+        date,
+        totalSeconds: 0,
+        playAttempts: 1
+      });
+    }
+  }
+
+  // Video token methods
+  async createVideoAccessToken(data: { userId: string; movieId: string; token: string; ipAddress?: string; userAgent?: string; expiresAt: number }): Promise<void> {
+    await this.db.insert(videoAccessTokens).values(data);
+  }
+
+  async getVideoAccessToken(token: string): Promise<{ userId: string; movieId: string; token: string; ipAddress?: string; expiresAt: number; used: number } | undefined> {
+    const result = await this.db.select().from(videoAccessTokens)
+      .where(eq(videoAccessTokens.token, token))
+      .limit(1);
+    if (result[0]) {
+      return {
+        userId: result[0].userId,
+        movieId: result[0].movieId,
+        token: result[0].token,
+        ipAddress: result[0].ipAddress || undefined,
+        expiresAt: result[0].expiresAt,
+        used: result[0].used
+      };
+    }
+    return undefined;
+  }
+
+  async markVideoTokenUsed(token: string): Promise<void> {
+    await this.db.update(videoAccessTokens).set({ used: 1 }).where(eq(videoAccessTokens.token, token));
+  }
 }
 
 export class MemStorage implements IStorage {
@@ -852,6 +1012,55 @@ export class MemStorage implements IStorage {
   async deleteAdBanner(id: string): Promise<boolean> {
     throw new Error("Ad banners require database storage");
   }
+
+  // Security methods (stubs - require database)
+  async createSecurityViolation(violation: InsertSecurityViolation): Promise<SecurityViolation> {
+    throw new Error("Security features require database storage");
+  }
+
+  async getUserViolationCount(userId: string, violationType: string, hoursBack: number): Promise<number> {
+    return 0;
+  }
+
+  async getUserViolations(userId: string, limit: number): Promise<SecurityViolation[]> {
+    return [];
+  }
+
+  async getAllViolations(limit: number): Promise<SecurityViolation[]> {
+    return [];
+  }
+
+  async createUserBan(ban: InsertUserBan): Promise<UserBan> {
+    throw new Error("Security features require database storage");
+  }
+
+  async getActiveUserBan(userId: string): Promise<UserBan | undefined> {
+    return undefined;
+  }
+
+  async deactivateUserBan(id: string): Promise<void> {}
+
+  async deactivateAllUserBans(userId: string): Promise<void> {}
+
+  async getAllBans(limit: number): Promise<UserBan[]> {
+    return [];
+  }
+
+  async getDailyWatchTime(userId: string, date: string): Promise<DailyWatchTime | undefined> {
+    return undefined;
+  }
+
+  async updateDailyWatchTime(userId: string, date: string, secondsWatched: number): Promise<void> {}
+
+  async incrementPlayAttempts(userId: string, date: string): Promise<void> {}
+
+  async createVideoAccessToken(data: { userId: string; movieId: string; token: string; ipAddress?: string; userAgent?: string; expiresAt: number }): Promise<void> {}
+
+  async getVideoAccessToken(token: string): Promise<{ userId: string; movieId: string; token: string; ipAddress?: string; expiresAt: number; used: number } | undefined> {
+    return undefined;
+  }
+
+  async markVideoTokenUsed(token: string): Promise<void> {}
 }
 
 // Use database storage if DATABASE_URL is available, otherwise use in-memory

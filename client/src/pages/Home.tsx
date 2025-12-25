@@ -568,6 +568,10 @@ export default function Home() {
           onClose={() => setIsPlayerOpen(false)}
           user={user}
           hasPurchased={isSelectedMoviePurchased}
+          userId={user?.id}
+          isTrusted={user?.trustedUser === 1}
+          noWatermark={user?.noWatermark === 1}
+          movieId={selectedMovie.id}
         />
       )}
 

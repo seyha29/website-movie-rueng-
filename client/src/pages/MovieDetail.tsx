@@ -533,6 +533,10 @@ export default function MovieDetail() {
           }}
           user={user}
           hasPurchased={true}
+          userId={user?.id}
+          isTrusted={user?.trustedUser === 1}
+          noWatermark={user?.noWatermark === 1}
+          movieId={movie.id}
         />
       )}
 

@@ -6,6 +6,7 @@ import { z } from "zod";
 import bcrypt from "bcrypt";
 import { createPaymentProvider } from "./payment-provider";
 import { PaymentService } from "./payment-service";
+import { securityService, type ViolationType } from "./security-service";
 
 // Initialize payment service
 const paymentProvider = createPaymentProvider();
@@ -1460,27 +1461,145 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
     }
   });
 
-  // Security logging endpoint (requires authentication)
-  app.post("/api/security/log", requireAuth, async (req, res) => {
+  // Security: Check if user is banned
+  app.get("/api/security/ban-status", requireAuth, async (req, res) => {
     try {
-      const { eventType, details, userAgent, timestamp } = req.body;
-      const userId = req.session.userId;
+      const userId = req.session.userId!;
+      const result = await securityService.checkUserBan(userId);
       
-      // Only log authenticated users
-      if (!userId) {
-        return res.status(401).json({ error: "Unauthorized" });
+      if (result.isBanned) {
+        const ban = result.ban;
+        const expiresAt = ban.expiresAt ? new Date(ban.expiresAt * 1000).toISOString() : null;
+        return res.json({ 
+          isBanned: true, 
+          banType: ban.banType,
+          reason: ban.reason,
+          expiresAt
+        });
       }
       
-      // Log security event (console for now, could be stored in DB)
-      console.log(`[SECURITY] Event: ${eventType} | User: ${userId} | Details: ${details} | UA: ${userAgent} | Time: ${timestamp}`);
+      res.json({ isBanned: false });
+    } catch (error) {
+      console.error("Failed to check ban status:", error);
+      res.status(500).json({ error: "Failed to check ban status" });
+    }
+  });
+
+  // Security: Log violation and auto-ban
+  app.post("/api/security/violation", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const { violationType, description, movieId } = req.body;
       
-      // Could optionally store in database here for analytics
-      // await storage.logSecurityEvent({ userId, eventType, details, userAgent, timestamp });
+      const validTypes: ViolationType[] = ['devtools', 'screen_share', 'tab_switch', 'copy_attempt', 'right_click', 'keyboard_shortcut', 'suspicious_behavior'];
+      if (!validTypes.includes(violationType)) {
+        return res.status(400).json({ error: "Invalid violation type" });
+      }
       
+      const ipAddress = req.ip || req.headers['x-forwarded-for']?.toString();
+      const userAgent = req.headers['user-agent'];
+      
+      const result = await securityService.logViolation(
+        userId,
+        violationType as ViolationType,
+        description,
+        movieId,
+        ipAddress,
+        userAgent
+      );
+      
+      if (result.banned) {
+        req.session.destroy((err) => {
+          if (err) console.error("Error destroying banned user session:", err);
+        });
+        return res.status(403).json({ 
+          banned: true, 
+          message: "Your account has been banned due to security violations." 
+        });
+      }
+      
+      res.json({ logged: true, banned: false });
+    } catch (error) {
+      console.error("Failed to log violation:", error);
+      res.status(500).json({ error: "Failed to log violation" });
+    }
+  });
+
+  // Security: Get watch time limits
+  app.get("/api/security/watch-limits", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      
+      const watchLimit = await securityService.checkWatchTimeLimit(userId);
+      const playLimit = await securityService.checkPlayAttemptLimit(userId);
+      
+      res.json({
+        watchTime: {
+          allowed: watchLimit.allowed,
+          remainingSeconds: watchLimit.remainingSeconds,
+          maxDailySeconds: 3 * 60 * 60
+        },
+        playAttempts: {
+          allowed: playLimit.allowed,
+          attemptsRemaining: playLimit.attemptsRemaining,
+          maxPerHour: 50
+        }
+      });
+    } catch (error) {
+      console.error("Failed to get watch limits:", error);
+      res.status(500).json({ error: "Failed to get watch limits" });
+    }
+  });
+
+  // Security: Update watch time
+  app.post("/api/security/watch-time", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const { seconds } = req.body;
+      
+      if (typeof seconds !== 'number' || seconds < 0) {
+        return res.status(400).json({ error: "Invalid seconds value" });
+      }
+      
+      await securityService.updateWatchTime(userId, seconds);
       res.json({ success: true });
     } catch (error) {
-      console.error("Failed to log security event:", error);
-      res.status(500).json({ error: "Failed to log event" });
+      console.error("Failed to update watch time:", error);
+      res.status(500).json({ error: "Failed to update watch time" });
+    }
+  });
+
+  // Admin: Get all security violations
+  app.get("/api/admin/security/violations", requireAdmin, async (req, res) => {
+    try {
+      const violations = await securityService.getAllViolations(100);
+      res.json(violations);
+    } catch (error) {
+      console.error("Failed to get violations:", error);
+      res.status(500).json({ error: "Failed to get violations" });
+    }
+  });
+
+  // Admin: Get all bans
+  app.get("/api/admin/security/bans", requireAdmin, async (req, res) => {
+    try {
+      const bans = await securityService.getAllBans(100);
+      res.json(bans);
+    } catch (error) {
+      console.error("Failed to get bans:", error);
+      res.status(500).json({ error: "Failed to get bans" });
+    }
+  });
+
+  // Admin: Unban user
+  app.post("/api/admin/security/unban/:userId", requireAdmin, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      await securityService.unbanUser(userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to unban user:", error);
+      res.status(500).json({ error: "Failed to unban user" });
     }
   });
 
