@@ -12,6 +12,7 @@ Reoung Movies Flix is an iFlix KH-inspired, single-page streaming platform for b
 - **Smart Play Button**: Button text adapts based on video type - "Play Full Movie" for free content, "Watch Full Movie ($1)" for paid content
 - **RaksmeyPay Integration**: Secure payment processing with QR code support for mobile payments
 - **Single-Device Login**: One account can only be logged in on one device at a time. Logging in on a new device automatically logs out the previous device to prevent account sharing
+- **OTP Verification**: Phone number verification via 6-digit OTP code during login/registration. 3-step flow: Phone → OTP → Password. Codes expire after 5 minutes with max 5 attempts. Currently in test mode (code displayed on screen) - will use SMS in production
 
 ### 🎨 Design & UX
 Minimalist grid-based design with multiple filter options and centered search functionality. Orange color scheme (#f97316) with Inter font family throughout. The homepage starts directly with the movie grid for maximum content visibility. The application is built to scale for over 50,000 movies with responsive grid layouts and a full-stack React frontend and Express/PostgreSQL backend.
