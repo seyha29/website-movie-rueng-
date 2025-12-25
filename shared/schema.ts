@@ -269,6 +269,28 @@ export const insertDailyWatchTimeSchema = createInsertSchema(dailyWatchTime).omi
 export type InsertDailyWatchTime = z.infer<typeof insertDailyWatchTimeSchema>;
 export type DailyWatchTime = typeof dailyWatchTime.$inferSelect;
 
+// OTP Codes - for phone number verification
+export const otpCodes = pgTable("otp_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  phoneNumber: text("phone_number").notNull(),
+  code: text("code").notNull(),
+  purpose: text("purpose").notNull(), // 'login' or 'register'
+  attempts: integer("attempts").notNull().default(0),
+  verified: integer("verified").notNull().default(0),
+  createdAt: integer("created_at").notNull().default(sql`extract(epoch from now())`),
+  expiresAt: integer("expires_at").notNull(),
+});
+
+export const insertOtpCodeSchema = createInsertSchema(otpCodes).omit({
+  id: true,
+  attempts: true,
+  verified: true,
+  createdAt: true,
+});
+
+export type InsertOtpCode = z.infer<typeof insertOtpCodeSchema>;
+export type OtpCode = typeof otpCodes.$inferSelect;
+
 // Video Access Tokens - token-based video access
 export const videoAccessTokens = pgTable("video_access_tokens", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

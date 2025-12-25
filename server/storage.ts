@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Movie, type InsertMovie, type MyList, type InsertMyList, type SubscriptionPlan, type UserSubscription, type InsertUserSubscription, type PaymentTransaction, type InsertPaymentTransaction, type MovieView, type InsertMovieView, type VideoPurchase, type InsertVideoPurchase, type AdBanner, type InsertAdBanner, type SecurityViolation, type InsertSecurityViolation, type UserBan, type InsertUserBan, type DailyWatchTime, type InsertDailyWatchTime, users, movies, myList, subscriptionPlans, userSubscriptions, paymentTransactions, movieViews, videoPurchases, adBanners, securityViolations, userBans, dailyWatchTime, videoAccessTokens } from "@shared/schema";
+import { type User, type InsertUser, type Movie, type InsertMovie, type MyList, type InsertMyList, type SubscriptionPlan, type UserSubscription, type InsertUserSubscription, type PaymentTransaction, type InsertPaymentTransaction, type MovieView, type InsertMovieView, type VideoPurchase, type InsertVideoPurchase, type AdBanner, type InsertAdBanner, type SecurityViolation, type InsertSecurityViolation, type UserBan, type InsertUserBan, type DailyWatchTime, type InsertDailyWatchTime, type OtpCode, users, movies, myList, subscriptionPlans, userSubscriptions, paymentTransactions, movieViews, videoPurchases, adBanners, securityViolations, userBans, dailyWatchTime, videoAccessTokens, otpCodes } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -108,6 +108,13 @@ export interface IStorage {
   createVideoAccessToken(data: { userId: string; movieId: string; token: string; ipAddress?: string; userAgent?: string; expiresAt: number }): Promise<void>;
   getVideoAccessToken(token: string): Promise<{ userId: string; movieId: string; token: string; ipAddress?: string; expiresAt: number; used: number } | undefined>;
   markVideoTokenUsed(token: string): Promise<void>;
+  
+  // OTP methods
+  createOtpCode(phoneNumber: string, code: string, purpose: string, expiresAt: number): Promise<void>;
+  getOtpCode(phoneNumber: string, purpose: string): Promise<{ id: string; code: string; attempts: number; verified: number; expiresAt: number } | undefined>;
+  incrementOtpAttempts(id: string): Promise<void>;
+  markOtpVerified(id: string): Promise<void>;
+  deleteExpiredOtpCodes(): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -677,6 +684,44 @@ export class DatabaseStorage implements IStorage {
   async markVideoTokenUsed(token: string): Promise<void> {
     await this.db.update(videoAccessTokens).set({ used: 1 }).where(eq(videoAccessTokens.token, token));
   }
+
+  // OTP methods
+  async createOtpCode(phoneNumber: string, code: string, purpose: string, expiresAt: number): Promise<void> {
+    // Delete any existing OTP for this phone/purpose
+    await this.db.delete(otpCodes).where(
+      and(eq(otpCodes.phoneNumber, phoneNumber), eq(otpCodes.purpose, purpose))
+    );
+    await this.db.insert(otpCodes).values({ phoneNumber, code, purpose, expiresAt });
+  }
+
+  async getOtpCode(phoneNumber: string, purpose: string): Promise<{ id: string; code: string; attempts: number; verified: number; expiresAt: number } | undefined> {
+    const result = await this.db.select().from(otpCodes)
+      .where(and(eq(otpCodes.phoneNumber, phoneNumber), eq(otpCodes.purpose, purpose)))
+      .limit(1);
+    if (result[0]) {
+      return {
+        id: result[0].id,
+        code: result[0].code,
+        attempts: result[0].attempts,
+        verified: result[0].verified,
+        expiresAt: result[0].expiresAt
+      };
+    }
+    return undefined;
+  }
+
+  async incrementOtpAttempts(id: string): Promise<void> {
+    await this.db.update(otpCodes).set({ attempts: sql`attempts + 1` }).where(eq(otpCodes.id, id));
+  }
+
+  async markOtpVerified(id: string): Promise<void> {
+    await this.db.update(otpCodes).set({ verified: 1 }).where(eq(otpCodes.id, id));
+  }
+
+  async deleteExpiredOtpCodes(): Promise<void> {
+    const now = Math.floor(Date.now() / 1000);
+    await this.db.delete(otpCodes).where(sql`expires_at < ${now}`);
+  }
 }
 
 export class MemStorage implements IStorage {
@@ -1061,6 +1106,64 @@ export class MemStorage implements IStorage {
   }
 
   async markVideoTokenUsed(token: string): Promise<void> {}
+
+  // OTP methods (in-memory implementation for MemStorage)
+  private otpCodes: Map<string, { id: string; phoneNumber: string; code: string; purpose: string; attempts: number; verified: number; expiresAt: number }> = new Map();
+
+  async createOtpCode(phoneNumber: string, code: string, purpose: string, expiresAt: number): Promise<void> {
+    const key = `${phoneNumber}:${purpose}`;
+    this.otpCodes.set(key, {
+      id: randomUUID(),
+      phoneNumber,
+      code,
+      purpose,
+      attempts: 0,
+      verified: 0,
+      expiresAt
+    });
+  }
+  
+  async getOtpCode(phoneNumber: string, purpose: string): Promise<{ id: string; code: string; attempts: number; verified: number; expiresAt: number } | undefined> {
+    const key = `${phoneNumber}:${purpose}`;
+    const otp = this.otpCodes.get(key);
+    if (otp) {
+      return {
+        id: otp.id,
+        code: otp.code,
+        attempts: otp.attempts,
+        verified: otp.verified,
+        expiresAt: otp.expiresAt
+      };
+    }
+    return undefined;
+  }
+  
+  async incrementOtpAttempts(id: string): Promise<void> {
+    this.otpCodes.forEach((otp) => {
+      if (otp.id === id) {
+        otp.attempts++;
+      }
+    });
+  }
+  
+  async markOtpVerified(id: string): Promise<void> {
+    this.otpCodes.forEach((otp) => {
+      if (otp.id === id) {
+        otp.verified = 1;
+      }
+    });
+  }
+  
+  async deleteExpiredOtpCodes(): Promise<void> {
+    const now = Math.floor(Date.now() / 1000);
+    const keysToDelete: string[] = [];
+    this.otpCodes.forEach((otp, key) => {
+      if (otp.expiresAt < now) {
+        keysToDelete.push(key);
+      }
+    });
+    keysToDelete.forEach((key) => this.otpCodes.delete(key));
+  }
 }
 
 // Use database storage if DATABASE_URL is available, otherwise use in-memory
