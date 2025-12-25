@@ -90,4 +90,23 @@ Preferred communication style: Simple, everyday language.
 - **Database & ORM**: `drizzle-orm`, `drizzle-zod`, `@neondatabase/serverless`, `drizzle-kit`.
 - **Development Tools**: `typescript`, `tsx`, `esbuild`, `vite`, `@replit/*`.
 - **Utilities**: `date-fns`, `cmdk`, `nanoid`, `connect-pg-simple`.
+- **SMS Verification**: `twilio` - Twilio Verify API for phone number verification.
 - **Asset Management**: Custom images in `attached_assets/generated_images/` and stock images in `attached_assets/stock_images/`, served via Express.
+
+## Twilio SMS Verification
+
+The application uses Twilio Verify API for phone number verification. Credentials are stored as secrets (not in code).
+
+### Required Secrets
+- `TWILIO_ACCOUNT_SID` - Twilio Account SID
+- `TWILIO_AUTH_TOKEN` - Twilio Auth Token  
+- `TWILIO_VERIFY_SERVICE_SID` - Twilio Verify Service SID
+
+### API Endpoints
+- `POST /api/auth/send-verification` - Send verification code to phone number
+  - Body: `{ "phoneNumber": "+855123456789" }`
+  - Response: `{ "message": "Verification code sent successfully" }`
+
+- `POST /api/auth/verify-code` - Verify the code entered by user
+  - Body: `{ "phoneNumber": "+855123456789", "code": "123456" }`
+  - Response: `{ "valid": true/false, "message": "..." }`

@@ -7,6 +7,7 @@ import bcrypt from "bcrypt";
 import { createPaymentProvider } from "./payment-provider";
 import { PaymentService } from "./payment-service";
 import { securityService, type ViolationType } from "./security-service";
+import { twilioService } from "./twilio-service";
 
 // Initialize payment service
 const paymentProvider = createPaymentProvider();
@@ -229,6 +230,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ message: "Logged out successfully" });
     });
+  });
+
+  // Twilio SMS Verification Routes
+  app.post("/api/auth/send-verification", async (req, res) => {
+    try {
+      const { phoneNumber } = req.body;
+      
+      if (!phoneNumber) {
+        return res.status(400).json({ error: "Phone number is required" });
+      }
+
+      if (!twilioService.isConfigured()) {
+        return res.status(500).json({ error: "SMS verification service not configured" });
+      }
+
+      const result = await twilioService.sendVerificationCode(phoneNumber);
+      
+      if (result.success) {
+        res.json({ message: "Verification code sent successfully" });
+      } else {
+        res.status(400).json({ error: result.error || "Failed to send verification code" });
+      }
+    } catch (error: any) {
+      console.error("Send verification error:", error);
+      res.status(500).json({ error: "Failed to send verification code" });
+    }
+  });
+
+  app.post("/api/auth/verify-code", async (req, res) => {
+    try {
+      const { phoneNumber, code } = req.body;
+      
+      if (!phoneNumber || !code) {
+        return res.status(400).json({ error: "Phone number and code are required" });
+      }
+
+      if (!twilioService.isConfigured()) {
+        return res.status(500).json({ error: "SMS verification service not configured" });
+      }
+
+      const result = await twilioService.verifyCode(phoneNumber, code);
+      
+      if (result.success) {
+        res.json({ 
+          valid: result.valid,
+          message: result.valid ? "Verification successful" : "Invalid verification code"
+        });
+      } else {
+        res.status(400).json({ error: result.error || "Failed to verify code" });
+      }
+    } catch (error: any) {
+      console.error("Verify code error:", error);
+      res.status(500).json({ error: "Failed to verify code" });
+    }
   });
 
   app.get("/api/auth/me", requireAuth, async (req, res) => {
