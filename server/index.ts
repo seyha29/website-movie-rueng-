@@ -33,13 +33,6 @@ const pgPool = new pg.Pool({
 declare module 'express-session' {
   interface SessionData {
     userId?: string;
-    pendingLoginPhone?: string;
-    pendingLoginTime?: number;
-    pendingLoginPasswordHash?: string;
-    pendingRegisterPhone?: string;
-    pendingRegisterTime?: number;
-    pendingRegisterFullName?: string;
-    pendingRegisterPasswordHash?: string;
   }
 }
 

@@ -7,7 +7,6 @@ import bcrypt from "bcrypt";
 import { createPaymentProvider } from "./payment-provider";
 import { PaymentService } from "./payment-service";
 import { securityService, type ViolationType } from "./security-service";
-import { twilioService } from "./twilio-service";
 
 // Initialize payment service
 const paymentProvider = createPaymentProvider();
@@ -108,8 +107,7 @@ function requireAdminRole(...allowedRoles: string[]) {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
-  // Step 1: Validate registration data and send OTP
-  app.post("/api/auth/register/request-otp", async (req, res) => {
+  app.post("/api/auth/register", async (req, res) => {
     try {
       // Phone number normalization is handled by schema validation
       const validatedData = insertUserSchema.parse(req.body);
@@ -120,126 +118,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "User with this phone number already exists" });
       }
 
-      // Send OTP to verify phone number ownership
-      if (!twilioService.isConfigured()) {
-        return res.status(500).json({ error: "SMS verification service not configured" });
-      }
-
-      const result = await twilioService.sendVerificationCode(validatedData.phoneNumber);
-      
-      // Hash password for challenge binding (we'll use the same hash later)
-      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
-
-      if (result.success) {
-        // Store pending registration challenge in session (bind to all validated data)
-        req.session.pendingRegisterPhone = validatedData.phoneNumber;
-        req.session.pendingRegisterTime = Date.now();
-        req.session.pendingRegisterFullName = validatedData.fullName;
-        req.session.pendingRegisterPasswordHash = hashedPassword;
-        
-        req.session.save((err) => {
-          if (err) {
-            console.error("Session save error:", err);
-            return res.status(500).json({ error: "Failed to save session" });
-          }
-          res.json({ 
-            message: "OTP sent successfully", 
-            phoneNumber: validatedData.phoneNumber,
-            requiresOtp: true 
-          });
-        });
-      } else {
-        res.status(400).json({ error: result.error || "Failed to send OTP" });
-      }
-    } catch (error) {
-      console.error("Registration OTP request error:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid user data", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to send OTP", message: error instanceof Error ? error.message : "Unknown error" });
-    }
-  });
-
-  // Step 2: Verify OTP and complete registration
-  app.post("/api/auth/register", async (req, res) => {
-    try {
-      const { otpCode, ...userData } = req.body;
-      
-      if (!otpCode) {
-        return res.status(400).json({ error: "OTP code is required" });
-      }
-
-      // Phone number normalization is handled by schema validation
-      const validatedData = insertUserSchema.parse(userData);
-
-      // Verify that this session initiated the OTP challenge
-      if (!req.session.pendingRegisterPhone || req.session.pendingRegisterPhone !== validatedData.phoneNumber) {
-        return res.status(401).json({ error: "Please request OTP first" });
-      }
-
-      // Verify that submitted data matches what was validated during OTP request
-      // This prevents payload manipulation attacks
-      if (req.session.pendingRegisterFullName !== validatedData.fullName) {
-        delete req.session.pendingRegisterPhone;
-        delete req.session.pendingRegisterTime;
-        delete req.session.pendingRegisterFullName;
-        delete req.session.pendingRegisterPasswordHash;
-        return res.status(401).json({ error: "Registration data changed. Please request a new OTP" });
-      }
-
-      // Verify password matches (by checking the submitted password against the stored hash)
-      const isPasswordValid = await bcrypt.compare(validatedData.password, req.session.pendingRegisterPasswordHash || '');
-      if (!isPasswordValid) {
-        delete req.session.pendingRegisterPhone;
-        delete req.session.pendingRegisterTime;
-        delete req.session.pendingRegisterFullName;
-        delete req.session.pendingRegisterPasswordHash;
-        return res.status(401).json({ error: "Registration data changed. Please request a new OTP" });
-      }
-
-      // Check if challenge has expired (10 minutes)
-      const challengeAge = Date.now() - (req.session.pendingRegisterTime || 0);
-      if (challengeAge > 10 * 60 * 1000) {
-        delete req.session.pendingRegisterPhone;
-        delete req.session.pendingRegisterTime;
-        delete req.session.pendingRegisterFullName;
-        delete req.session.pendingRegisterPasswordHash;
-        return res.status(401).json({ error: "OTP challenge expired. Please request a new code" });
-      }
-      
-      // Check if user already exists
-      const existingUser = await storage.getUserByPhoneNumber(validatedData.phoneNumber);
-      if (existingUser) {
-        return res.status(400).json({ error: "User with this phone number already exists" });
-      }
-
-      // Verify OTP code
-      if (!twilioService.isConfigured()) {
-        return res.status(500).json({ error: "SMS verification service not configured" });
-      }
-
-      const otpResult = await twilioService.verifyCode(validatedData.phoneNumber, otpCode);
-      if (!otpResult.success || !otpResult.valid) {
-        // Invalidate challenge on OTP failure to prevent brute-force
-        delete req.session.pendingRegisterPhone;
-        delete req.session.pendingRegisterTime;
-        delete req.session.pendingRegisterFullName;
-        delete req.session.pendingRegisterPasswordHash;
-        return res.status(401).json({ error: "Invalid or expired OTP code. Please request a new code" });
-      }
-
-      // Clear the pending challenge and use the pre-hashed password
-      const hashedPassword = req.session.pendingRegisterPasswordHash!;
-      delete req.session.pendingRegisterPhone;
-      delete req.session.pendingRegisterTime;
-      delete req.session.pendingRegisterFullName;
-      delete req.session.pendingRegisterPasswordHash;
-
       // Check if this is the first user - grant admin privileges
       const allUsers = await storage.getAllUsers();
       const isFirstUser = allUsers.length === 0;
 
-      // Use the pre-hashed password from the challenge (already validated)
+      // Hash password before storing
+      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
       const userDataWithHashedPassword = {
         ...validatedData,
         password: hashedPassword,
@@ -263,18 +147,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateUser(user.id, { currentSessionId: req.sessionID });
         console.log("Session saved for new user:", user.id, "sessionID:", req.sessionID);
         
-        // Return safe user object - explicitly exclude password
-        const safeUser = {
-          id: user.id,
-          fullName: user.fullName,
-          phoneNumber: user.phoneNumber,
-          isAdmin: user.isAdmin,
-          adminRole: user.adminRole,
-          balance: user.balance,
-          trustedUser: user.trustedUser,
-          noWatermark: user.noWatermark
-        };
-        res.status(201).json(safeUser);
+        // Don't send password in response
+        const { password, ...userWithoutPassword } = user;
+        res.status(201).json(userWithoutPassword);
       });
     } catch (error) {
       console.error("Registration error:", error);
@@ -285,8 +160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Step 1: Validate credentials and send OTP for login
-  app.post("/api/auth/login/request-otp", async (req, res) => {
+  app.post("/api/auth/login", async (req, res) => {
     try {
       let { phoneNumber, password } = req.body;
       
@@ -309,114 +183,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Invalid phone number or password" });
       }
 
-      // Password is valid, send OTP
-      if (!twilioService.isConfigured()) {
-        return res.status(500).json({ error: "SMS verification service not configured" });
-      }
-
-      const result = await twilioService.sendVerificationCode(phoneNumber);
-      
-      if (result.success) {
-        // Store pending login challenge in session (bind to validated password hash)
-        req.session.pendingLoginPhone = phoneNumber;
-        req.session.pendingLoginTime = Date.now();
-        req.session.pendingLoginPasswordHash = user.password;
-        
-        req.session.save((err) => {
-          if (err) {
-            console.error("Session save error:", err);
-            return res.status(500).json({ error: "Failed to save session" });
-          }
-          res.json({ 
-            message: "OTP sent successfully", 
-            phoneNumber: phoneNumber,
-            requiresOtp: true 
-          });
-        });
-      } else {
-        res.status(400).json({ error: result.error || "Failed to send OTP" });
-      }
-    } catch (error) {
-      console.error("Login OTP request error:", error);
-      res.status(500).json({ error: "Failed to send OTP" });
-    }
-  });
-
-  // Step 2: Verify OTP and complete login
-  app.post("/api/auth/login", async (req, res) => {
-    try {
-      let { phoneNumber, password, otpCode } = req.body;
-      
-      if (!phoneNumber || !password || !otpCode) {
-        return res.status(400).json({ error: "Phone number, password, and OTP code are required" });
-      }
-
-      // Normalize phone number to +855xxxxxxxx format
-      const digitsOnly = phoneNumber.replace(/^(\+855|855|0)/, '');
-      phoneNumber = `+855${digitsOnly}`;
-
-      // Verify that this session initiated the OTP challenge
-      if (!req.session.pendingLoginPhone || req.session.pendingLoginPhone !== phoneNumber) {
-        return res.status(401).json({ error: "Please request OTP first" });
-      }
-
-      // Check if challenge has expired (10 minutes)
-      const challengeAge = Date.now() - (req.session.pendingLoginTime || 0);
-      if (challengeAge > 10 * 60 * 1000) {
-        delete req.session.pendingLoginPhone;
-        delete req.session.pendingLoginTime;
-        delete req.session.pendingLoginPasswordHash;
-        return res.status(401).json({ error: "OTP challenge expired. Please request a new code" });
-      }
-
-      const user = await storage.getUserByPhoneNumber(phoneNumber);
-      if (!user) {
-        // Invalidate challenge on failed lookup
-        delete req.session.pendingLoginPhone;
-        delete req.session.pendingLoginTime;
-        delete req.session.pendingLoginPasswordHash;
-        return res.status(401).json({ error: "Invalid phone number or password" });
-      }
-
-      // Verify password matches the one validated during OTP request
-      // This prevents password brute-forcing after OTP is sent
-      if (user.password !== req.session.pendingLoginPasswordHash) {
-        // Credentials changed since OTP was requested
-        delete req.session.pendingLoginPhone;
-        delete req.session.pendingLoginTime;
-        delete req.session.pendingLoginPasswordHash;
-        return res.status(401).json({ error: "Please request a new OTP" });
-      }
-
-      // Also verify password from request (should match what was submitted)
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (!isPasswordValid) {
-        // Invalidate challenge on failed password attempt
-        delete req.session.pendingLoginPhone;
-        delete req.session.pendingLoginTime;
-        delete req.session.pendingLoginPasswordHash;
-        return res.status(401).json({ error: "Invalid phone number or password" });
-      }
-
-      // Verify OTP code
-      if (!twilioService.isConfigured()) {
-        return res.status(500).json({ error: "SMS verification service not configured" });
-      }
-
-      const otpResult = await twilioService.verifyCode(phoneNumber, otpCode);
-      if (!otpResult.success || !otpResult.valid) {
-        // Invalidate challenge on OTP failure to prevent brute-force
-        delete req.session.pendingLoginPhone;
-        delete req.session.pendingLoginTime;
-        delete req.session.pendingLoginPasswordHash;
-        return res.status(401).json({ error: "Invalid or expired OTP code. Please request a new code" });
-      }
-
-      // Clear the pending challenge
-      delete req.session.pendingLoginPhone;
-      delete req.session.pendingLoginTime;
-      delete req.session.pendingLoginPasswordHash;
-
       req.session.userId = user.id;
       
       // Explicitly save session before responding
@@ -431,18 +197,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateUser(user.id, { currentSessionId: req.sessionID });
         console.log("Session saved successfully for user:", user.id, "sessionID:", req.sessionID);
         
-        // Return safe user object - explicitly exclude password and currentSessionId
-        const safeUser = {
-          id: user.id,
-          fullName: user.fullName,
-          phoneNumber: user.phoneNumber,
-          isAdmin: user.isAdmin,
-          adminRole: user.adminRole,
-          balance: user.balance,
-          trustedUser: user.trustedUser,
-          noWatermark: user.noWatermark
-        };
-        res.json(safeUser);
+        // Don't send password in response
+        const { password, ...userWithoutPassword } = user;
+        res.json(userWithoutPassword);
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -474,78 +231,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Twilio SMS Verification Routes
-  app.post("/api/auth/send-verification", async (req, res) => {
-    try {
-      const { phoneNumber } = req.body;
-      
-      if (!phoneNumber) {
-        return res.status(400).json({ error: "Phone number is required" });
-      }
-
-      if (!twilioService.isConfigured()) {
-        return res.status(500).json({ error: "SMS verification service not configured" });
-      }
-
-      const result = await twilioService.sendVerificationCode(phoneNumber);
-      
-      if (result.success) {
-        res.json({ message: "Verification code sent successfully" });
-      } else {
-        res.status(400).json({ error: result.error || "Failed to send verification code" });
-      }
-    } catch (error: any) {
-      console.error("Send verification error:", error);
-      res.status(500).json({ error: "Failed to send verification code" });
-    }
-  });
-
-  app.post("/api/auth/verify-code", async (req, res) => {
-    try {
-      const { phoneNumber, code } = req.body;
-      
-      if (!phoneNumber || !code) {
-        return res.status(400).json({ error: "Phone number and code are required" });
-      }
-
-      if (!twilioService.isConfigured()) {
-        return res.status(500).json({ error: "SMS verification service not configured" });
-      }
-
-      const result = await twilioService.verifyCode(phoneNumber, code);
-      
-      if (result.success) {
-        res.json({ 
-          valid: result.valid,
-          message: result.valid ? "Verification successful" : "Invalid verification code"
-        });
-      } else {
-        res.status(400).json({ error: result.error || "Failed to verify code" });
-      }
-    } catch (error: any) {
-      console.error("Verify code error:", error);
-      res.status(500).json({ error: "Failed to verify code" });
-    }
-  });
-
   app.get("/api/auth/me", requireAuth, async (req, res) => {
     try {
       const user = await storage.getUser(req.session.userId!);
       if (!user) {
         return res.status(404).json({ error: "User not found" });
       }
-      // Return safe user object - explicitly exclude password and currentSessionId
-      const safeUser = {
-        id: user.id,
-        fullName: user.fullName,
-        phoneNumber: user.phoneNumber,
-        isAdmin: user.isAdmin,
-        adminRole: user.adminRole,
-        balance: user.balance,
-        trustedUser: user.trustedUser,
-        noWatermark: user.noWatermark
-      };
-      res.json(safeUser);
+      // Don't send password in response
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch user" });
     }
@@ -610,18 +304,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "Failed to update profile" });
       }
 
-      // Return safe user object - explicitly exclude password and currentSessionId
-      const safeUser = {
-        id: updatedUser.id,
-        fullName: updatedUser.fullName,
-        phoneNumber: updatedUser.phoneNumber,
-        isAdmin: updatedUser.isAdmin,
-        adminRole: updatedUser.adminRole,
-        balance: updatedUser.balance,
-        trustedUser: updatedUser.trustedUser,
-        noWatermark: updatedUser.noWatermark
-      };
-      res.json(safeUser);
+      // Don't send password in response
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
     } catch (error) {
       console.error("Profile update error:", error);
       res.status(500).json({ error: "Failed to update profile" });
