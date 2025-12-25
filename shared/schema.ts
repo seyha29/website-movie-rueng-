@@ -202,3 +202,75 @@ export const insertAdBannerSchema = createInsertSchema(adBanners).omit({
 
 export type InsertAdBanner = z.infer<typeof insertAdBannerSchema>;
 export type AdBanner = typeof adBanners.$inferSelect;
+
+// Security Violations - track user security violations
+export const securityViolations = pgTable("security_violations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  violationType: text("violation_type").notNull(), // devtools, screen_share, tab_switch, copy_attempt, right_click
+  severity: text("severity").notNull().default("low"), // low, medium, high, critical
+  description: text("description"),
+  userAgent: text("user_agent"),
+  ipAddress: text("ip_address"),
+  movieId: varchar("movie_id").references(() => movies.id, { onDelete: 'set null' }),
+  createdAt: integer("created_at").notNull().default(sql`extract(epoch from now())`),
+});
+
+export const insertSecurityViolationSchema = createInsertSchema(securityViolations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertSecurityViolation = z.infer<typeof insertSecurityViolationSchema>;
+export type SecurityViolation = typeof securityViolations.$inferSelect;
+
+// User Bans - track banned users
+export const userBans = pgTable("user_bans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  banType: text("ban_type").notNull().default("temporary"), // temporary, permanent
+  reason: text("reason").notNull(),
+  violationId: varchar("violation_id").references(() => securityViolations.id, { onDelete: 'set null' }),
+  bannedAt: integer("banned_at").notNull().default(sql`extract(epoch from now())`),
+  expiresAt: integer("expires_at"), // null for permanent bans
+  isActive: integer("is_active").notNull().default(1),
+});
+
+export const insertUserBanSchema = createInsertSchema(userBans).omit({
+  id: true,
+  bannedAt: true,
+});
+
+export type InsertUserBan = z.infer<typeof insertUserBanSchema>;
+export type UserBan = typeof userBans.$inferSelect;
+
+// Daily Watch Time - track user's daily video watch time
+export const dailyWatchTime = pgTable("daily_watch_time", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  date: text("date").notNull(), // YYYY-MM-DD format
+  totalSeconds: integer("total_seconds").notNull().default(0),
+  playAttempts: integer("play_attempts").notNull().default(0),
+  lastUpdated: integer("last_updated").notNull().default(sql`extract(epoch from now())`),
+});
+
+export const insertDailyWatchTimeSchema = createInsertSchema(dailyWatchTime).omit({
+  id: true,
+  lastUpdated: true,
+});
+
+export type InsertDailyWatchTime = z.infer<typeof insertDailyWatchTimeSchema>;
+export type DailyWatchTime = typeof dailyWatchTime.$inferSelect;
+
+// Video Access Tokens - token-based video access
+export const videoAccessTokens = pgTable("video_access_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  movieId: varchar("movie_id").notNull().references(() => movies.id, { onDelete: 'cascade' }),
+  token: text("token").notNull().unique(),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  createdAt: integer("created_at").notNull().default(sql`extract(epoch from now())`),
+  expiresAt: integer("expires_at").notNull(),
+  used: integer("used").notNull().default(0),
+});

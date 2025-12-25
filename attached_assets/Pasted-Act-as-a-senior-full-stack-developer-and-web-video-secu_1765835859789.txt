@@ -1,0 +1,240 @@
+Act as a senior full-stack developer and web video security specialist.
+I have an existing paid video / movie streaming website and I want to update it with strong anti-recording and anti-theft protection.
+
+MAIN RULES
+
+Users can watch videos only.
+Downloading, copying, recording, or extracting video links must be prevented as much as possible.
+
+If a user tries to record, screen share, inspect source code, open DevTools, copy video links, or behave suspiciously, the system must:
+
+Immediately pause or close the video
+
+Log the violation in the database
+
+Automatically ban the user (temporary or permanent)
+
+Apply spam protection and time limits
+
+FRONTEND REQUIREMENTS (React / JavaScript)
+
+Use HLS (.m3u8) streaming only (NO direct MP4 links).
+
+Hide all real video URLs:
+
+No video link visible in HTML
+
+No static video URLs in source code
+
+Video loaded only via secure API with expiring token
+
+Block user actions:
+
+Disable right-click menu
+
+Disable text selection
+
+Disable copy, save, view source, and inspect shortcuts
+
+Prevent “Copy video address”
+
+Auto-stop video when:
+
+Browser tab is hidden or user switches tab
+
+Screen sharing or browser recording is attempted
+
+Developer tools are opened
+
+Add dynamic watermark overlay on video:
+
+User ID
+
+Current timestamp
+
+Random moving position
+
+BACKEND REQUIREMENTS
+
+Serve video streams via token-based access:
+
+Tokens must expire
+
+Tokens tied to user ID and IP/device
+
+Violation system:
+
+Screen share / recording attempt → Permanent ban
+
+DevTools or inspect attempt → Permanent ban
+
+2+ tab switches → 24-hour temporary ban
+
+Repeated violations → Account locked
+
+Spam & time limits:
+
+Limit daily watch time (example: 3 hours/day)
+
+Limit number of play attempts per hour
+
+Session & device control:
+
+1 account = 1 device/session
+
+New login terminates old session
+
+SECURITY & UX RULES
+
+Show warning message before playback:
+
+“Recording, copying, or redistribution is prohibited. Violations will result in automatic ban.”
+
+If user is banned:
+
+Immediately stop stream
+
+Block access to all video APIs
+
+OUTPUT REQUIRED
+
+Updated frontend code 
+
+Updated backend logic
+
+Database schema for:
+
+Violations
+
+Ban status
+
+Watch time tracking
+
+Clear explanation of auto-ban, spam control, and time-limit logic
+
+Follow real-world streaming platform security practices.
+Do NOT claim 100% recording prevention, only realistic protection.
+
+My goal is to make video theft difficult, traceable, and punishable automatically.
+
+On Wed, Dec 24, 2025 at 10:38 PM SEY HA <thanseyha2002@gmail.com> wrote:
+
+
+Act as a senior full-stack developer and web video security specialist.
+I have an existing paid video / movie streaming website and I want to update it with strong anti-recording and anti-theft protection.
+
+MAIN RULES
+
+Users can watch videos only.
+Downloading, copying, recording, or extracting video links must be prevented as much as possible.
+
+If a user tries to record, screen share, inspect source code, open DevTools, copy video links, or behave suspiciously, the system must:
+
+Immediately pause or close the video
+
+Log the violation in the database
+
+Automatically ban the user (temporary or permanent)
+
+Apply spam protection and time limits
+
+FRONTEND REQUIREMENTS (React / JavaScript)
+
+Use HLS (.m3u8) streaming only (NO direct MP4 links).
+
+Hide all real video URLs:
+
+No video link visible in HTML
+
+No static video URLs in source code
+
+Video loaded only via secure API with expiring token
+
+Block user actions:
+
+Disable right-click menu
+
+Disable text selection
+
+Disable copy, save, view source, and inspect shortcuts
+
+Prevent “Copy video address”
+
+Auto-stop video when:
+
+Browser tab is hidden or user switches tab
+
+Screen sharing or browser recording is attempted
+
+Developer tools are opened
+
+Add dynamic watermark overlay on video:
+
+User ID
+
+Current timestamp
+
+Random moving position
+
+BACKEND REQUIREMENTS
+
+Serve video streams via token-based access:
+
+Tokens must expire
+
+Tokens tied to user ID and IP/device
+
+Violation system:
+
+Screen share / recording attempt → Permanent ban
+
+DevTools or inspect attempt → Permanent ban
+
+2+ tab switches → 24-hour temporary ban
+
+Repeated violations → Account locked
+
+Spam & time limits:
+
+Limit daily watch time (example: 3 hours/day)
+
+Limit number of play attempts per hour
+
+Session & device control:
+
+1 account = 1 device/session
+
+New login terminates old session
+
+SECURITY & UX RULES
+
+Show warning message before playback:
+
+“Recording, copying, or redistribution is prohibited. Violations will result in automatic ban.”
+
+If user is banned:
+
+Immediately stop stream
+
+Block access to all video APIs
+
+OUTPUT REQUIRED
+
+Updated frontend code (React + JavaScript)
+
+Updated backend logic (Node.js / Laravel / PHP)
+
+Database schema for:
+
+Violations
+
+Ban status
+
+Watch time tracking
+
+Clear explanation of auto-ban, spam control, and time-limit logic
+
+Follow real-world streaming platform security practices.
+Do NOT claim 100% recording prevention, only realistic protection.
+
+My goal is to make video theft difficult, traceable, and punishable automatically.
