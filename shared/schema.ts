@@ -1,7 +1,14 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, json, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// Express session table (used by connect-pg-simple)
+export const userSessions = pgTable("user_sessions", {
+  sid: varchar("sid").primaryKey(),
+  sess: json("sess").notNull(),
+  expire: timestamp("expire", { withTimezone: false }).notNull(),
+});
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
