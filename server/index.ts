@@ -47,6 +47,8 @@ if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
   console.warn('⚠️  WARNING: SESSION_SECRET is not set! Using fallback secret. Please set SESSION_SECRET in your production environment for security.');
 }
 
+const isProduction = process.env.NODE_ENV === 'production' || process.env.REPL_SLUG !== undefined;
+
 app.use(session({
   secret: process.env.SESSION_SECRET || 'reoung-movies-secret-key-change-in-production',
   resave: false,
@@ -55,15 +57,16 @@ app.use(session({
     pool: pgPool,
     tableName: 'user_sessions',
     createTableIfMissing: true,
-    pruneSessionInterval: 60 * 60, // Prune expired sessions every hour (in seconds)
+    pruneSessionInterval: 60 * 60,
   }),
   cookie: {
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days - users stay logged in for a month
+    maxAge: 30 * 24 * 60 * 60 * 1000,
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
     path: '/'
-  }
+  },
+  proxy: isProduction
 }));
 
 app.use(express.json({
