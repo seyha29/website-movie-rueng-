@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSubscription } from "@/hooks/use-subscription";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { authLabels, searchLabels } from "@/lib/translations";
+import { authLabels, searchLabels, navLabels, subscriptionLabels } from "@/lib/translations";
 import logoImage from "@assets/logo Reung_1764364561043.png";
 import cambodiaFlag from "@assets/Flag_of_Cambodia.svg_1764367832078.png";
 import ukFlag from "@assets/Flag_of_the_United_Kingdom_(3-5).svg_1764367864097.png";
@@ -87,11 +87,11 @@ export default function Header() {
   };
 
   const navItems = [
-    { label: "Home", path: "/" },
-    { label: "Movies", path: "/movies" },
-    { label: "TV Shows", path: "/tv-shows" },
-    { label: "New & Popular", path: "/new" },
-    { label: "My List", path: "/my-list" },
+    { label: navLabels.home[language], path: "/" },
+    { label: navLabels.movies[language], path: "/movies" },
+    { label: navLabels.tvShows[language], path: "/tv-shows" },
+    { label: navLabels.newAndPopular[language], path: "/new" },
+    { label: navLabels.myList[language], path: "/my-list" },
   ];
 
   return (
@@ -197,18 +197,18 @@ export default function Header() {
                             {isSubscribed ? (
                               <>
                                 <CheckCircle2 className="h-4 w-4 text-primary" />
-                                <span className="text-sm font-medium">Subscribed</span>
+                                <span className="text-sm font-medium">{subscriptionLabels.subscribed[language]}</span>
                               </>
                             ) : (
                               <>
                                 <CreditCard className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm font-medium">Free Plan</span>
+                                <span className="text-sm font-medium">{subscriptionLabels.freePlan[language]}</span>
                               </>
                             )}
                           </div>
                           {isSubscribed && subscription?.endDate && (
                             <p className="text-xs text-muted-foreground">
-                              Expires: {new Date(subscription.endDate * 1000).toLocaleDateString()}
+                              {subscriptionLabels.expires[language]} {new Date(subscription.endDate * 1000).toLocaleDateString()}
                             </p>
                           )}
                         </div>
@@ -257,10 +257,10 @@ export default function Header() {
                             <>
                               <CheckCircle2 className="h-4 w-4 text-primary" />
                               <div className="flex flex-col">
-                                <span className="text-sm font-medium">Subscribed</span>
+                                <span className="text-sm font-medium">{subscriptionLabels.subscribed[language]}</span>
                                 {subscription?.endDate && (
                                   <span className="text-xs text-muted-foreground">
-                                    Expires: {new Date(subscription.endDate * 1000).toLocaleDateString()}
+                                    {subscriptionLabels.expires[language]} {new Date(subscription.endDate * 1000).toLocaleDateString()}
                                   </span>
                                 )}
                               </div>
@@ -268,7 +268,7 @@ export default function Header() {
                           ) : (
                             <>
                               <CreditCard className="h-4 w-4 text-muted-foreground" />
-                              <span>Free Plan</span>
+                              <span>{subscriptionLabels.freePlan[language]}</span>
                             </>
                           )}
                         </DropdownMenuItem>
@@ -279,7 +279,7 @@ export default function Header() {
                     <DropdownMenuItem asChild>
                       <Link href="/my-list">
                         <List className="h-4 w-4 mr-2" />
-                        My List
+                        {navLabels.myList[language]}
                       </Link>
                     </DropdownMenuItem>
                     
@@ -287,7 +287,7 @@ export default function Header() {
                       <DropdownMenuItem asChild>
                         <Link href="/admin">
                           <LayoutDashboard className="h-4 w-4 mr-2" />
-                          Admin Panel
+                          {subscriptionLabels.adminPanel[language]}
                         </Link>
                       </DropdownMenuItem>
                     )}

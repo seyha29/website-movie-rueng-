@@ -257,3 +257,18 @@ export const commonLabels = {
   success: { km: "ជោគជ័យ", en: "Success" },
   lastUpdated: { km: "ធ្វើបច្ចុប្បន្នភាពចុងក្រោយ:", en: "Last updated:" }
 };
+
+export const navLabels = {
+  home: { km: "ទំព័រដើម", en: "Home" },
+  movies: { km: "ភាពយន្ត", en: "Movies" },
+  tvShows: { km: "រឿងភាគ", en: "TV Shows" },
+  newAndPopular: { km: "ថ្មី និងពេញនិយម", en: "New & Popular" },
+  myList: { km: "បញ្ជីរបស់ខ្ញុំ", en: "My List" }
+};
+
+export const subscriptionLabels = {
+  subscribed: { km: "បានជាវ", en: "Subscribed" },
+  freePlan: { km: "គម្រោងឥតគិតថ្លៃ", en: "Free Plan" },
+  expires: { km: "ផុតកំណត់:", en: "Expires:" },
+  adminPanel: { km: "ផ្ទាំងគ្រប់គ្រង", en: "Admin Panel" }
+};
