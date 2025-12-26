@@ -272,3 +272,15 @@ export const subscriptionLabels = {
   expires: { km: "ផុតកំណត់:", en: "Expires:" },
   adminPanel: { km: "ផ្ទាំងគ្រប់គ្រង", en: "Admin Panel" }
 };
+
+export const screenProtectionLabels = {
+  screenshotDetected: { km: "⚠️ ការថតអេក្រង់ត្រូវបានរកឃើញ", en: "⚠️ Screenshot Detected" },
+  contentProtected: { km: "មាតិកានេះត្រូវបានការពារ។ សកម្មភាពរបស់អ្នកត្រូវបានកត់ត្រា។", en: "This content is protected. Your activity has been logged." },
+  rightClickDisabled: { km: "បិទការចុចខាងស្តាំ", en: "Right-click Disabled" },
+  contentProtectedFromCopy: { km: "មាតិកានេះត្រូវបានការពារពីការចម្លង។", en: "This content is protected from copying." },
+  copyDisabled: { km: "បិទការចម្លង", en: "Copy Disabled" },
+  cannotCopyContent: { km: "មាតិកានេះមិនអាចចម្លងបានទេ។", en: "This content cannot be copied." },
+  contentProtectedTitle: { km: "⚠️ មាតិកាត្រូវបានការពារ", en: "⚠️ Content Protected" },
+  returnToWatch: { km: "សូមត្រលប់មកទំព័រនេះវិញដើម្បីបន្តមើល", en: "Please return to this page to continue watching" },
+  returnToWatchSub: { km: "មាតិកាត្រូវបានការពារ - សូមត្រលប់មកបន្តមើល", en: "Content Protected - Please return to continue watching" }
+};

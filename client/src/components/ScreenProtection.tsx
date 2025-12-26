@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { screenProtectionLabels } from "@/lib/translations";
 
 interface ScreenProtectionProps {
   children: React.ReactNode;
@@ -15,6 +17,8 @@ export default function ScreenProtection({
   onSecurityViolation 
 }: ScreenProtectionProps) {
   const { toast } = useToast();
+  const { language } = useLanguage();
+  const t = screenProtectionLabels;
   const [detectionCount, setDetectionCount] = useState(0);
   const [isBlurred, setIsBlurred] = useState(false);
   const lastDetectionTime = useRef(0);
@@ -32,8 +36,8 @@ export default function ScreenProtection({
 
     if (showWarnings) {
       toast({
-        title: "⚠️ ការថតអេក្រង់ត្រូវបានរកឃើញ",
-        description: `មាតិកានេះត្រូវបានការពារ។ សកម្មភាពរបស់អ្នកត្រូវបានកត់ត្រា។ (${userName})`,
+        title: t.screenshotDetected[language],
+        description: `${t.contentProtected[language]} (${userName})`,
         variant: "destructive",
         duration: 5000,
       });
@@ -44,7 +48,7 @@ export default function ScreenProtection({
     if (onSecurityViolation) {
       onSecurityViolation();
     }
-  }, [showWarnings, userName, toast, onSecurityViolation]);
+  }, [showWarnings, userName, toast, onSecurityViolation, language, t]);
 
   useEffect(() => {
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -89,8 +93,8 @@ export default function ScreenProtection({
       e.preventDefault();
       if (showWarnings) {
         toast({
-          title: "បិទការចុចខាងស្តាំ",
-          description: "មាតិកានេះត្រូវបានការពារពីការចម្លង។",
+          title: t.rightClickDisabled[language],
+          description: t.contentProtectedFromCopy[language],
           variant: "destructive",
         });
       }
@@ -126,8 +130,8 @@ export default function ScreenProtection({
       e.preventDefault();
       if (showWarnings) {
         toast({
-          title: "បិទការចម្លង",
-          description: "មាតិកានេះមិនអាចចម្លងបានទេ។",
+          title: t.copyDisabled[language],
+          description: t.cannotCopyContent[language],
           variant: "destructive",
         });
       }
@@ -162,7 +166,7 @@ export default function ScreenProtection({
       window.removeEventListener("blur", handleBlur);
       window.removeEventListener("focus", handleFocus);
     };
-  }, [showWarnings, toast, handleScreenshotAttempt]);
+  }, [showWarnings, toast, handleScreenshotAttempt, language, t]);
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -232,9 +236,9 @@ export default function ScreenProtection({
       {isBlurred && (
         <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center">
           <div className="text-center text-white p-8">
-            <p className="text-2xl font-bold mb-4">⚠️ មាតិកាត្រូវបានការពារ</p>
-            <p className="text-gray-300">សូមត្រលប់មកទំព័រនេះវិញដើម្បីបន្តមើល</p>
-            <p className="text-sm text-gray-500 mt-4">Content Protected - Please return to continue watching</p>
+            <p className="text-2xl font-bold mb-4">{t.contentProtectedTitle[language]}</p>
+            <p className="text-gray-300">{t.returnToWatch[language]}</p>
+            <p className="text-sm text-gray-500 mt-4">{t.returnToWatchSub[language]}</p>
           </div>
         </div>
       )}
