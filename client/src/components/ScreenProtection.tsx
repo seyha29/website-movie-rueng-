@@ -98,6 +98,7 @@ export default function ScreenProtection({
           variant: "destructive",
         });
       }
+      logSecurityEvent("right_click_attempt", "Right click");
       return false;
     };
 
@@ -135,6 +136,7 @@ export default function ScreenProtection({
           variant: "destructive",
         });
       }
+      logSecurityEvent("copy_attempt", "Copy");
     };
 
     const handleDragStart = (e: DragEvent) => {
@@ -206,16 +208,30 @@ export default function ScreenProtection({
   }, []);
 
   const logSecurityEvent = async (eventType: string, details: string) => {
+    const violationTypeMap: Record<string, string> = {
+      'screenshot_attempt': 'keyboard_shortcut',
+      'Print Screen': 'keyboard_shortcut',
+      'Snipping Tool': 'keyboard_shortcut',
+      'macOS Screenshot': 'keyboard_shortcut',
+      'Developer Tools': 'devtools',
+      'Print': 'keyboard_shortcut',
+      'Save': 'keyboard_shortcut',
+      'right_click_attempt': 'right_click',
+      'Right click': 'right_click',
+      'copy_attempt': 'copy_attempt',
+      'Copy': 'copy_attempt',
+    };
+    
+    const violationType = violationTypeMap[details] || violationTypeMap[eventType] || 'suspicious_behavior';
+    
     try {
-      await fetch("/api/security/log", {
+      await fetch("/api/security/violation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
-          eventType,
-          details,
-          userName,
-          userAgent: navigator.userAgent,
-          timestamp: new Date().toISOString(),
+          violationType,
+          description: `${eventType}: ${details} (User: ${userName})`,
         }),
       });
     } catch (error) {
