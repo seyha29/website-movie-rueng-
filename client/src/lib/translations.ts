@@ -284,3 +284,17 @@ export const screenProtectionLabels = {
   returnToWatch: { km: "សូមត្រលប់មកទំព័រនេះវិញដើម្បីបន្តមើល", en: "Please return to this page to continue watching" },
   returnToWatchSub: { km: "មាតិកាត្រូវបានការពារ - សូមត្រលប់មកបន្តមើល", en: "Content Protected - Please return to continue watching" }
 };
+
+export const videoWarningLabels = {
+  importantNotice: { km: "សេចក្តីជូនដំណឹងសំខាន់", en: "Important Notice" },
+  prohibitedText: { km: "ការថតសំឡេង ការចម្លង ការចែករំលែកអេក្រង់ ឬការចែកចាយមាតិកានេះឡើងវិញគឺ", en: "Recording, copying, screen sharing, or redistribution of this content is" },
+  strictlyProhibited: { km: "ត្រូវបានហាមឃាត់យ៉ាងតឹងរ៉ឹង", en: "strictly prohibited" },
+  violationsText: { km: "ការបំពានច្បាប់នឹងនាំឱ្យមានការផ្អាកគណនីដោយស្វ័យប្រវត្តិ ឬហាមឃាត់ជាអចិន្ត្រៃយ៍។ សកម្មភាពទាំងអស់ត្រូវបានតាមដាន និងកត់ត្រា។", en: "Violations will result in automatic account suspension or permanent ban. All activity is monitored and logged." },
+  cancel: { km: "បោះបង់", en: "Cancel" },
+  iUnderstandContinue: { km: "យល់ព្រម បន្ត", en: "I Understand, Continue" },
+  videoPlaybackBlocked: { km: "ការចាក់វីដេអូត្រូវបានរារាំង", en: "Video Playback Blocked" },
+  securityViolationDetected: { km: "បានរកឃើញការបំពានសុវត្ថិភាព។", en: "A security violation was detected." },
+  accountSuspended: { km: "គណនីរបស់អ្នកត្រូវបានផ្អាក។ សូមទាក់ទងផ្នែកជំនួយ។", en: "Your account has been suspended. Please contact support." },
+  incidentLogged: { km: "ព្រឹត្តិការណ៍នេះត្រូវបានកត់ត្រា។ ការបំពានម្តងទៀតអាចនាំឱ្យផ្អាកគណនី។", en: "This incident has been logged. Repeated violations may result in account suspension." },
+  closePlayer: { km: "បិទកម្មវិធីចាក់វីដេអូ", en: "Close Player" }
+};

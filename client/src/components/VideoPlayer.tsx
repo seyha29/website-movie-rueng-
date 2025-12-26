@@ -1,6 +1,8 @@
 import { X, Maximize, ArrowLeft, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useRef, useState, useEffect, useCallback } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { videoWarningLabels } from "@/lib/translations";
 
 interface VideoPlayerProps {
   title: string;
@@ -116,6 +118,8 @@ export default function VideoPlayer({
   noWatermark = false,
   movieId
 }: VideoPlayerProps) {
+  const { language } = useLanguage();
+  const t = videoWarningLabels;
   const containerRef = useRef<HTMLDivElement>(null);
   const [isBrowserFullscreen, setIsBrowserFullscreen] = useState(false);
   const [showWarning, setShowWarning] = useState(() => {
@@ -319,14 +323,13 @@ export default function VideoPlayer({
       <div className="fixed inset-0 bg-black z-50 flex items-center justify-center p-4">
         <div className="bg-zinc-900 border border-zinc-700 rounded-lg max-w-md w-full p-6 text-center">
           <AlertTriangle className="h-12 w-12 text-orange-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-3">Important Notice</h2>
+          <h2 className="text-xl font-bold text-white mb-3">{t.importantNotice[language]}</h2>
           <p className="text-gray-300 mb-4 text-sm leading-relaxed">
-            Recording, copying, screen sharing, or redistribution of this content is 
-            <span className="text-red-400 font-semibold"> strictly prohibited</span>.
+            {t.prohibitedText[language]} 
+            <span className="text-red-400 font-semibold"> {t.strictlyProhibited[language]}</span>.
           </p>
           <p className="text-gray-400 mb-6 text-xs">
-            Violations will result in automatic account suspension or permanent ban. 
-            All activity is monitored and logged.
+            {t.violationsText[language]}
           </p>
           <div className="flex gap-3 justify-center">
             <Button
@@ -334,13 +337,13 @@ export default function VideoPlayer({
               onClick={onClose}
               className="border-zinc-600 text-gray-300 hover:bg-zinc-800"
             >
-              Cancel
+              {t.cancel[language]}
             </Button>
             <Button
               onClick={acknowledgeWarning}
               className="bg-orange-600 hover:bg-orange-700 text-white"
             >
-              I Understand, Continue
+              {t.iUnderstandContinue[language]}
             </Button>
           </div>
         </div>
@@ -353,18 +356,18 @@ export default function VideoPlayer({
       <div className="fixed inset-0 bg-black z-50 flex items-center justify-center p-4">
         <div className="bg-red-950 border border-red-700 rounded-lg max-w-md w-full p-6 text-center">
           <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-3">Video Playback Blocked</h2>
+          <h2 className="text-2xl font-bold text-white mb-3">{t.videoPlaybackBlocked[language]}</h2>
           <p className="text-red-300 mb-4">
-            {blockReason || 'A security violation was detected.'}
+            {blockReason || t.securityViolationDetected[language]}
           </p>
           <p className="text-gray-400 mb-6 text-sm">
-            This incident has been logged. Repeated violations may result in account suspension.
+            {t.incidentLogged[language]}
           </p>
           <Button
             onClick={onClose}
             className="bg-red-600 hover:bg-red-700 text-white"
           >
-            Close Player
+            {t.closePlayer[language]}
           </Button>
         </div>
       </div>
