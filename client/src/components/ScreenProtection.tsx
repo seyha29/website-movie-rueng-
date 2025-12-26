@@ -87,6 +87,21 @@ export default function ScreenProtection({
         e.preventDefault();
         handleScreenshotAttempt("Save");
       }
+
+      if (e.ctrlKey && (e.key === "u" || e.key === "U")) {
+        e.preventDefault();
+        handleScreenshotAttempt("View Source");
+      }
+
+      if (e.ctrlKey && e.shiftKey && (e.key === "j" || e.key === "J")) {
+        e.preventDefault();
+        handleScreenshotAttempt("Developer Console");
+      }
+
+      if (e.ctrlKey && e.shiftKey && (e.key === "c" || e.key === "C")) {
+        e.preventDefault();
+        handleScreenshotAttempt("Inspect Element");
+      }
     };
 
     const handleContextMenu = (e: MouseEvent) => {
@@ -214,6 +229,9 @@ export default function ScreenProtection({
       'Snipping Tool': 'keyboard_shortcut',
       'macOS Screenshot': 'keyboard_shortcut',
       'Developer Tools': 'devtools',
+      'Developer Console': 'devtools',
+      'Inspect Element': 'devtools',
+      'View Source': 'devtools',
       'Print': 'keyboard_shortcut',
       'Save': 'keyboard_shortcut',
       'right_click_attempt': 'right_click',
