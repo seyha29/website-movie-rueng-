@@ -35,6 +35,20 @@ export default function Home() {
   const [selectedCountryIndex, setSelectedCountryIndex] = useState<number>(0);
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect screen size for responsive pagination
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Movies per page based on screen size
+  const moviesPerPage = isMobile ? 9 : 12;
 
   // Load Khmer font and set language attribute when component mounts
   useEffect(() => {
@@ -91,9 +105,9 @@ export default function Home() {
   };
 
   const { data: moviesData, isLoading, isFetching } = useQuery<{ movies: Movie[], total: number }>({
-    queryKey: [getEndpoint(), { page: currentPage, limit: 30 }],
+    queryKey: [getEndpoint(), { page: currentPage, limit: moviesPerPage }],
     queryFn: async () => {
-      const response = await fetch(`${getEndpoint()}?page=${currentPage}&limit=30`);
+      const response = await fetch(`${getEndpoint()}?page=${currentPage}&limit=${moviesPerPage}`);
       if (!response.ok) throw new Error("Failed to fetch movies");
       return response.json();
     },
@@ -103,7 +117,7 @@ export default function Home() {
 
   const movies = moviesData?.movies || [];
   const total = moviesData?.total || 0;
-  const totalPages = Math.ceil(total / 30);
+  const totalPages = Math.ceil(total / moviesPerPage);
 
   // Apply client-side filters for rating, year, and country (only on current page)
   const filteredMovies = movies.filter(movie => {
@@ -377,7 +391,7 @@ export default function Home() {
       {/* Movie Grid */}
       <div className="p-4 lg:p-12">
         {/* Pagination Controls - Top */}
-        {total > 30 && (
+        {totalPages > 1 && (
           <div className="mb-6 flex items-center justify-center gap-2">
             <Button
               variant="outline"
@@ -503,7 +517,7 @@ export default function Home() {
         </div>
 
         {/* Pagination Controls - Bottom */}
-        {total > 30 && (
+        {totalPages > 1 && (
           <div className="mt-8 flex items-center justify-center gap-2">
             <Button
               variant="outline"
