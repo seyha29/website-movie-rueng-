@@ -390,61 +390,6 @@ export default function Home() {
 
       {/* Movie Grid */}
       <div className="p-4 lg:p-12">
-        {/* Pagination Controls - Top */}
-        {totalPages > 1 && (
-          <div className="mb-6 flex items-center justify-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              data-testid="button-prev-page-top"
-              className="hover-elevate text-sm lg:text-base"
-            >
-              {paginationLabels.previous[language]}
-            </Button>
-
-            <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                let pageNumber: number;
-                if (totalPages <= 5) {
-                  pageNumber = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNumber = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNumber = totalPages - 4 + i;
-                } else {
-                  pageNumber = currentPage - 2 + i;
-                }
-
-                return (
-                  <Button
-                    key={pageNumber}
-                    variant={currentPage === pageNumber ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(pageNumber)}
-                    data-testid={`button-page-${pageNumber}-top`}
-                    className="w-9 lg:w-11 hover-elevate text-sm lg:text-base"
-                  >
-                    {pageNumber}
-                  </Button>
-                );
-              })}
-            </div>
-
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              data-testid="button-next-page-top"
-              className="hover-elevate text-sm lg:text-base"
-            >
-              {paginationLabels.next[language]}
-            </Button>
-          </div>
-        )}
-
         {isFetching && (
           <div className="mb-4 text-center text-base text-muted-foreground">
             Loading...
