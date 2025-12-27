@@ -237,7 +237,7 @@ export default function Home() {
                       <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
                     </Button>
                     {isGenreDropdownOpen && (
-                      <div className="fixed sm:absolute top-auto sm:top-full left-1/2 sm:left-0 -translate-x-1/2 sm:translate-x-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[160px] max-h-[300px] sm:max-h-[400px] overflow-y-auto z-[100]">
+                      <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[160px] max-h-[300px] sm:max-h-[400px] overflow-y-auto z-[100]">
                         {genres.map((genre, index) => (
                           <button
                             key={genre}
@@ -270,7 +270,7 @@ export default function Home() {
                       <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
                     </Button>
                     {isRatingDropdownOpen && (
-                      <div className="fixed sm:absolute top-auto sm:top-full left-1/2 sm:left-0 -translate-x-1/2 sm:translate-x-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[140px] z-[100]">
+                      <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[140px] z-[100]">
                         {ratings.map((rating, index) => (
                           <button
                             key={rating}
@@ -307,7 +307,7 @@ export default function Home() {
                       <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
                     </Button>
                     {isYearDropdownOpen && (
-                      <div className="fixed sm:absolute top-auto sm:top-full left-1/2 sm:left-0 -translate-x-1/2 sm:translate-x-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[160px] z-[100]">
+                      <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[160px] z-[100]">
                         {years.map((year, index) => (
                           <button
                             key={year}
@@ -344,7 +344,7 @@ export default function Home() {
                       <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
                     </Button>
                     {isCountryDropdownOpen && (
-                      <div className="fixed sm:absolute top-auto sm:top-full left-1/2 sm:left-0 -translate-x-1/2 sm:translate-x-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[160px] max-h-[300px] sm:max-h-[400px] overflow-y-auto z-[100]">
+                      <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[160px] max-h-[300px] sm:max-h-[400px] overflow-y-auto z-[100]">
                         {countries.map((country, index) => (
                           <button
                             key={country}
