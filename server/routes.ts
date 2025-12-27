@@ -7,6 +7,7 @@ import bcrypt from "bcrypt";
 import { createPaymentProvider } from "./payment-provider";
 import { PaymentService } from "./payment-service";
 import { securityService, type ViolationType } from "./security-service";
+import { generateOTP, sendOTPEmail } from "./email";
 
 // Initialize payment service
 const paymentProvider = createPaymentProvider();
@@ -99,7 +100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.post("/api/auth/register", async (req, res) => {
     try {
-      const { fullName, phoneNumber, email, password } = req.body;
+      const { fullName, phoneNumber, email, password, language } = req.body;
       
       if (!fullName || !password) {
         return res.status(400).json({ error: "Full name and password are required" });
@@ -126,6 +127,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // EMAIL REGISTRATION: Requires OTP verification
+      if (email && !phoneNumber) {
+        // Hash password before storing in pending registration
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        // Generate OTP (6 digits)
+        const otp = generateOTP();
+        const otpHash = await bcrypt.hash(otp, 10);
+        const otpExpiresAt = Math.floor(Date.now() / 1000) + 600; // 10 minutes
+        
+        // Create pending registration
+        await storage.createPendingEmailRegistration({
+          email: email.toLowerCase(),
+          fullName,
+          passwordHash: hashedPassword,
+          otpHash,
+          otpExpiresAt,
+        });
+        
+        // Send OTP email
+        const lang = language === "km" ? "km" : "en";
+        const emailSent = await sendOTPEmail(email.toLowerCase(), otp, fullName, lang);
+        
+        if (!emailSent) {
+          return res.status(500).json({ error: "Failed to send verification email. Please try again." });
+        }
+        
+        console.log(`OTP sent to ${email} for registration`);
+        return res.status(200).json({ 
+          requiresOTP: true, 
+          email: email.toLowerCase(),
+          message: "Verification code sent to your email" 
+        });
+      }
+
+      // PHONE REGISTRATION: Immediate registration (no OTP)
       // Check if this is the first user - grant admin privileges
       const allUsers = await storage.getAllUsers();
       const isFirstUser = allUsers.length === 0;
@@ -143,16 +180,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const digitsOnly = phoneNumber.replace(/^(\+855|855|0)/, '');
         userData.phoneNumber = `+855${digitsOnly}`;
       }
-      
-      if (email) {
-        userData.email = email.toLowerCase();
-      }
 
       const user = await storage.createUser(userData);
       req.session.userId = user.id;
       
       if (isFirstUser) {
-        console.log('First user registered - granted admin privileges:', userData.phoneNumber || userData.email);
+        console.log('First user registered - granted admin privileges:', userData.phoneNumber);
       }
       
       // Explicitly save session before responding
@@ -175,6 +208,127 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid user data", details: error.errors });
       }
       res.status(500).json({ error: "Failed to register user", message: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
+
+  // Verify email OTP and complete registration
+  app.post("/api/auth/verify-email-otp", async (req, res) => {
+    try {
+      const { email, otp } = req.body;
+      
+      if (!email || !otp) {
+        return res.status(400).json({ error: "Email and OTP are required" });
+      }
+      
+      const pending = await storage.getPendingEmailRegistration(email.toLowerCase());
+      if (!pending) {
+        return res.status(400).json({ error: "No pending registration found. Please register again." });
+      }
+      
+      // Check if OTP expired
+      const now = Math.floor(Date.now() / 1000);
+      if (now > pending.otpExpiresAt) {
+        return res.status(400).json({ error: "Verification code expired. Please request a new one." });
+      }
+      
+      // Check attempt count (max 5 attempts)
+      if (pending.attemptCount >= 5) {
+        await storage.deletePendingEmailRegistration(email.toLowerCase());
+        return res.status(400).json({ error: "Too many attempts. Please register again." });
+      }
+      
+      // Verify OTP
+      const isOTPValid = await bcrypt.compare(otp, pending.otpHash);
+      if (!isOTPValid) {
+        await storage.updatePendingEmailRegistration(email.toLowerCase(), { 
+          attemptCount: pending.attemptCount + 1 
+        });
+        return res.status(400).json({ error: "Invalid verification code" });
+      }
+      
+      // OTP valid - create user account
+      // Check if this is the first user
+      const allUsers = await storage.getAllUsers();
+      const isFirstUser = allUsers.length === 0;
+      
+      const user = await storage.createUser({
+        fullName: pending.fullName,
+        email: pending.email,
+        password: pending.passwordHash, // Already hashed
+      });
+      
+      // Delete pending registration
+      await storage.deletePendingEmailRegistration(email.toLowerCase());
+      
+      // Set session
+      req.session.userId = user.id;
+      
+      if (isFirstUser) {
+        console.log('First user registered via email - granted admin privileges:', pending.email);
+      }
+      
+      req.session.save(async (err) => {
+        if (err) {
+          return res.status(500).json({ error: "Failed to save session" });
+        }
+        
+        await storage.updateUser(user.id, { currentSessionId: req.sessionID });
+        console.log("Session saved for new email user:", user.id);
+        
+        const { password: _, ...userWithoutPassword } = user;
+        res.status(201).json(userWithoutPassword);
+      });
+    } catch (error) {
+      console.error("Email OTP verification error:", error);
+      res.status(500).json({ error: "Failed to verify code" });
+    }
+  });
+
+  // Resend email OTP
+  app.post("/api/auth/resend-email-otp", async (req, res) => {
+    try {
+      const { email, language } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ error: "Email is required" });
+      }
+      
+      const pending = await storage.getPendingEmailRegistration(email.toLowerCase());
+      if (!pending) {
+        return res.status(400).json({ error: "No pending registration found. Please register again." });
+      }
+      
+      // Check resend count (max 3 resends)
+      if (pending.resendCount >= 3) {
+        return res.status(400).json({ error: "Maximum resend attempts reached. Please register again." });
+      }
+      
+      // Generate new OTP
+      const otp = generateOTP();
+      const otpHash = await bcrypt.hash(otp, 10);
+      const otpExpiresAt = Math.floor(Date.now() / 1000) + 600; // 10 minutes
+      
+      // Update pending registration
+      await storage.updatePendingEmailRegistration(email.toLowerCase(), {
+        otpHash,
+        otpExpiresAt,
+        attemptCount: 0, // Reset attempt count on resend
+        resendCount: pending.resendCount + 1,
+      });
+      
+      // Send OTP email
+      const lang = language === "km" ? "km" : "en";
+      const emailSent = await sendOTPEmail(email.toLowerCase(), otp, pending.fullName, lang);
+      
+      if (!emailSent) {
+        return res.status(500).json({ error: "Failed to send verification email. Please try again." });
+      }
+      
+      console.log(`OTP resent to ${email}`);
+      res.json({ success: true, message: "Verification code resent" });
+    } catch (error) {
+      console.error("Resend OTP error:", error);
+      res.status(500).json({ error: "Failed to resend code" });
     }
   });
 
