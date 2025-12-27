@@ -176,6 +176,19 @@ export default function Header() {
                       </SheetTitle>
                     </SheetHeader>
                     <div className="flex flex-col gap-4 mt-6">
+                      {/* User Profile Section */}
+                      <div className="p-3 rounded-lg bg-card border border-border">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                            <User className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-sm">{user.fullName}</span>
+                            <span className="text-xs text-muted-foreground">{user.phoneNumber}</span>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Navigation */}
                       <nav className="flex flex-col gap-2">
                         {navItems.map((item) => (
