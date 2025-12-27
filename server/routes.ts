@@ -99,13 +99,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.post("/api/auth/register", async (req, res) => {
     try {
-      // Phone number normalization is handled by schema validation
-      const validatedData = insertUserSchema.parse(req.body);
+      const { fullName, phoneNumber, email, password } = req.body;
       
-      // Check if user already exists
-      const existingUser = await storage.getUserByPhoneNumber(validatedData.phoneNumber);
-      if (existingUser) {
-        return res.status(400).json({ error: "User with this phone number already exists" });
+      if (!fullName || !password) {
+        return res.status(400).json({ error: "Full name and password are required" });
+      }
+      
+      if (!phoneNumber && !email) {
+        return res.status(400).json({ error: "Either phone number or email is required" });
+      }
+
+      // Check if user already exists by phone or email
+      if (phoneNumber) {
+        const digitsOnly = phoneNumber.replace(/^(\+855|855|0)/, '');
+        const formattedPhone = `+855${digitsOnly}`;
+        const existingUser = await storage.getUserByPhoneNumber(formattedPhone);
+        if (existingUser) {
+          return res.status(400).json({ error: "User with this phone number already exists" });
+        }
+      }
+      
+      if (email) {
+        const existingUser = await storage.getUserByEmail(email.toLowerCase());
+        if (existingUser) {
+          return res.status(400).json({ error: "User with this email already exists" });
+        }
       }
 
       // Check if this is the first user - grant admin privileges
@@ -113,18 +131,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isFirstUser = allUsers.length === 0;
 
       // Hash password before storing
-      const hashedPassword = await bcrypt.hash(validatedData.password, 10);
-      const userDataWithHashedPassword = {
-        ...validatedData,
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      // Prepare user data
+      const userData: any = {
+        fullName,
         password: hashedPassword,
-        isAdmin: isFirstUser ? 1 : 0
       };
+      
+      if (phoneNumber) {
+        const digitsOnly = phoneNumber.replace(/^(\+855|855|0)/, '');
+        userData.phoneNumber = `+855${digitsOnly}`;
+      }
+      
+      if (email) {
+        userData.email = email.toLowerCase();
+      }
 
-      const user = await storage.createUser(userDataWithHashedPassword);
+      const user = await storage.createUser(userData);
       req.session.userId = user.id;
       
       if (isFirstUser) {
-        console.log('First user registered - granted admin privileges:', validatedData.phoneNumber);
+        console.log('First user registered - granted admin privileges:', userData.phoneNumber || userData.email);
       }
       
       // Explicitly save session before responding
@@ -138,7 +166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("Session saved for new user:", user.id, "sessionID:", req.sessionID);
         
         // Don't send password in response
-        const { password, ...userWithoutPassword } = user;
+        const { password: _, ...userWithoutPassword } = user;
         res.status(201).json(userWithoutPassword);
       });
     } catch (error) {
@@ -152,25 +180,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/auth/login", async (req, res) => {
     try {
-      let { phoneNumber, password } = req.body;
+      const { phoneNumber, email, password } = req.body;
       
-      if (!phoneNumber || !password) {
-        return res.status(400).json({ error: "Phone number and password are required" });
+      if (!password) {
+        return res.status(400).json({ error: "Password is required" });
+      }
+      
+      if (!phoneNumber && !email) {
+        return res.status(400).json({ error: "Phone number or email is required" });
       }
 
-      // Normalize phone number to +855xxxxxxxx format
-      const digitsOnly = phoneNumber.replace(/^(\+855|855|0)/, '');
-      phoneNumber = `+855${digitsOnly}`;
-
-      const user = await storage.getUserByPhoneNumber(phoneNumber);
+      let user;
+      
+      // Try to find user by phone number or email
+      if (phoneNumber) {
+        const digitsOnly = phoneNumber.replace(/^(\+855|855|0)/, '');
+        const formattedPhone = `+855${digitsOnly}`;
+        user = await storage.getUserByPhoneNumber(formattedPhone);
+      } else if (email) {
+        user = await storage.getUserByEmail(email.toLowerCase());
+      }
+      
       if (!user) {
-        return res.status(401).json({ error: "Invalid phone number or password" });
+        return res.status(401).json({ error: "Invalid credentials" });
       }
 
       // Verify password
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
-        return res.status(401).json({ error: "Invalid phone number or password" });
+        return res.status(401).json({ error: "Invalid credentials" });
       }
 
       req.session.userId = user.id;
@@ -188,7 +226,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("Session saved successfully for user:", user.id, "sessionID:", req.sessionID);
         
         // Don't send password in response
-        const { password, ...userWithoutPassword } = user;
+        const { password: _, ...userWithoutPassword } = user;
         res.json(userWithoutPassword);
       });
     } catch (error) {
