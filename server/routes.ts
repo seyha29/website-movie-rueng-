@@ -44,27 +44,23 @@ async function requireAuth(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-// Middleware to check if user is admin (with single-device login enforcement)
+// Middleware to check if admin is authenticated (separate admin table)
 async function requireAdmin(req: Request, res: Response, next: NextFunction) {
-  if (!req.session.userId) {
-    return res.status(401).json({ error: "Unauthorized - Please login" });
+  if (!req.session.adminId) {
+    return res.status(401).json({ error: "Unauthorized - Admin login required" });
   }
 
-  const user = await storage.getUser(req.session.userId);
-  if (!user) {
-    return res.status(401).json({ error: "Unauthorized - User not found" });
+  const admin = await storage.getAdmin(req.session.adminId);
+  if (!admin) {
+    return res.status(401).json({ error: "Unauthorized - Admin not found" });
   }
 
-  // Single-device login check
-  if (user.currentSessionId && user.currentSessionId !== req.sessionID) {
+  // Single-device login check for admins
+  if (admin.currentSessionId && admin.currentSessionId !== req.sessionID) {
     req.session.destroy((err) => {
-      if (err) console.error("Error destroying invalidated session:", err);
+      if (err) console.error("Error destroying invalidated admin session:", err);
     });
     return res.status(401).json({ error: "Session expired - You have been logged out because you logged in on another device" });
-  }
-
-  if (user.isAdmin !== 1) {
-    return res.status(403).json({ error: "Forbidden - Admin access required" });
   }
 
   next();
@@ -72,32 +68,26 @@ async function requireAdmin(req: Request, res: Response, next: NextFunction) {
 
 function requireAdminRole(...allowedRoles: string[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
-    if (!req.session.userId) {
-      return res.status(401).json({ error: "Unauthorized - Please login" });
+    if (!req.session.adminId) {
+      return res.status(401).json({ error: "Unauthorized - Admin login required" });
     }
 
-    const user = await storage.getUser(req.session.userId);
-    if (!user) {
-      return res.status(401).json({ error: "Unauthorized - User not found" });
+    const admin = await storage.getAdmin(req.session.adminId);
+    if (!admin) {
+      return res.status(401).json({ error: "Unauthorized - Admin not found" });
     }
 
-    // Single-device login check
-    if (user.currentSessionId && user.currentSessionId !== req.sessionID) {
+    // Single-device login check for admins
+    if (admin.currentSessionId && admin.currentSessionId !== req.sessionID) {
       req.session.destroy((err) => {
-        if (err) console.error("Error destroying invalidated session:", err);
+        if (err) console.error("Error destroying invalidated admin session:", err);
       });
       return res.status(401).json({ error: "Session expired - You have been logged out because you logged in on another device" });
     }
 
-    if (user.isAdmin !== 1) {
-      return res.status(403).json({ error: "Forbidden - Admin access required" });
-    }
-
-    // Treat null/undefined adminRole as "full" for backward compatibility
-    const userRole = user.adminRole || "full";
-    
-    // Check if user has the required role
-    if (!allowedRoles.includes(userRole)) {
+    // Check if admin has the required role
+    const adminRole = admin.role || "full";
+    if (!allowedRoles.includes(adminRole)) {
       return res.status(403).json({ error: "Forbidden - Insufficient permissions" });
     }
 
@@ -229,6 +219,147 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ message: "Logged out successfully" });
     });
+  });
+
+  // Admin Authentication Routes (separate from user auth)
+  app.post("/api/admin/auth/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password are required" });
+      }
+
+      const admin = await storage.getAdminByUsername(username);
+      if (!admin) {
+        return res.status(401).json({ error: "Invalid username or password" });
+      }
+
+      // Verify password
+      const isPasswordValid = await bcrypt.compare(password, admin.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: "Invalid username or password" });
+      }
+
+      // Set admin session
+      req.session.adminId = admin.id;
+      req.session.save(async (err) => {
+        if (err) {
+          console.error("Admin session save error:", err);
+          return res.status(500).json({ error: "Failed to save admin session" });
+        }
+        
+        // Single-device login: Save the current session ID
+        await storage.updateAdmin(admin.id, { currentSessionId: req.sessionID });
+        
+        // Don't send password in response
+        const { password: _, ...adminWithoutPassword } = admin;
+        res.json(adminWithoutPassword);
+      });
+    } catch (error) {
+      console.error("Admin login error:", error);
+      res.status(500).json({ error: "Failed to login" });
+    }
+  });
+
+  app.post("/api/admin/auth/logout", async (req, res) => {
+    const adminId = req.session.adminId;
+    
+    if (adminId) {
+      try {
+        const admin = await storage.getAdmin(adminId);
+        if (admin && admin.currentSessionId === req.sessionID) {
+          await storage.updateAdmin(adminId, { currentSessionId: null });
+        }
+      } catch (error) {
+        console.error("Error clearing admin currentSessionId:", error);
+      }
+    }
+    
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ error: "Failed to logout" });
+      }
+      res.json({ message: "Admin logged out successfully" });
+    });
+  });
+
+  app.get("/api/admin/auth/me", requireAdmin, async (req, res) => {
+    try {
+      const admin = await storage.getAdmin(req.session.adminId!);
+      if (!admin) {
+        return res.status(404).json({ error: "Admin not found" });
+      }
+      const { password: _, ...adminWithoutPassword } = admin;
+      res.json(adminWithoutPassword);
+    } catch (error) {
+      console.error("Get admin error:", error);
+      res.status(500).json({ error: "Failed to get admin info" });
+    }
+  });
+
+  // Admin management routes (only full admins can manage other admins)
+  app.get("/api/admin/admins", requireAdminRole("full"), async (req, res) => {
+    try {
+      const allAdmins = await storage.getAllAdmins();
+      const adminsWithoutPasswords = allAdmins.map(({ password: _, ...admin }) => admin);
+      res.json(adminsWithoutPasswords);
+    } catch (error) {
+      console.error("Get admins error:", error);
+      res.status(500).json({ error: "Failed to get admins" });
+    }
+  });
+
+  app.post("/api/admin/admins", requireAdminRole("full"), async (req, res) => {
+    try {
+      const { username, password, fullName, role } = req.body;
+      
+      if (!username || !password || !fullName) {
+        return res.status(400).json({ error: "Username, password, and full name are required" });
+      }
+
+      // Check if admin username already exists
+      const existingAdmin = await storage.getAdminByUsername(username);
+      if (existingAdmin) {
+        return res.status(400).json({ error: "Admin with this username already exists" });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const newAdmin = await storage.createAdmin({
+        username,
+        password: hashedPassword,
+        fullName,
+        role: role || "full"
+      });
+
+      const { password: _, ...adminWithoutPassword } = newAdmin;
+      res.status(201).json(adminWithoutPassword);
+    } catch (error) {
+      console.error("Create admin error:", error);
+      res.status(500).json({ error: "Failed to create admin" });
+    }
+  });
+
+  app.delete("/api/admin/admins/:id", requireAdminRole("full"), async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Prevent deleting yourself
+      if (id === req.session.adminId) {
+        return res.status(400).json({ error: "Cannot delete your own admin account" });
+      }
+
+      const deleted = await storage.deleteAdmin(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Admin not found" });
+      }
+      res.json({ message: "Admin deleted successfully" });
+    } catch (error) {
+      console.error("Delete admin error:", error);
+      res.status(500).json({ error: "Failed to delete admin" });
+    }
   });
 
   app.get("/api/auth/me", requireAuth, async (req, res) => {

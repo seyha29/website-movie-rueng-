@@ -33,6 +33,7 @@ const pgPool = new pg.Pool({
 declare module 'express-session' {
   interface SessionData {
     userId?: string;
+    adminId?: string;
   }
 }
 
