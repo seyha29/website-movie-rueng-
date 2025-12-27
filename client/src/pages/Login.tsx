@@ -52,10 +52,7 @@ export default function Login() {
         });
         return;
       }
-      const formattedPhone = phoneNumber.trim().startsWith("+855") 
-        ? phoneNumber.trim() 
-        : `+855${phoneNumber.trim().replace(/^0/, "")}`;
-      loginMutation.mutate({ phoneNumber: formattedPhone, password });
+      loginMutation.mutate({ phoneNumber: phoneNumber.trim(), password });
     } else {
       if (!email.trim()) {
         toast({

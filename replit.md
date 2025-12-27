@@ -56,7 +56,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Models
 - **Movie Schema**: `id`, `title`, `description`, `rating`, `year`, `duration`, `genres`, `cast`, `director`, `country`, `posterImage`, `backdropImage`, `videoEmbedUrl` (full movie), `trailerUrl` (preview), `isFree` (1=free, 0=paid), `isTrending`, `isNewAndPopular`.
-- **User Schema**: `id`, `fullName`, `phoneNumber` (unique), `password` (hashed), `currentSessionId` (for single-device login). Note: Users are regular customers only.
+- **User Schema**: `id`, `fullName`, `phoneNumber` (unique, optional), `email` (unique, optional), `password` (hashed), `currentSessionId` (for single-device login). Note: Users are regular customers only. Users can register/login with either phone number OR email.
 - **Admin Schema**: `id`, `username` (unique), `password` (hashed), `fullName`, `role` (full/video), `currentSessionId`, `createdAt`. Admins are stored in a separate table from users.
 - **My List Schema**: `id`, `userId`, `movieId`, `addedAt`.
 - **Movie Views Schema**: `id`, `userId`, `movieId`, `viewedAt`, `watchDuration` - Tracks individual movie views and watch time for analytics.
