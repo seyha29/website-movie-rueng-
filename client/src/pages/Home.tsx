@@ -232,150 +232,134 @@ export default function Home() {
         <div className="px-4 lg:px-12 py-4 lg:py-6">
           <div className="flex flex-col items-center gap-4">
             {/* Centered Filter Box - Single row on all devices */}
-            <div className="w-full max-w-4xl mx-auto bg-secondary/30 border border-border rounded-lg px-2 lg:px-4 py-2 lg:py-3 shadow-sm">
-              <div className="flex items-center justify-between lg:justify-center gap-1 sm:gap-2 lg:gap-6">
+            <div className="w-full max-w-4xl mx-auto bg-secondary/30 border border-border rounded-lg px-3 lg:px-4 py-2 lg:py-3 shadow-sm">
+              <div className="flex items-center justify-center gap-2 sm:gap-4 lg:gap-6">
                 {/* Genre Filter */}
-                <div className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1.5 lg:gap-2">
-                  <span className="text-xs sm:text-sm lg:text-base text-muted-foreground whitespace-nowrap">
-                    {filterLabels.genre[language]}
-                  </span>
-                  <div className="relative">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="gap-0.5 sm:gap-1 hover-elevate h-7 sm:h-9 px-1.5 sm:px-2 lg:px-3 text-xs sm:text-sm lg:text-base"
-                      onClick={() => setIsGenreDropdownOpen(!isGenreDropdownOpen)}
-                      data-testid="button-genre-filter"
-                    >
-                      <span className="truncate max-w-[50px] sm:max-w-[80px] lg:max-w-[110px]">{selectedGenre}</span>
-                      <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                    </Button>
-                    {isGenreDropdownOpen && (
-                      <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[160px] max-h-[300px] sm:max-h-[400px] overflow-y-auto z-[100]">
-                        {genres.map((genre, index) => (
-                          <button
-                            key={genre}
-                            className="w-full text-left px-4 py-2 text-base hover:bg-accent/50 first:rounded-t-md last:rounded-b-md transition-colors whitespace-nowrap"
-                            onClick={() => handleGenreChange(index)}
-                            data-testid={`button-genre-${genresTranslation.en[index].toLowerCase().replace(' ', '-')}`}
-                          >
-                            {genre}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1 hover-elevate h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
+                    onClick={() => setIsGenreDropdownOpen(!isGenreDropdownOpen)}
+                    data-testid="button-genre-filter"
+                  >
+                    <span className="hidden sm:inline text-muted-foreground mr-1">{filterLabels.genre[language]}</span>
+                    <span className="font-medium">{selectedGenre}</span>
+                    <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  </Button>
+                  {isGenreDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[160px] max-h-[300px] overflow-y-auto z-[100]">
+                      {genres.map((genre, index) => (
+                        <button
+                          key={genre}
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-accent/50 first:rounded-t-md last:rounded-b-md transition-colors whitespace-nowrap"
+                          onClick={() => handleGenreChange(index)}
+                          data-testid={`button-genre-${genresTranslation.en[index].toLowerCase().replace(' ', '-')}`}
+                        >
+                          {genre}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Rating Filter */}
-                <div className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1.5 lg:gap-2">
-                  <span className="text-xs sm:text-sm lg:text-base text-muted-foreground whitespace-nowrap">
-                    {filterLabels.rating[language]}
-                  </span>
-                  <div className="relative">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="gap-0.5 sm:gap-1 hover-elevate h-7 sm:h-9 px-1.5 sm:px-2 lg:px-3 text-xs sm:text-sm lg:text-base"
-                      onClick={() => setIsRatingDropdownOpen(!isRatingDropdownOpen)}
-                      data-testid="button-rating-filter"
-                    >
-                      <span className="truncate max-w-[45px] sm:max-w-[70px] lg:max-w-[90px]">{selectedRating}</span>
-                      <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                    </Button>
-                    {isRatingDropdownOpen && (
-                      <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[140px] z-[100]">
-                        {ratings.map((rating, index) => (
-                          <button
-                            key={rating}
-                            className="w-full text-left px-4 py-2 text-base hover:bg-accent/50 first:rounded-t-md last:rounded-b-md transition-colors whitespace-nowrap"
-                            onClick={() => {
-                              setSelectedRatingIndex(index);
-                              setCurrentPage(1);
-                              setIsRatingDropdownOpen(false);
-                            }}
-                            data-testid={`button-rating-${ratingsTranslation.en[index].toLowerCase().replace(/\+| /g, '-')}`}
-                          >
-                            {rating}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1 hover-elevate h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
+                    onClick={() => setIsRatingDropdownOpen(!isRatingDropdownOpen)}
+                    data-testid="button-rating-filter"
+                  >
+                    <span className="hidden sm:inline text-muted-foreground mr-1">{filterLabels.rating[language]}</span>
+                    <span className="font-medium">{selectedRating}</span>
+                    <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  </Button>
+                  {isRatingDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[120px] z-[100]">
+                      {ratings.map((rating, index) => (
+                        <button
+                          key={rating}
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-accent/50 first:rounded-t-md last:rounded-b-md transition-colors whitespace-nowrap"
+                          onClick={() => {
+                            setSelectedRatingIndex(index);
+                            setCurrentPage(1);
+                            setIsRatingDropdownOpen(false);
+                          }}
+                          data-testid={`button-rating-${ratingsTranslation.en[index].toLowerCase().replace(/\+| /g, '-')}`}
+                        >
+                          {rating}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Year Filter */}
-                <div className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1.5 lg:gap-2">
-                  <span className="text-xs sm:text-sm lg:text-base text-muted-foreground whitespace-nowrap">
-                    {filterLabels.year[language]}
-                  </span>
-                  <div className="relative">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="gap-0.5 sm:gap-1 hover-elevate h-7 sm:h-9 px-1.5 sm:px-2 lg:px-3 text-xs sm:text-sm lg:text-base"
-                      onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
-                      data-testid="button-year-filter"
-                    >
-                      <span className="truncate max-w-[55px] sm:max-w-[80px] lg:max-w-[110px]">{selectedYear}</span>
-                      <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                    </Button>
-                    {isYearDropdownOpen && (
-                      <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[160px] z-[100]">
-                        {years.map((year, index) => (
-                          <button
-                            key={year}
-                            className="w-full text-left px-4 py-2 text-base hover:bg-accent/50 first:rounded-t-md last:rounded-b-md transition-colors whitespace-nowrap"
-                            onClick={() => {
-                              setSelectedYearIndex(index);
-                              setCurrentPage(1);
-                              setIsYearDropdownOpen(false);
-                            }}
-                            data-testid={`button-year-${yearsTranslation.en[index].toLowerCase().replace(/\+| /g, '-')}`}
-                          >
-                            {year}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1 hover-elevate h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
+                    onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
+                    data-testid="button-year-filter"
+                  >
+                    <span className="hidden sm:inline text-muted-foreground mr-1">{filterLabels.year[language]}</span>
+                    <span className="font-medium">{selectedYear}</span>
+                    <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  </Button>
+                  {isYearDropdownOpen && (
+                    <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[140px] z-[100]">
+                      {years.map((year, index) => (
+                        <button
+                          key={year}
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-accent/50 first:rounded-t-md last:rounded-b-md transition-colors whitespace-nowrap"
+                          onClick={() => {
+                            setSelectedYearIndex(index);
+                            setCurrentPage(1);
+                            setIsYearDropdownOpen(false);
+                          }}
+                          data-testid={`button-year-${yearsTranslation.en[index].toLowerCase().replace(/\+| /g, '-')}`}
+                        >
+                          {year}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Country Filter */}
-                <div className="flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1.5 lg:gap-2">
-                  <span className="text-xs sm:text-sm lg:text-base text-muted-foreground whitespace-nowrap">
-                    {filterLabels.country[language]}
-                  </span>
-                  <div className="relative">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="gap-0.5 sm:gap-1 hover-elevate h-7 sm:h-9 px-1.5 sm:px-2 lg:px-3 text-xs sm:text-sm lg:text-base"
-                      onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
-                      data-testid="button-country-filter"
-                    >
-                      <span className="truncate max-w-[50px] sm:max-w-[80px] lg:max-w-[110px]">{selectedCountry}</span>
-                      <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5 flex-shrink-0" />
-                    </Button>
-                    {isCountryDropdownOpen && (
-                      <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[160px] max-h-[300px] sm:max-h-[400px] overflow-y-auto z-[100]">
-                        {countries.map((country, index) => (
-                          <button
-                            key={country}
-                            className="w-full text-left px-4 py-2 text-base hover:bg-accent/50 first:rounded-t-md last:rounded-b-md transition-colors whitespace-nowrap"
-                            onClick={() => {
-                              setSelectedCountryIndex(index);
-                              setCurrentPage(1);
-                              setIsCountryDropdownOpen(false);
-                            }}
-                            data-testid={`button-country-${countriesTranslation.en[index].toLowerCase().replace(/ /g, '-')}`}
-                          >
-                            {country}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1 hover-elevate h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm"
+                    onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
+                    data-testid="button-country-filter"
+                  >
+                    <span className="hidden sm:inline text-muted-foreground mr-1">{filterLabels.country[language]}</span>
+                    <span className="font-medium">{selectedCountry}</span>
+                    <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  </Button>
+                  {isCountryDropdownOpen && (
+                    <div className="absolute top-full right-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[140px] max-h-[300px] overflow-y-auto z-[100]">
+                      {countries.map((country, index) => (
+                        <button
+                          key={country}
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-accent/50 first:rounded-t-md last:rounded-b-md transition-colors whitespace-nowrap"
+                          onClick={() => {
+                            setSelectedCountryIndex(index);
+                            setCurrentPage(1);
+                            setIsCountryDropdownOpen(false);
+                          }}
+                          data-testid={`button-country-${countriesTranslation.en[index].toLowerCase().replace(/ /g, '-')}`}
+                        >
+                          {country}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
