@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
@@ -49,6 +49,24 @@ export default function Home() {
 
   // Movies per page based on screen size
   const moviesPerPage = isMobile ? 9 : 12;
+
+  // Ref for filter container to detect clicks outside
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  // Close all dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setIsGenreDropdownOpen(false);
+        setIsRatingDropdownOpen(false);
+        setIsYearDropdownOpen(false);
+        setIsCountryDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Load Khmer font and set language attribute when component mounts
   useEffect(() => {
@@ -232,7 +250,7 @@ export default function Home() {
         <div className="px-4 lg:px-12 py-4 lg:py-6">
           <div className="flex flex-col items-center gap-4">
             {/* Centered Filter Box - Single row on all devices */}
-            <div className="w-full max-w-4xl mx-auto bg-secondary/30 border border-border rounded-lg px-3 lg:px-4 py-2 lg:py-3 shadow-sm">
+            <div ref={filterRef} className="w-full max-w-4xl mx-auto bg-secondary/30 border border-border rounded-lg px-3 lg:px-4 py-2 lg:py-3 shadow-sm">
               <div className="flex items-center justify-center gap-2 sm:gap-4 lg:gap-6">
                 {/* Genre Filter */}
                 <div className="relative">
