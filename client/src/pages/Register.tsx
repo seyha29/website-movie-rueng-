@@ -5,33 +5,31 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { X, Eye, EyeOff } from "lucide-react";
+import { X, Eye, EyeOff, Phone, Mail } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { registerPageLabels } from "@/lib/translations";
 
 export default function Register() {
   const [, setLocation] = useLocation();
   const { language } = useLanguage();
+  const [registerMethod, setRegisterMethod] = useState<"phone" | "email">("phone");
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
   const registerMutation = useMutation({
-    mutationFn: async (data: { fullName: string; phoneNumber: string; password: string }) => {
+    mutationFn: async (data: { fullName: string; phoneNumber?: string; email?: string; password: string }) => {
       const result = await apiRequest("POST", "/api/auth/register", data);
       return await result.json();
     },
     onSuccess: (user) => {
-      // Invalidate queries before redirect
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      
-      // Determine redirect path (new users always go to homepage)
       const redirectPath = user.isAdmin === 1 ? "/admin" : "/";
-      
-      // Use hard redirect for reliability
       window.location.href = redirectPath;
     },
     onError: (error: Error) => {
@@ -55,15 +53,6 @@ export default function Register() {
       return;
     }
 
-    if (!phoneNumber.trim()) {
-      toast({
-        title: "Phone number required",
-        description: "Please enter your phone number",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!password.trim()) {
       toast({
         title: "Password required",
@@ -82,12 +71,30 @@ export default function Register() {
       return;
     }
 
-    // Convert phone number: 012345678 → +85512345678
-    const formattedPhone = phoneNumber.trim().startsWith("+855") 
-      ? phoneNumber.trim() 
-      : `+855${phoneNumber.trim().replace(/^0/, "")}`;
-
-    registerMutation.mutate({ fullName, phoneNumber: formattedPhone, password });
+    if (registerMethod === "phone") {
+      if (!phoneNumber.trim()) {
+        toast({
+          title: "Phone number required",
+          description: "Please enter your phone number",
+          variant: "destructive",
+        });
+        return;
+      }
+      const formattedPhone = phoneNumber.trim().startsWith("+855") 
+        ? phoneNumber.trim() 
+        : `+855${phoneNumber.trim().replace(/^0/, "")}`;
+      registerMutation.mutate({ fullName, phoneNumber: formattedPhone, password });
+    } else {
+      if (!email.trim()) {
+        toast({
+          title: "Email required",
+          description: "Please enter your email",
+          variant: "destructive",
+        });
+        return;
+      }
+      registerMutation.mutate({ fullName, email: email.trim().toLowerCase(), password });
+    }
   };
 
   return (
@@ -125,23 +132,51 @@ export default function Register() {
               />
             </div>
 
-            <div className="space-y-1.5 sm:space-y-2">
-              <label htmlFor="phone" className="text-xs sm:text-sm font-medium">
-                {registerPageLabels.phoneNumber[language]}
-              </label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder={registerPageLabels.phoneNumberPlaceholder[language]}
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                data-testid="input-phone-register"
-                className="text-sm"
-              />
-              <p className="text-xs text-muted-foreground">
-                {registerPageLabels.phoneNumberHelper[language]}
-              </p>
-            </div>
+            <Tabs value={registerMethod} onValueChange={(v) => setRegisterMethod(v as "phone" | "email")} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="phone" className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  {registerPageLabels.phoneTab[language]}
+                </TabsTrigger>
+                <TabsTrigger value="email" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  {registerPageLabels.emailTab[language]}
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="phone" className="space-y-1.5 sm:space-y-2 mt-4">
+                <label htmlFor="phone" className="text-xs sm:text-sm font-medium">
+                  {registerPageLabels.phoneNumber[language]}
+                </label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder={registerPageLabels.phoneNumberPlaceholder[language]}
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  data-testid="input-phone-register"
+                  className="text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {registerPageLabels.phoneNumberHelper[language]}
+                </p>
+              </TabsContent>
+              
+              <TabsContent value="email" className="space-y-1.5 sm:space-y-2 mt-4">
+                <label htmlFor="email" className="text-xs sm:text-sm font-medium">
+                  {registerPageLabels.email[language]}
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder={registerPageLabels.emailPlaceholder[language]}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  data-testid="input-email-register"
+                  className="text-sm"
+                />
+              </TabsContent>
+            </Tabs>
 
             <div className="space-y-1.5 sm:space-y-2">
               <label htmlFor="password" className="text-xs sm:text-sm font-medium">

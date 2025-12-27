@@ -5,38 +5,36 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { X, Eye, EyeOff } from "lucide-react";
+import { X, Eye, EyeOff, Phone, Mail } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { loginPageLabels } from "@/lib/translations";
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const { language } = useLanguage();
+  const [loginMethod, setLoginMethod] = useState<"phone" | "email">("phone");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
   const loginMutation = useMutation({
-    mutationFn: async (data: { phoneNumber: string; password: string }) => {
+    mutationFn: async (data: { phoneNumber?: string; email?: string; password: string }) => {
       const result = await apiRequest("POST", "/api/auth/login", data);
       return await result.json();
     },
     onSuccess: (user) => {
-      // Determine redirect path based on user role
       const redirectPath = user.isAdmin === 1 ? "/admin" : "/";
-      
-      // Invalidate queries before redirect
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-      
-      // Use hard redirect for reliability
       window.location.href = redirectPath;
     },
     onError: (error: Error) => {
       toast({
         title: "Login failed",
-        description: error.message || "Invalid phone number or password",
+        description: error.message || "Invalid credentials",
         variant: "destructive",
       });
     },
@@ -44,29 +42,31 @@ export default function Login() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!phoneNumber.trim()) {
-      toast({
-        title: "Phone number required",
-        description: "Please enter your phone number",
-        variant: "destructive",
-      });
-      return;
+    
+    if (loginMethod === "phone") {
+      if (!phoneNumber.trim()) {
+        toast({
+          title: "Phone number required",
+          description: "Please enter your phone number",
+          variant: "destructive",
+        });
+        return;
+      }
+      const formattedPhone = phoneNumber.trim().startsWith("+855") 
+        ? phoneNumber.trim() 
+        : `+855${phoneNumber.trim().replace(/^0/, "")}`;
+      loginMutation.mutate({ phoneNumber: formattedPhone, password });
+    } else {
+      if (!email.trim()) {
+        toast({
+          title: "Email required",
+          description: "Please enter your email",
+          variant: "destructive",
+        });
+        return;
+      }
+      loginMutation.mutate({ email: email.trim().toLowerCase(), password });
     }
-    if (!password.trim()) {
-      toast({
-        title: "Password required",
-        description: "Please enter your password",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Convert phone number: 012345678 → +85512345678
-    const formattedPhone = phoneNumber.trim().startsWith("+855") 
-      ? phoneNumber.trim() 
-      : `+855${phoneNumber.trim().replace(/^0/, "")}`;
-
-    loginMutation.mutate({ phoneNumber: formattedPhone, password });
   };
 
   return (
@@ -89,23 +89,51 @@ export default function Login() {
         </CardHeader>
         <CardContent className="px-4 sm:px-6 pb-5 sm:pb-6">
           <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-            <div className="space-y-1.5 sm:space-y-2">
-              <label htmlFor="phone" className="text-xs sm:text-sm font-medium">
-                {loginPageLabels.phoneNumber[language]}
-              </label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder={loginPageLabels.phoneNumberPlaceholder[language]}
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                data-testid="input-phone-login"
-                className="text-sm"
-              />
-              <p className="text-xs text-muted-foreground">
-                {loginPageLabels.phoneNumberHelper[language]}
-              </p>
-            </div>
+            <Tabs value={loginMethod} onValueChange={(v) => setLoginMethod(v as "phone" | "email")} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="phone" className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  {loginPageLabels.phoneTab[language]}
+                </TabsTrigger>
+                <TabsTrigger value="email" className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  {loginPageLabels.emailTab[language]}
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="phone" className="space-y-1.5 sm:space-y-2 mt-4">
+                <label htmlFor="phone" className="text-xs sm:text-sm font-medium">
+                  {loginPageLabels.phoneNumber[language]}
+                </label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder={loginPageLabels.phoneNumberPlaceholder[language]}
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  data-testid="input-phone-login"
+                  className="text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {loginPageLabels.phoneNumberHelper[language]}
+                </p>
+              </TabsContent>
+              
+              <TabsContent value="email" className="space-y-1.5 sm:space-y-2 mt-4">
+                <label htmlFor="email" className="text-xs sm:text-sm font-medium">
+                  {loginPageLabels.email[language]}
+                </label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder={loginPageLabels.emailPlaceholder[language]}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  data-testid="input-email-login"
+                  className="text-sm"
+                />
+              </TabsContent>
+            </Tabs>
 
             <div className="space-y-1.5 sm:space-y-2">
               <label htmlFor="password" className="text-xs sm:text-sm font-medium">
