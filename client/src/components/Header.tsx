@@ -103,7 +103,12 @@ export default function Header() {
       <div className="max-w-screen-2xl mx-auto px-4 lg:px-12">
         <div className="flex items-center justify-between h-14 lg:h-16 gap-2 lg:gap-4">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 flex-shrink-0" data-testid="link-home">
+          <Link 
+            href="/" 
+            className="flex items-center gap-2 flex-shrink-0" 
+            data-testid="link-home"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          >
             <img 
               src={logoImage} 
               alt="Rueng" 
