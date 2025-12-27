@@ -53,19 +53,33 @@ export default function Home() {
   // Ref for filter container to detect clicks outside
   const filterRef = useRef<HTMLDivElement>(null);
 
-  // Close all dropdowns when clicking outside
+  // Close all dropdowns helper function
+  const closeAllDropdowns = () => {
+    setIsGenreDropdownOpen(false);
+    setIsRatingDropdownOpen(false);
+    setIsYearDropdownOpen(false);
+    setIsCountryDropdownOpen(false);
+  };
+
+  // Close all dropdowns when clicking outside or scrolling
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
-        setIsGenreDropdownOpen(false);
-        setIsRatingDropdownOpen(false);
-        setIsYearDropdownOpen(false);
-        setIsCountryDropdownOpen(false);
+        closeAllDropdowns();
       }
     };
 
+    const handleScroll = () => {
+      closeAllDropdowns();
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    window.addEventListener('scroll', handleScroll, true);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
   }, []);
 
   // Load Khmer font and set language attribute when component mounts
