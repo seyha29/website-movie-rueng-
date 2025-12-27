@@ -1,4 +1,5 @@
-import { Facebook, Twitter, Instagram, Youtube } from "lucide-react";
+import { Facebook } from "lucide-react";
+import { FaTelegram } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -114,18 +115,24 @@ export default function Footer() {
           <div>
             <h3 className="font-semibold mb-4" data-testid="text-footer-heading-social">{t("connectWithUs")}</h3>
             <div className="flex gap-2">
-              <Button size="icon" variant="ghost" data-testid="button-social-facebook">
-                <Facebook className="h-5 w-5" />
-              </Button>
-              <Button size="icon" variant="ghost" data-testid="button-social-twitter">
-                <Twitter className="h-5 w-5" />
-              </Button>
-              <Button size="icon" variant="ghost" data-testid="button-social-instagram">
-                <Instagram className="h-5 w-5" />
-              </Button>
-              <Button size="icon" variant="ghost" data-testid="button-social-youtube">
-                <Youtube className="h-5 w-5" />
-              </Button>
+              <a 
+                href="https://www.facebook.com/ruengvip" 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <Button size="icon" variant="ghost" data-testid="button-social-facebook">
+                  <Facebook className="h-5 w-5" />
+                </Button>
+              </a>
+              <a 
+                href="https://t.me/ruengvip" 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <Button size="icon" variant="ghost" data-testid="button-social-telegram">
+                  <FaTelegram className="h-5 w-5" />
+                </Button>
+              </a>
             </div>
           </div>
         </div>
