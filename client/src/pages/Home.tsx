@@ -61,7 +61,7 @@ export default function Home() {
     setIsCountryDropdownOpen(false);
   };
 
-  // Close all dropdowns when clicking outside or scrolling
+  // Close all dropdowns when clicking outside or scrolling outside filter area
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
@@ -69,16 +69,19 @@ export default function Home() {
       }
     };
 
-    const handleScroll = () => {
-      closeAllDropdowns();
+    const handleScroll = (event: Event) => {
+      // Only close if scrolling outside the filter container
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        closeAllDropdowns();
+      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    window.addEventListener('scroll', handleScroll, true);
+    document.addEventListener('scroll', handleScroll, true);
     
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', handleScroll, true);
+      document.removeEventListener('scroll', handleScroll, true);
     };
   }, []);
 
