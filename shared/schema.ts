@@ -10,6 +10,29 @@ export const userSessions = pgTable("user_sessions", {
   expire: timestamp("expire", { withTimezone: false }).notNull(),
 });
 
+// Admins table - separate from users
+export const admins = pgTable("admins", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+  fullName: text("full_name").notNull(),
+  role: text("role").notNull().default("full"), // "full" = full admin access, "video" = video management only
+  currentSessionId: text("current_session_id"),
+  createdAt: integer("created_at").notNull().default(sql`extract(epoch from now())`),
+});
+
+export const insertAdminSchema = createInsertSchema(admins).omit({
+  id: true,
+  currentSessionId: true,
+  createdAt: true,
+}).extend({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+export type InsertAdmin = z.infer<typeof insertAdminSchema>;
+export type Admin = typeof admins.$inferSelect;
+
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   fullName: text("full_name").notNull(),

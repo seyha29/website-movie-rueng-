@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Movie, type InsertMovie, type MyList, type InsertMyList, type SubscriptionPlan, type UserSubscription, type InsertUserSubscription, type PaymentTransaction, type InsertPaymentTransaction, type MovieView, type InsertMovieView, type VideoPurchase, type InsertVideoPurchase, type AdBanner, type InsertAdBanner, type SecurityViolation, type InsertSecurityViolation, type UserBan, type InsertUserBan, type DailyWatchTime, type InsertDailyWatchTime, users, movies, myList, subscriptionPlans, userSubscriptions, paymentTransactions, movieViews, videoPurchases, adBanners, securityViolations, userBans, dailyWatchTime, videoAccessTokens } from "@shared/schema";
+import { type User, type InsertUser, type Movie, type InsertMovie, type MyList, type InsertMyList, type SubscriptionPlan, type UserSubscription, type InsertUserSubscription, type PaymentTransaction, type InsertPaymentTransaction, type MovieView, type InsertMovieView, type VideoPurchase, type InsertVideoPurchase, type AdBanner, type InsertAdBanner, type SecurityViolation, type InsertSecurityViolation, type UserBan, type InsertUserBan, type DailyWatchTime, type InsertDailyWatchTime, type Admin, type InsertAdmin, users, movies, myList, subscriptionPlans, userSubscriptions, paymentTransactions, movieViews, videoPurchases, adBanners, securityViolations, userBans, dailyWatchTime, videoAccessTokens, admins } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -108,6 +108,14 @@ export interface IStorage {
   createVideoAccessToken(data: { userId: string; movieId: string; token: string; ipAddress?: string; userAgent?: string; expiresAt: number }): Promise<void>;
   getVideoAccessToken(token: string): Promise<{ userId: string; movieId: string; token: string; ipAddress?: string; expiresAt: number; used: number } | undefined>;
   markVideoTokenUsed(token: string): Promise<void>;
+  
+  // Admin methods
+  getAdmin(id: string): Promise<Admin | undefined>;
+  getAdminByUsername(username: string): Promise<Admin | undefined>;
+  getAllAdmins(): Promise<Admin[]>;
+  createAdmin(admin: InsertAdmin): Promise<Admin>;
+  updateAdmin(id: string, admin: Partial<InsertAdmin> & { currentSessionId?: string | null }): Promise<Admin | undefined>;
+  deleteAdmin(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -677,6 +685,36 @@ export class DatabaseStorage implements IStorage {
   async markVideoTokenUsed(token: string): Promise<void> {
     await this.db.update(videoAccessTokens).set({ used: 1 }).where(eq(videoAccessTokens.token, token));
   }
+
+  // Admin methods
+  async getAdmin(id: string): Promise<Admin | undefined> {
+    const result = await this.db.select().from(admins).where(eq(admins.id, id));
+    return result[0];
+  }
+
+  async getAdminByUsername(username: string): Promise<Admin | undefined> {
+    const result = await this.db.select().from(admins).where(eq(admins.username, username));
+    return result[0];
+  }
+
+  async getAllAdmins(): Promise<Admin[]> {
+    return await this.db.select().from(admins);
+  }
+
+  async createAdmin(admin: InsertAdmin): Promise<Admin> {
+    const result = await this.db.insert(admins).values(admin).returning();
+    return result[0];
+  }
+
+  async updateAdmin(id: string, admin: Partial<InsertAdmin> & { currentSessionId?: string | null }): Promise<Admin | undefined> {
+    const result = await this.db.update(admins).set(admin).where(eq(admins.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteAdmin(id: string): Promise<boolean> {
+    const result = await this.db.delete(admins).where(eq(admins.id, id)).returning();
+    return result.length > 0;
+  }
 }
 
 export class MemStorage implements IStorage {
@@ -1061,6 +1099,31 @@ export class MemStorage implements IStorage {
   }
 
   async markVideoTokenUsed(token: string): Promise<void> {}
+
+  // Admin methods (memory storage not supported for admins - database required)
+  async getAdmin(id: string): Promise<Admin | undefined> {
+    return undefined;
+  }
+
+  async getAdminByUsername(username: string): Promise<Admin | undefined> {
+    return undefined;
+  }
+
+  async getAllAdmins(): Promise<Admin[]> {
+    return [];
+  }
+
+  async createAdmin(admin: InsertAdmin): Promise<Admin> {
+    throw new Error("Admin features require database storage");
+  }
+
+  async updateAdmin(id: string, admin: Partial<InsertAdmin> & { currentSessionId?: string | null }): Promise<Admin | undefined> {
+    return undefined;
+  }
+
+  async deleteAdmin(id: string): Promise<boolean> {
+    return false;
+  }
 }
 
 // Use database storage if DATABASE_URL is available, otherwise use in-memory
