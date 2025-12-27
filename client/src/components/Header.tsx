@@ -306,18 +306,7 @@ export default function Header() {
               </>
             ) : (
               <>
-                {/* Mobile menu for non-authenticated users */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="lg:hidden hover-elevate"
-                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  data-testid="button-mobile-menu"
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
-
-                {/* Login/Register buttons */}
+                {/* Login/Register buttons - no mobile menu for non-authenticated users */}
                 <Link href="/login">
                   <Button variant="ghost" size="sm" className="hover-elevate" data-testid="button-login">
                     {authLabels.login[language]}
@@ -334,25 +323,6 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile menu for non-authenticated users */}
-      {!user && isMobileMenuOpen && (
-        <div className="lg:hidden border-t border-border bg-background/95 backdrop-blur-md">
-          <div className="px-4 py-3 space-y-2">
-            <form onSubmit={handleSearch}>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder={searchLabels.placeholder[language]}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </header>
   );
 }

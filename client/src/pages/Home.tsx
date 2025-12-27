@@ -39,7 +39,7 @@ export default function Home() {
   // Load Khmer font and set language attribute when component mounts
   useEffect(() => {
     // Set lang attribute on html element for proper font rendering
-    document.documentElement.lang = language === 'kh' ? 'km' : 'en';
+    document.documentElement.lang = language === 'km' ? 'km' : 'en';
   }, [language]);
 
   const genres = genresTranslation[language];
@@ -217,9 +217,9 @@ export default function Home() {
       <div className="pt-14 lg:pt-16 border-b border-border">
         <div className="px-4 lg:px-12 py-4 lg:py-6">
           <div className="flex flex-col items-center gap-4">
-            {/* Centered Filter Box */}
-            <div className="w-full max-w-4xl mx-auto bg-secondary/30 border border-border rounded-lg px-3 lg:px-4 py-3 shadow-sm">
-              <div className="flex items-center justify-center gap-2 lg:gap-6 flex-wrap">
+            {/* Centered Filter Box - Single row with horizontal scroll on mobile */}
+            <div className="w-full max-w-4xl mx-auto bg-secondary/30 border border-border rounded-lg px-2 lg:px-4 py-2 lg:py-3 shadow-sm overflow-x-auto">
+              <div className="flex items-center justify-start lg:justify-center gap-3 lg:gap-6 min-w-max">
                 {/* Genre Filter */}
                 <div className="flex items-center gap-1.5 lg:gap-2 min-w-0">
                   <span className="text-sm lg:text-base text-muted-foreground whitespace-nowrap flex-shrink-0">
