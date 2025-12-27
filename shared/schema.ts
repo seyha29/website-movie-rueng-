@@ -36,7 +36,8 @@ export type Admin = typeof admins.$inferSelect;
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   fullName: text("full_name").notNull(),
-  phoneNumber: text("phone_number").notNull().unique(),
+  phoneNumber: text("phone_number").unique(), // Optional - user can register with phone OR email
+  email: text("email").unique(), // Optional - user can register with phone OR email
   password: text("password").notNull(),
   isAdmin: integer("is_admin").notNull().default(0),
   adminRole: text("admin_role"), // "full" = full admin access, "video" = video management only, null = regular user
@@ -56,14 +57,15 @@ export const insertUserSchema = createInsertSchema(users).omit({
   phoneNumber: z.string()
     .regex(/^(\+855|855|0)?\d{8,9}$/, "Phone number must be 8-9 digits (with or without +855/855/0 prefix)")
     .transform((val) => {
-      // Remove any prefix and keep only digits
       const digitsOnly = val.replace(/^(\+855|855|0)/, '');
-      // Ensure it's 8-9 digits
       if (digitsOnly.length < 8 || digitsOnly.length > 9) {
         throw new Error("Phone number must be 8-9 digits");
       }
       return `+855${digitsOnly}`;
-    }),
+    })
+    .optional()
+    .nullable(),
+  email: z.string().email("Invalid email address").optional().nullable(),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
