@@ -302,8 +302,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/admins", requireAdminRole("full"), async (req, res) => {
     try {
       const allAdmins = await storage.getAllAdmins();
-      const adminsWithoutPasswords = allAdmins.map(({ password: _, ...admin }) => admin);
-      res.json(adminsWithoutPasswords);
+      const safeAdmins = allAdmins.map(({ password: _, currentSessionId: __, ...admin }) => admin);
+      res.json(safeAdmins);
     } catch (error) {
       console.error("Get admins error:", error);
       res.status(500).json({ error: "Failed to get admins" });
@@ -316,6 +316,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!username || !password || !fullName) {
         return res.status(400).json({ error: "Username, password, and full name are required" });
+      }
+
+      // Validate username format
+      if (username.length < 3) {
+        return res.status(400).json({ error: "Username must be at least 3 characters" });
+      }
+      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        return res.status(400).json({ error: "Username can only contain letters, numbers, and underscores" });
+      }
+
+      // Validate password strength
+      if (password.length < 8) {
+        return res.status(400).json({ error: "Password must be at least 8 characters" });
+      }
+
+      // Validate role
+      if (role && !["full", "video"].includes(role)) {
+        return res.status(400).json({ error: "Role must be 'full' or 'video'" });
       }
 
       // Check if admin username already exists
@@ -334,8 +352,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: role || "full"
       });
 
-      const { password: _, ...adminWithoutPassword } = newAdmin;
-      res.status(201).json(adminWithoutPassword);
+      const { password: _, currentSessionId: __, ...adminWithoutSensitive } = newAdmin;
+      res.status(201).json(adminWithoutSensitive);
     } catch (error) {
       console.error("Create admin error:", error);
       res.status(500).json({ error: "Failed to create admin" });

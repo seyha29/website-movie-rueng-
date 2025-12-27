@@ -56,13 +56,27 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Models
 - **Movie Schema**: `id`, `title`, `description`, `rating`, `year`, `duration`, `genres`, `cast`, `director`, `country`, `posterImage`, `backdropImage`, `videoEmbedUrl` (full movie), `trailerUrl` (preview), `isFree` (1=free, 0=paid), `isTrending`, `isNewAndPopular`.
-- **User Schema**: `id`, `fullName`, `phoneNumber` (unique), `password` (hashed), `isAdmin`, `adminRole`, `currentSessionId` (for single-device login).
+- **User Schema**: `id`, `fullName`, `phoneNumber` (unique), `password` (hashed), `currentSessionId` (for single-device login). Note: Users are regular customers only.
+- **Admin Schema**: `id`, `username` (unique), `password` (hashed), `fullName`, `role` (full/video), `currentSessionId`, `createdAt`. Admins are stored in a separate table from users.
 - **My List Schema**: `id`, `userId`, `movieId`, `addedAt`.
 - **Movie Views Schema**: `id`, `userId`, `movieId`, `viewedAt`, `watchDuration` - Tracks individual movie views and watch time for analytics.
 - **Subscriptions Schema**: `subscriptionPlans`, `userSubscriptions`, `paymentTransactions` - Full payment tracking system.
 
+### Admin System (Separate from Users)
+- **Admin Authentication**: Separate login at `/admin/login` using username/password (not phone number like users)
+- **Admin Roles**: 
+  - `full`: Complete access to all admin features (analytics, users, videos, banners, admins management)
+  - `video`: Video management access only
+- **Admin API Endpoints**: 
+  - `/api/admin/auth/login`, `/api/admin/auth/logout`, `/api/admin/auth/me` for admin authentication
+  - `/api/admin/admins` (GET/POST) for admin management (full admin only)
+  - `/api/admin/admins/:id` (DELETE) for deleting admins
+- **Single-Device Login**: Admins also have single-device login enforcement
+- **Default Admin**: On first startup, creates admin account (username: admin, password: Samnang@@##5678)
+- **Security**: Password hashing with bcrypt, session-based auth with single-device enforcement, no password/session data exposed in API responses
+
 ### Admin Analytics Dashboard
-- **Access**: Available at `/admin/analytics` for admin users (isAdmin = 1)
+- **Access**: Available at `/admin/analytics` for full admin role
 - **Features**:
   - **Overview Tab**: Total users, active subscribers, new vs lost subscribers, total revenue, revenue this month, total watch time, average watch time per view, total movie views, subscriber trends chart, recent activity feed
   - **Revenue Tab**: Monthly revenue trends (line chart), revenue breakdown table by month, average revenue per subscriber, all-time total revenue
@@ -73,7 +87,7 @@ Preferred communication style: Simple, everyday language.
 - **Visualization**: Uses Recharts library for bar charts, line charts, and pie charts
 
 ### Routing Structure
-- **Frontend Routes**: `/`, `/register`, `/login`, `/profile`, `/movies`, `/tv-shows`, `/new`, `/my-list`, `/search/:query`, `/admin`, `/admin/analytics`, `/admin/videos`, `/admin/users`.
+- **Frontend Routes**: `/`, `/register`, `/login`, `/profile`, `/movies`, `/tv-shows`, `/new`, `/my-list`, `/search/:query`, `/admin`, `/admin/login`, `/admin/analytics`, `/admin/videos`, `/admin/users`, `/admin/banners`, `/admin/admins`.
 - **Component Organization**: Pages in `client/src/pages/`, reusable components in `client/src/components/`, Shadcn UI in `client/src/components/ui/`.
 
 ### Performance Optimizations

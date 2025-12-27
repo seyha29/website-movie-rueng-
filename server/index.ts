@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { seedData, ensureCriticalPlansExist } from "./seed";
+import { seedData, ensureCriticalPlansExist, ensureDefaultAdminExists } from "./seed";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import compression from "compression";
@@ -121,6 +121,7 @@ app.use((req, res, next) => {
   const server = await registerRoutes(app);
   await seedData();
   await ensureCriticalPlansExist();
+  await ensureDefaultAdminExists();
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

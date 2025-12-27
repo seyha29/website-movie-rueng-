@@ -2,7 +2,7 @@ import { storage } from "./storage";
 import type { InsertMovie, InsertUser, InsertSubscriptionPlan } from "@shared/schema";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
-import { users, subscriptionPlans } from "@shared/schema";
+import { users, subscriptionPlans, admins } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcrypt";
 
@@ -21,60 +21,8 @@ export async function seedData() {
   // Only seed if database is completely empty (first install)
   console.log("First installation detected - seeding initial data...");
   
-  // Seed admin users only if no users exist
-  const existingUsers = await storage.getAllUsers();
-  if (existingUsers.length === 0) {
-    // Hash password for admin users (Samnang@@##5678)
-    const hashedPassword = await bcrypt.hash("Samnang@@##5678", 10);
-    
-    // Define 3 admin accounts
-    const adminAccounts = [
-      {
-        fullName: "Admin User 1",
-        phoneNumber: "+85599999999",
-        password: hashedPassword,
-        isAdmin: 1
-      },
-      {
-        fullName: "Admin User 2",
-        phoneNumber: "+85599999998",
-        password: hashedPassword,
-        isAdmin: 1
-      },
-      {
-        fullName: "Admin User 3",
-        phoneNumber: "+85599999997",
-        password: hashedPassword,
-        isAdmin: 1
-      }
-    ];
-    
-    // Create admin users directly in database with isAdmin flag
-    if (process.env.DATABASE_URL) {
-      const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-      const db = drizzle(pool);
-      
-      for (const adminData of adminAccounts) {
-        await db.insert(users).values(adminData);
-        console.log(`Admin user created: ${adminData.phoneNumber}`);
-      }
-    } else {
-      // For in-memory storage
-      for (const adminData of adminAccounts) {
-        const adminUser: InsertUser = {
-          fullName: adminData.fullName,
-          phoneNumber: adminData.phoneNumber,
-          password: adminData.password,
-        };
-        const admin = await storage.createUser(adminUser);
-        // Manually set as admin by directly accessing the storage map
-        const memStorage = storage as any;
-        const adminWithPrivileges = { ...admin, isAdmin: 1 };
-        memStorage.users.set(admin.id, adminWithPrivileges);
-        console.log(`Admin user created: ${adminData.phoneNumber}`);
-      }
-    }
-  }
+  // NOTE: Admin accounts are now managed via the separate admins table
+  // Default admin is created by ensureDefaultAdminExists() function
 
   const movies: InsertMovie[] = [
     {
@@ -339,6 +287,35 @@ export async function ensureCriticalPlansExist() {
     console.log("Monthly plan created successfully");
   } else {
     console.log("Monthly plan exists");
+  }
+
+  await pool.end();
+}
+
+export async function ensureDefaultAdminExists() {
+  if (!process.env.DATABASE_URL) {
+    console.log("No DATABASE_URL - skipping admin check");
+    return;
+  }
+
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const db = drizzle(pool);
+
+  const existingAdmins = await db.select().from(admins).limit(1);
+
+  if (existingAdmins.length === 0) {
+    console.log("No admins found - creating default admin...");
+    const hashedPassword = await bcrypt.hash("Samnang@@##5678", 10);
+    
+    await db.insert(admins).values({
+      username: "admin",
+      password: hashedPassword,
+      fullName: "System Administrator",
+      role: "full"
+    });
+    console.log("Default admin created (username: admin, password: Samnang@@##5678)");
+  } else {
+    console.log("Admins exist - skipping default admin creation");
   }
 
   await pool.end();
