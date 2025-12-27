@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, Route, Switch } from "wouter";
-import { User } from "@shared/schema";
+import { Admin } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { Film, Users as UsersIcon, LogOut, BarChart3, Image, Key } from "lucide-react";
+import { Film, Users as UsersIcon, LogOut, BarChart3, Image, Key, Shield } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -10,35 +10,34 @@ import VideoManagement from "@/pages/VideoManagement";
 import UserManagement from "@/pages/UserManagement";
 import Analytics from "@/pages/Analytics";
 import AdBannerManagement from "@/pages/AdBannerManagement";
-import ChangePasswordDialog from "@/components/ChangePasswordDialog";
+import AdminManagement from "@/components/AdminManagement";
 import logoImage from "@assets/logo Reung_1764364561043.png";
 
 export default function AdminPanel() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const { data: user, isLoading, error } = useQuery<User | null>({
-    queryKey: ["/api/auth/me"],
+  const { data: admin, isLoading, error } = useQuery<Admin | null>({
+    queryKey: ["/api/admin/auth/me"],
     retry: 1,
     staleTime: 5 * 60 * 1000,
   });
 
-  // Log for debugging
   if (error) {
-    console.error("Auth check error:", error);
+    console.error("Admin auth check error:", error);
   }
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await apiRequest("POST", "/api/auth/logout", {});
+      await apiRequest("POST", "/api/admin/auth/logout", {});
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/auth/me"] });
       toast({
         title: "Logged out",
         description: "You have been logged out successfully",
       });
-      setLocation("/login");
+      setLocation("/admin/login");
     },
   });
 
@@ -50,32 +49,16 @@ export default function AdminPanel() {
     );
   }
 
-  if (!user) {
-    setLocation("/login");
+  if (!admin) {
+    setLocation("/admin/login");
     return null;
   }
 
-  const isAdmin = user.isAdmin === 1;
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-          <p className="text-muted-foreground mb-6">You do not have admin privileges</p>
-          <Button onClick={() => logoutMutation.mutate()} data-testid="button-logout">
-            Logout
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Treat null/undefined adminRole as "full" for backward compatibility
-  const isFullAdmin = !user.adminRole || user.adminRole === "full";
+  const isFullAdmin = admin.role === "full";
   const currentPath = location.split("/")[2] || "videos";
 
   // Redirect video-only admins to videos page if they try to access restricted sections
-  if (!isFullAdmin && (currentPath === "analytics" || currentPath === "users" || currentPath === "banners")) {
+  if (!isFullAdmin && (currentPath === "analytics" || currentPath === "users" || currentPath === "banners" || currentPath === "admins")) {
     setLocation("/admin/videos");
     return null;
   }
@@ -140,18 +123,22 @@ export default function AdminPanel() {
                     Banners
                   </Button>
                 )}
+                {isFullAdmin && (
+                  <Button
+                    variant={currentPath === "admins" ? "default" : "ghost"}
+                    onClick={() => setLocation("/admin/admins")}
+                    data-testid="button-nav-admins"
+                    size="sm"
+                    className="text-xs sm:text-sm"
+                  >
+                    <Shield className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    Admins
+                  </Button>
+                )}
               </nav>
             </div>
             <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-between sm:justify-end">
-              <span className="text-xs sm:text-sm text-muted-foreground truncate max-w-[120px] sm:max-w-none">{user.fullName}</span>
-              <ChangePasswordDialog 
-                trigger={
-                  <Button variant="outline" size="sm" className="text-xs sm:text-sm" data-testid="button-change-password">
-                    <Key className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                    <span className="hidden sm:inline">Password</span>
-                  </Button>
-                }
-              />
+              <span className="text-xs sm:text-sm text-muted-foreground truncate max-w-[120px] sm:max-w-none">{admin.fullName}</span>
               <Button
                 variant="outline"
                 size="sm"
@@ -174,6 +161,7 @@ export default function AdminPanel() {
           <Route path="/admin/videos" component={VideoManagement} />
           {isFullAdmin && <Route path="/admin/users" component={UserManagement} />}
           {isFullAdmin && <Route path="/admin/banners" component={AdBannerManagement} />}
+          {isFullAdmin && <Route path="/admin/admins" component={AdminManagement} />}
           <Route path="/admin" component={isFullAdmin ? Analytics : VideoManagement} />
         </Switch>
       </div>

@@ -14,6 +14,7 @@ const Login = lazy(() => import("@/pages/Login"));
 const Register = lazy(() => import("@/pages/Register"));
 const Profile = lazy(() => import("@/pages/Profile"));
 const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
+const AdminLogin = lazy(() => import("@/pages/AdminLogin"));
 const PaymentResult = lazy(() => import("@/pages/PaymentResult"));
 const TermsOfService = lazy(() => import("@/pages/TermsOfService"));
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
@@ -46,6 +47,7 @@ function Router() {
         <Route path="/register" component={Register} />
         <Route path="/profile" component={Profile} />
         <Route path="/payments/result" component={PaymentResult} />
+        <Route path="/admin/login" component={AdminLogin} />
         <Route path="/admin/:section?" component={AdminPanel} />
         <Route path="/terms" component={TermsOfService} />
         <Route path="/privacy" component={PrivacyPolicy} />
