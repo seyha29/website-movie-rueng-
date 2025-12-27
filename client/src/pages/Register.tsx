@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { X, Eye, EyeOff, Phone, Mail } from "lucide-react";
+import { X, Eye, EyeOff, Phone, Mail, ArrowLeft } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { registerPageLabels } from "@/lib/translations";
 
@@ -20,22 +20,81 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [otpStep, setOtpStep] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [pendingEmail, setPendingEmail] = useState("");
   const { toast } = useToast();
 
   const registerMutation = useMutation({
-    mutationFn: async (data: { fullName: string; phoneNumber?: string; email?: string; password: string }) => {
+    mutationFn: async (data: { fullName: string; phoneNumber?: string; email?: string; password: string; language?: string }) => {
       const result = await apiRequest("POST", "/api/auth/register", data);
+      return await result.json();
+    },
+    onSuccess: (response) => {
+      if (response.requiresOTP) {
+        setPendingEmail(response.email);
+        setOtpStep(true);
+        toast({
+          title: language === "km" ? "លេខកូដបានផ្ញើ" : "Code Sent",
+          description: language === "km" 
+            ? "សូមពិនិត្យអ៊ីមែលរបស់អ្នកសម្រាប់លេខកូដផ្ទៀងផ្ទាត់" 
+            : "Please check your email for the verification code",
+        });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        const redirectPath = response.isAdmin === 1 ? "/admin" : "/";
+        window.location.href = redirectPath;
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: language === "km" ? "ការចុះឈ្មោះបរាជ័យ" : "Registration failed",
+        description: error.message || (language === "km" ? "សូមពិនិត្យព័ត៌មានរបស់អ្នកហើយព្យាយាមម្តងទៀត" : "Please check your information and try again"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const verifyOtpMutation = useMutation({
+    mutationFn: async (data: { email: string; otp: string }) => {
+      const result = await apiRequest("POST", "/api/auth/verify-email-otp", data);
       return await result.json();
     },
     onSuccess: (user) => {
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      toast({
+        title: language === "km" ? "គណនីបានបង្កើត!" : "Account Created!",
+        description: language === "km" ? "សូមស្វាគមន៍មកកាន់ Reoung Movies Flix" : "Welcome to Reoung Movies Flix",
+      });
       const redirectPath = user.isAdmin === 1 ? "/admin" : "/";
       window.location.href = redirectPath;
     },
     onError: (error: Error) => {
       toast({
-        title: "Registration failed",
-        description: error.message || "Please check your information and try again",
+        title: language === "km" ? "ការផ្ទៀងផ្ទាត់បរាជ័យ" : "Verification failed",
+        description: error.message || (language === "km" ? "លេខកូដមិនត្រឹមត្រូវ" : "Invalid verification code"),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resendOtpMutation = useMutation({
+    mutationFn: async (data: { email: string; language: string }) => {
+      const result = await apiRequest("POST", "/api/auth/resend-email-otp", data);
+      return await result.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: language === "km" ? "លេខកូដបានផ្ញើម្តងទៀត" : "Code Resent",
+        description: language === "km" 
+          ? "សូមពិនិត្យអ៊ីមែលរបស់អ្នកសម្រាប់លេខកូដថ្មី" 
+          : "Please check your email for the new code",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: language === "km" ? "ការផ្ញើបរាជ័យ" : "Failed to resend",
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -46,8 +105,8 @@ export default function Register() {
     
     if (!fullName.trim()) {
       toast({
-        title: "Full name required",
-        description: "Please enter your full name",
+        title: language === "km" ? "ត្រូវការឈ្មោះពេញ" : "Full name required",
+        description: language === "km" ? "សូមបញ្ចូលឈ្មោះពេញរបស់អ្នក" : "Please enter your full name",
         variant: "destructive",
       });
       return;
@@ -55,8 +114,8 @@ export default function Register() {
 
     if (!password.trim()) {
       toast({
-        title: "Password required",
-        description: "Please enter a password",
+        title: language === "km" ? "ត្រូវការលេខសំងាត់" : "Password required",
+        description: language === "km" ? "សូមបញ្ចូលលេខសំងាត់" : "Please enter a password",
         variant: "destructive",
       });
       return;
@@ -64,8 +123,8 @@ export default function Register() {
 
     if (password.length < 6) {
       toast({
-        title: "Password too short",
-        description: "Password must be at least 6 characters",
+        title: language === "km" ? "លេខសំងាត់ខ្លីពេក" : "Password too short",
+        description: language === "km" ? "លេខសំងាត់ត្រូវមានយ៉ាងហោចណាស់ 6 ខ្ទង់" : "Password must be at least 6 characters",
         variant: "destructive",
       });
       return;
@@ -74,8 +133,8 @@ export default function Register() {
     if (registerMethod === "phone") {
       if (!phoneNumber.trim()) {
         toast({
-          title: "Phone number required",
-          description: "Please enter your phone number",
+          title: language === "km" ? "ត្រូវការលេខទូរស័ព្ទ" : "Phone number required",
+          description: language === "km" ? "សូមបញ្ចូលលេខទូរស័ព្ទរបស់អ្នក" : "Please enter your phone number",
           variant: "destructive",
         });
         return;
@@ -84,15 +143,122 @@ export default function Register() {
     } else {
       if (!email.trim()) {
         toast({
-          title: "Email required",
-          description: "Please enter your email",
+          title: language === "km" ? "ត្រូវការអ៊ីមែល" : "Email required",
+          description: language === "km" ? "សូមបញ្ចូលអ៊ីមែលរបស់អ្នក" : "Please enter your email",
           variant: "destructive",
         });
         return;
       }
-      registerMutation.mutate({ fullName, email: email.trim().toLowerCase(), password });
+      registerMutation.mutate({ fullName, email: email.trim().toLowerCase(), password, language });
     }
   };
+
+  const handleVerifyOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!otpCode.trim() || otpCode.length !== 6) {
+      toast({
+        title: language === "km" ? "លេខកូដមិនត្រឹមត្រូវ" : "Invalid code",
+        description: language === "km" ? "សូមបញ្ចូលលេខកូដ 6 ខ្ទង់" : "Please enter the 6-digit code",
+        variant: "destructive",
+      });
+      return;
+    }
+    verifyOtpMutation.mutate({ email: pendingEmail, otp: otpCode });
+  };
+
+  const handleResendOtp = () => {
+    resendOtpMutation.mutate({ email: pendingEmail, language });
+  };
+
+  const handleBackToRegister = () => {
+    setOtpStep(false);
+    setOtpCode("");
+    setPendingEmail("");
+  };
+
+  if (otpStep) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-3 sm:px-4">
+        <Card className="w-full max-w-md relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-2"
+            onClick={() => setLocation("/")}
+            data-testid="button-close"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          <CardHeader className="space-y-1 px-4 sm:px-6 pt-5 sm:pt-6">
+            <CardTitle className="text-xl sm:text-2xl font-bold text-center">
+              {registerPageLabels.verifyEmailTitle[language]}
+            </CardTitle>
+            <CardDescription className="text-center text-sm">
+              {registerPageLabels.verifyEmailDescription[language]}
+              <br />
+              <span className="font-medium text-primary">{pendingEmail}</span>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="px-4 sm:px-6 pb-5 sm:pb-6">
+            <form onSubmit={handleVerifyOtp} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="otpCode" className="text-xs sm:text-sm font-medium">
+                  {registerPageLabels.enterVerificationCode[language]}
+                </label>
+                <Input
+                  id="otpCode"
+                  type="text"
+                  placeholder={registerPageLabels.verificationCodePlaceholder[language]}
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="text-center text-lg tracking-widest"
+                  maxLength={6}
+                  autoFocus
+                />
+                <p className="text-xs text-muted-foreground text-center">
+                  {registerPageLabels.codeExpires[language]}
+                </p>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={verifyOtpMutation.isPending || otpCode.length !== 6}
+              >
+                {verifyOtpMutation.isPending 
+                  ? registerPageLabels.verifying[language]
+                  : registerPageLabels.verifyButton[language]}
+              </Button>
+
+              <div className="flex flex-col gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleResendOtp}
+                  disabled={resendOtpMutation.isPending}
+                >
+                  {resendOtpMutation.isPending 
+                    ? registerPageLabels.resending[language]
+                    : registerPageLabels.resendCode[language]}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full flex items-center gap-2"
+                  onClick={handleBackToRegister}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  {registerPageLabels.backToRegister[language]}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-3 sm:px-4">
@@ -208,7 +374,11 @@ export default function Register() {
               disabled={registerMutation.isPending}
               data-testid="button-register-submit"
             >
-              {registerMutation.isPending ? (language === "km" ? "កំពុងបង្កើតគណនី..." : "Creating account...") : registerPageLabels.registerButton[language]}
+              {registerMutation.isPending 
+                ? (registerMethod === "email" 
+                    ? registerPageLabels.sendingCode[language] 
+                    : (language === "km" ? "កំពុងបង្កើតគណនី..." : "Creating account..."))
+                : registerPageLabels.registerButton[language]}
             </Button>
 
             <div className="text-center text-sm">

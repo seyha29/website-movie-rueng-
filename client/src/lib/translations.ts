@@ -138,7 +138,18 @@ export const registerPageLabels = {
   passwordHelper: { km: "យ៉ាងហោចណាស់ 6 ខ្ទង់", en: "At least 6 characters" },
   registerButton: { km: "ចុះឈ្មោះ", en: "Register" },
   haveAccount: { km: "មានអាខោនរួចហើយ?", en: "Already have an account?" },
-  loginLink: { km: "ចូល", en: "Login" }
+  loginLink: { km: "ចូល", en: "Login" },
+  verifyEmailTitle: { km: "បញ្ជាក់អ៊ីមែល", en: "Verify Email" },
+  verifyEmailDescription: { km: "យើងបានផ្ញើលេខកូដផ្ទៀងផ្ទាត់ទៅ", en: "We've sent a verification code to" },
+  enterVerificationCode: { km: "បញ្ចូលលេខកូដផ្ទៀងផ្ទាត់", en: "Enter Verification Code" },
+  verificationCodePlaceholder: { km: "បញ្ចូលលេខកូដ 6 ខ្ទង់", en: "Enter 6-digit code" },
+  verifyButton: { km: "បញ្ជាក់", en: "Verify" },
+  resendCode: { km: "ផ្ញើលេខកូដម្តងទៀត", en: "Resend Code" },
+  codeExpires: { km: "លេខកូដនឹងផុតកំណត់ក្នុង 10 នាទី", en: "Code expires in 10 minutes" },
+  verifying: { km: "កំពុងផ្ទៀងផ្ទាត់...", en: "Verifying..." },
+  resending: { km: "កំពុងផ្ញើម្តងទៀត...", en: "Resending..." },
+  backToRegister: { km: "ត្រលប់ទៅចុះឈ្មោះ", en: "Back to Register" },
+  sendingCode: { km: "កំពុងផ្ញើលេខកូដ...", en: "Sending code..." }
 };
 
 export const footerLabels = {
