@@ -3,9 +3,13 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { legalPageLabels } from "@/lib/translations";
 
 export default function CookiePreferences() {
   const [, setLocation] = useLocation();
+  const { language } = useLanguage();
+  const t = (key: keyof typeof legalPageLabels) => legalPageLabels[key][language];
 
   const handleBack = () => {
     window.history.back();
@@ -23,90 +27,76 @@ export default function CookiePreferences() {
             data-testid="button-back"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            {t("back")}
           </Button>
-          <h1 className="text-3xl sm:text-4xl font-bold mb-8" data-testid="text-cookies-title">Cookie Preferences</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold mb-8" data-testid="text-cookies-title">{t("cookiePreferencesTitle")}</h1>
           
           <div className="space-y-6 text-sm sm:text-base text-muted-foreground">
             <section>
-              <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">What Are Cookies?</h2>
-              <p>
-                Cookies are small text files that are placed on your device when you visit our website. They help us provide you with a better experience by remembering your preferences and understanding how you use our service.
-              </p>
+              <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">{t("whatAreCookies")}</h2>
+              <p>{t("whatAreCookiesText")}</p>
             </section>
 
             <section>
-              <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">Types of Cookies We Use</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">{t("typesOfCookies")}</h2>
               
-              <h3 className="text-lg font-semibold text-foreground mb-3 mt-4">1. Essential Cookies</h3>
-              <p className="mb-3">
-                These cookies are necessary for the website to function properly. They enable core functionality such as security, network management, and accessibility.
-              </p>
+              <h3 className="text-lg font-semibold text-foreground mb-3 mt-4">{t("essentialCookies")}</h3>
+              <p className="mb-3">{t("essentialCookiesText")}</p>
               <ul className="list-disc pl-6 space-y-2">
-                <li>Session management</li>
-                <li>Authentication and security</li>
-                <li>Load balancing</li>
+                <li>{t("essentialItem1")}</li>
+                <li>{t("essentialItem2")}</li>
+                <li>{t("essentialItem3")}</li>
               </ul>
 
-              <h3 className="text-lg font-semibold text-foreground mb-3 mt-4">2. Functional Cookies</h3>
-              <p className="mb-3">
-                These cookies enable enhanced functionality and personalization, such as:
-              </p>
+              <h3 className="text-lg font-semibold text-foreground mb-3 mt-4">{t("functionalCookies")}</h3>
+              <p className="mb-3">{t("functionalCookiesText")}</p>
               <ul className="list-disc pl-6 space-y-2">
-                <li>Remembering your preferences</li>
-                <li>Language selection</li>
-                <li>Video player settings</li>
-                <li>Search history</li>
+                <li>{t("functionalItem1")}</li>
+                <li>{t("functionalItem2")}</li>
+                <li>{t("functionalItem3")}</li>
+                <li>{t("functionalItem4")}</li>
               </ul>
 
-              <h3 className="text-lg font-semibold text-foreground mb-3 mt-4">3. Analytics Cookies</h3>
-              <p className="mb-3">
-                These cookies help us understand how visitors interact with our website by collecting and reporting information:
-              </p>
+              <h3 className="text-lg font-semibold text-foreground mb-3 mt-4">{t("analyticsCookies")}</h3>
+              <p className="mb-3">{t("analyticsCookiesText")}</p>
               <ul className="list-disc pl-6 space-y-2">
-                <li>Number of visitors</li>
-                <li>Pages viewed</li>
-                <li>Time spent on site</li>
-                <li>Traffic sources</li>
+                <li>{t("analyticsItem1")}</li>
+                <li>{t("analyticsItem2")}</li>
+                <li>{t("analyticsItem3")}</li>
+                <li>{t("analyticsItem4")}</li>
               </ul>
 
-              <h3 className="text-lg font-semibold text-foreground mb-3 mt-4">4. Performance Cookies</h3>
-              <p className="mb-3">
-                These cookies collect information about how you use our website to help us improve performance:
-              </p>
+              <h3 className="text-lg font-semibold text-foreground mb-3 mt-4">{t("performanceCookies")}</h3>
+              <p className="mb-3">{t("performanceCookiesText")}</p>
               <ul className="list-disc pl-6 space-y-2">
-                <li>Video streaming quality</li>
-                <li>Page load times</li>
-                <li>Error monitoring</li>
+                <li>{t("performanceItem1")}</li>
+                <li>{t("performanceItem2")}</li>
+                <li>{t("performanceItem3")}</li>
               </ul>
 
-              <h3 className="text-lg font-semibold text-foreground mb-3 mt-4">5. Targeting/Advertising Cookies</h3>
-              <p className="mb-3">
-                These cookies may be set through our site by advertising partners to build a profile of your interests:
-              </p>
+              <h3 className="text-lg font-semibold text-foreground mb-3 mt-4">{t("targetingCookies")}</h3>
+              <p className="mb-3">{t("targetingCookiesText")}</p>
               <ul className="list-disc pl-6 space-y-2">
-                <li>Content recommendations</li>
-                <li>Personalized advertising</li>
-                <li>Marketing campaign effectiveness</li>
+                <li>{t("targetingItem1")}</li>
+                <li>{t("targetingItem2")}</li>
+                <li>{t("targetingItem3")}</li>
               </ul>
             </section>
 
             <section>
-              <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">Managing Your Cookie Preferences</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">{t("managingPreferences")}</h2>
               
-              <h3 className="text-lg font-semibold text-foreground mb-3 mt-4">Browser Settings</h3>
-              <p className="mb-3">
-                Most web browsers allow you to control cookies through their settings. You can:
-              </p>
+              <h3 className="text-lg font-semibold text-foreground mb-3 mt-4">{t("browserSettings")}</h3>
+              <p className="mb-3">{t("browserSettingsText")}</p>
               <ul className="list-disc pl-6 space-y-2">
-                <li>View cookies stored on your device</li>
-                <li>Delete existing cookies</li>
-                <li>Block all cookies</li>
-                <li>Block third-party cookies</li>
-                <li>Clear all cookies when you close your browser</li>
+                <li>{t("browserItem1")}</li>
+                <li>{t("browserItem2")}</li>
+                <li>{t("browserItem3")}</li>
+                <li>{t("browserItem4")}</li>
+                <li>{t("browserItem5")}</li>
               </ul>
 
-              <h3 className="text-lg font-semibold text-foreground mb-3 mt-4">Browser-Specific Instructions</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-3 mt-4">{t("browserInstructions")}</h3>
               <ul className="list-disc pl-6 space-y-2">
                 <li><strong>Chrome:</strong> Settings → Privacy and security → Cookies and other site data</li>
                 <li><strong>Firefox:</strong> Settings → Privacy & Security → Cookies and Site Data</li>
@@ -116,56 +106,44 @@ export default function CookiePreferences() {
             </section>
 
             <section>
-              <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">Impact of Disabling Cookies</h2>
-              <p className="mb-3">
-                Please note that blocking or deleting cookies may impact your experience on our website:
-              </p>
+              <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">{t("impactOfDisabling")}</h2>
+              <p className="mb-3">{t("impactText")}</p>
               <ul className="list-disc pl-6 space-y-2">
-                <li>Some features may not work properly</li>
-                <li>You may need to re-enter information</li>
-                <li>Personalized recommendations may not be available</li>
-                <li>Your preferences will not be saved</li>
+                <li>{t("impactItem1")}</li>
+                <li>{t("impactItem2")}</li>
+                <li>{t("impactItem3")}</li>
+                <li>{t("impactItem4")}</li>
               </ul>
             </section>
 
             <section>
-              <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">Third-Party Cookies</h2>
-              <p>
-                We may use third-party services that set their own cookies. These third parties have their own privacy policies, and we do not have access to or control over their cookies. We recommend reviewing the privacy policies of these third-party services.
-              </p>
+              <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">{t("thirdPartyCookies")}</h2>
+              <p>{t("thirdPartyCookiesText")}</p>
             </section>
 
             <section>
-              <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">Cookie Duration</h2>
+              <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">{t("cookieDuration")}</h2>
               
-              <h3 className="text-lg font-semibold text-foreground mb-3 mt-4">Session Cookies</h3>
-              <p>
-                These are temporary cookies that expire when you close your browser.
-              </p>
+              <h3 className="text-lg font-semibold text-foreground mb-3 mt-4">{t("sessionCookies")}</h3>
+              <p>{t("sessionCookiesText")}</p>
 
-              <h3 className="text-lg font-semibold text-foreground mb-3 mt-4">Persistent Cookies</h3>
-              <p>
-                These cookies remain on your device until they expire or you delete them. Their duration varies from a few days to several years.
-              </p>
+              <h3 className="text-lg font-semibold text-foreground mb-3 mt-4">{t("persistentCookies")}</h3>
+              <p>{t("persistentCookiesText")}</p>
             </section>
 
             <section>
-              <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">Updates to Cookie Policy</h2>
-              <p>
-                We may update this Cookie Preferences page from time to time to reflect changes in our practices or for other operational, legal, or regulatory reasons.
-              </p>
+              <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">{t("updatesToPolicy")}</h2>
+              <p>{t("updatesToPolicyText")}</p>
             </section>
 
             <section>
-              <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">Contact Us</h2>
-              <p>
-                If you have questions about our use of cookies, please contact us through our website.
-              </p>
+              <h2 className="text-xl sm:text-2xl font-semibold text-foreground mb-4">{t("contactUs")}</h2>
+              <p>{t("contactUsText")}</p>
             </section>
 
             <section className="pt-6 border-t">
               <p className="text-xs">
-                Last updated: November 8, 2025
+                {t("lastUpdated")} November 8, 2025
               </p>
             </section>
           </div>
