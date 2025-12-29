@@ -1,4 +1,4 @@
-import { Play, Plus, Info } from "lucide-react";
+import { Play, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
@@ -101,19 +101,6 @@ export default function MovieCard({
           >
             <Plus className="h-4 w-4" />
           </Button>
-          {onShowDetails && (
-            <Button
-              size="icon"
-              variant="secondary"
-              onClick={(e) => {
-                e.stopPropagation();
-                onShowDetails?.();
-              }}
-              data-testid="button-info"
-            >
-              <Info className="h-4 w-4" />
-            </Button>
-          )}
         </div>
       </div>
     </div>
