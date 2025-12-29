@@ -129,6 +129,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // EMAIL REGISTRATION: Requires OTP verification
       if (email && !phoneNumber) {
+        // Check for existing pending registration to prevent email spam
+        const existingPending = await storage.getPendingEmailRegistration(email.toLowerCase());
+        if (existingPending) {
+          const now = Math.floor(Date.now() / 1000);
+          const timeSinceCreated = now - existingPending.createdAt;
+          
+          // If pending registration exists and was created less than 60 seconds ago, reject
+          if (timeSinceCreated < 60) {
+            return res.status(429).json({ 
+              error: "Please wait before requesting a new code",
+              retryAfter: 60 - timeSinceCreated
+            });
+          }
+          
+          // If too many resends already, reject
+          if (existingPending.resendCount >= 3) {
+            // Delete old pending and allow new registration after cooldown
+            const cooldownSeconds = 300; // 5 minutes
+            if (timeSinceCreated < cooldownSeconds) {
+              return res.status(429).json({ 
+                error: "Too many attempts. Please wait 5 minutes before trying again.",
+                retryAfter: cooldownSeconds - timeSinceCreated
+              });
+            }
+          }
+        }
+        
         // Hash password before storing in pending registration
         const hashedPassword = await bcrypt.hash(password, 10);
         
@@ -137,7 +164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const otpHash = await bcrypt.hash(otp, 10);
         const otpExpiresAt = Math.floor(Date.now() / 1000) + 600; // 10 minutes
         
-        // Create pending registration
+        // Create pending registration (replaces any existing one for this email)
         await storage.createPendingEmailRegistration({
           email: email.toLowerCase(),
           fullName,
