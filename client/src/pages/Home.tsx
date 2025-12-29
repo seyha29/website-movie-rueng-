@@ -561,10 +561,15 @@ export default function Home() {
           isOpen={isDetailModalOpen}
           onClose={() => setIsDetailModalOpen(false)}
           movie={{
+            id: selectedMovie.id,
             title: selectedMovie.title,
             image: selectedMovie.posterImage,
             backdropImage: selectedMovie.backdropImage,
             rating: parseFloat(selectedMovie.rating),
+            imdbRating: selectedMovie.imdbRating,
+            tmdbRating: selectedMovie.tmdbRating,
+            userRatingAvg: selectedMovie.userRatingAvg,
+            userRatingCount: selectedMovie.userRatingCount,
             year: selectedMovie.year,
             duration: selectedMovie.duration,
             genres: selectedMovie.genres,
