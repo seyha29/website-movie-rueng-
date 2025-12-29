@@ -1,5 +1,8 @@
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const moceanClient = require('mocean-sdk');
 
 const MOCEAN_API_TOKEN = process.env.MOCEAN_API_TOKEN;
 const SMS_SENDER = process.env.SMS_SENDER || 'RUENG';
@@ -9,6 +12,17 @@ interface SendSMSResult {
   success: boolean;
   messageId?: string;
   error?: string;
+}
+
+let mocean: any = null;
+if (MOCEAN_API_TOKEN) {
+  try {
+    const client = new moceanClient.Client({ apiToken: MOCEAN_API_TOKEN });
+    mocean = new moceanClient.Mocean(client);
+    console.log('[SMS] MoceanAPI client initialized with API token');
+  } catch (err) {
+    console.error('[SMS] Failed to initialize MoceanAPI client:', err);
+  }
 }
 
 export function generateOTP(): string {
@@ -32,43 +46,25 @@ export async function verifyOTP(otp: string, storedHash: string): Promise<boolea
 }
 
 export async function sendSMS(phoneNumber: string, message: string): Promise<SendSMSResult> {
-  if (!MOCEAN_API_TOKEN) {
-    console.error('[SMS] MoceanAPI token not configured');
+  if (!mocean) {
+    console.error('[SMS] MoceanAPI client not initialized');
     return { success: false, error: 'SMS service not configured' };
   }
 
   try {
     const formattedPhone = phoneNumber.replace('+', '');
     
-    const requestBody = {
+    console.log(`[SMS] Sending to ${formattedPhone}: ${message.substring(0, 50)}...`);
+
+    const result = await mocean.sms().send({
       'mocean-from': SMS_SENDER,
       'mocean-to': formattedPhone,
       'mocean-text': message,
-    };
-
-    console.log(`[SMS] Sending to ${formattedPhone}: ${message.substring(0, 50)}...`);
-
-    const response = await fetch('https://rest.moceanapi.com/rest/2/sms', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${MOCEAN_API_TOKEN}`,
-      },
-      body: JSON.stringify(requestBody),
     });
 
-    const responseText = await response.text();
-    console.log(`[SMS] API Response: ${responseText.substring(0, 300)}`);
+    console.log(`[SMS] API Response:`, JSON.stringify(result).substring(0, 300));
     
-    let result;
-    try {
-      result = JSON.parse(responseText);
-    } catch {
-      console.error(`[SMS] Invalid response format: ${responseText.substring(0, 200)}`);
-      return { success: false, error: 'Invalid API response format' };
-    }
-    
-    if (response.ok && result.messages && result.messages[0]?.status === '0') {
+    if (result.messages && result.messages[0]?.status === 0) {
       console.log(`[SMS] Sent successfully to ${formattedPhone}`);
       return { success: true, messageId: result.messages[0]['msgid'] };
     } else {
@@ -76,9 +72,10 @@ export async function sendSMS(phoneNumber: string, message: string): Promise<Sen
       console.error(`[SMS] Failed: ${errorMsg}`);
       return { success: false, error: errorMsg };
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('[SMS] Error:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    const errorMsg = error?.message || error?.err_msg || 'Unknown error';
+    return { success: false, error: errorMsg };
   }
 }
 
