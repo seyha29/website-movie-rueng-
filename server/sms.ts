@@ -1,8 +1,9 @@
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 
-const MOCEAN_API_TOKEN = process.env.MOCEAN_API_TOKEN;
-const SMS_SENDER = process.env.SMS_SENDER || 'RUENG';
+const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
 const OTP_EXPIRE_MINUTES = parseInt(process.env.OTP_EXPIRE_MINUTES || '5', 10);
 
 interface SendSMSResult {
@@ -32,47 +33,42 @@ export async function verifyOTP(otp: string, storedHash: string): Promise<boolea
 }
 
 export async function sendSMS(phoneNumber: string, message: string): Promise<SendSMSResult> {
-  if (!MOCEAN_API_TOKEN) {
-    console.error('[SMS] MoceanAPI token not configured');
+  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
+    console.error('[SMS] Twilio credentials not configured');
     return { success: false, error: 'SMS service not configured' };
   }
 
   try {
-    const formattedPhone = phoneNumber.replace('+', '');
+    const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
     
-    const requestBody = {
-      'mocean-from': SMS_SENDER,
-      'mocean-to': formattedPhone,
-      'mocean-text': message,
-    };
-
     console.log(`[SMS] Sending to ${formattedPhone}: ${message.substring(0, 50)}...`);
 
-    const response = await fetch('https://rest.moceanapi.com/rest/2/sms', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${MOCEAN_API_TOKEN}`,
-      },
-      body: JSON.stringify(requestBody),
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
+    
+    const authHeader = Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64');
+    
+    const body = new URLSearchParams({
+      To: formattedPhone,
+      From: TWILIO_PHONE_NUMBER,
+      Body: message,
     });
 
-    const responseText = await response.text();
-    console.log(`[SMS] API Response: ${responseText.substring(0, 300)}`);
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${authHeader}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: body.toString(),
+    });
+
+    const result = await response.json();
     
-    let result;
-    try {
-      result = JSON.parse(responseText);
-    } catch {
-      console.error(`[SMS] Invalid response format: ${responseText.substring(0, 200)}`);
-      return { success: false, error: 'Invalid API response format' };
-    }
-    
-    if (response.ok && result.messages && result.messages[0]?.status === '0') {
-      console.log(`[SMS] Sent successfully to ${formattedPhone}`);
-      return { success: true, messageId: result.messages[0]['msgid'] };
+    if (response.ok && result.sid) {
+      console.log(`[SMS] Sent successfully to ${formattedPhone}, SID: ${result.sid}`);
+      return { success: true, messageId: result.sid };
     } else {
-      const errorMsg = result['err_msg'] || result.messages?.[0]?.['err_msg'] || 'Unknown error';
+      const errorMsg = result.message || result.error_message || 'Unknown error';
       console.error(`[SMS] Failed: ${errorMsg}`);
       return { success: false, error: errorMsg };
     }
