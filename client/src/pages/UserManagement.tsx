@@ -20,7 +20,7 @@ import {
 export default function UserManagement() {
   const { toast } = useToast();
   const [creditAmount, setCreditAmount] = useState<string>("1");
-  const [searchPhone, setSearchPhone] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [individualCreditAmount, setIndividualCreditAmount] = useState<string>("1");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showCreditDialog, setShowCreditDialog] = useState(false);
@@ -30,10 +30,14 @@ export default function UserManagement() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Filter users by phone number
-  const filteredUsers = users.filter(user => 
-    searchPhone === "" || user.phoneNumber.includes(searchPhone)
-  );
+  // Filter users by phone number or email
+  const filteredUsers = users.filter(user => {
+    if (searchQuery === "") return true;
+    const query = searchQuery.toLowerCase();
+    return (user.phoneNumber?.toLowerCase().includes(query)) || 
+           (user.email?.toLowerCase().includes(query)) ||
+           (user.fullName?.toLowerCase().includes(query));
+  });
 
   const deleteUserMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -191,16 +195,16 @@ export default function UserManagement() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              value={searchPhone}
-              onChange={(e) => setSearchPhone(e.target.value)}
-              placeholder="Enter phone number to search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, email, or phone..."
               className="pl-9"
               data-testid="input-search-phone"
             />
           </div>
-          {searchPhone && (
+          {searchQuery && (
             <p className="text-sm text-muted-foreground mt-2">
-              Found {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''} matching "{searchPhone}"
+              Found {filteredUsers.length} user{filteredUsers.length !== 1 ? 's' : ''} matching "{searchQuery}"
             </p>
           )}
         </CardContent>
@@ -272,7 +276,12 @@ export default function UserManagement() {
                       </Badge>
                     )}
                   </CardTitle>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">{user.phoneNumber}</p>
+                  {user.email && (
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">{user.email}</p>
+                  )}
+                  {user.phoneNumber && (
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate">{user.phoneNumber}</p>
+                  )}
                   <div className="flex items-center gap-1 mt-1">
                     <Wallet className="h-3 w-3 text-primary" />
                     <span className="text-xs font-medium text-primary">
@@ -308,13 +317,13 @@ export default function UserManagement() {
         ))}
       </div>
 
-      {filteredUsers.length === 0 && searchPhone && (
+      {filteredUsers.length === 0 && searchQuery && (
         <div className="text-center py-12 text-muted-foreground">
-          No users found matching "{searchPhone}"
+          No users found matching "{searchQuery}"
         </div>
       )}
 
-      {users.length === 0 && !searchPhone && (
+      {users.length === 0 && !searchQuery && (
         <div className="text-center py-12 text-muted-foreground">
           No users registered yet.
         </div>
