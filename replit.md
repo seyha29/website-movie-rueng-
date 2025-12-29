@@ -1,8 +1,8 @@
-# RUENG - Replit Project Guide
+# Reoung Movies Flix - Replit Project Guide
 
 ## Overview
 
-RUENG (formerly Reoung Movies Flix) is an iFlix KH-inspired, single-page streaming platform for browsing movies. It features a **pay-per-video model ($1 per movie)** where users purchase individual videos instead of monthly subscriptions. The platform includes:
+Reoung Movies Flix is an iFlix KH-inspired, single-page streaming platform for browsing movies. It features a **pay-per-video model ($1 per movie)** where users purchase individual videos instead of monthly subscriptions. The platform includes:
 
 ### 🎯 Core Features
 - **Free Trailers**: All movie trailers are free to watch - no login or payment required. Trailers are embedded directly on the movie detail page with a "FREE TO WATCH" badge
@@ -57,8 +57,6 @@ Preferred communication style: Simple, everyday language.
 ### Data Models
 - **Movie Schema**: `id`, `title`, `description`, `rating`, `year`, `duration`, `genres`, `cast`, `director`, `country`, `posterImage`, `backdropImage`, `videoEmbedUrl` (full movie), `trailerUrl` (preview), `isFree` (1=free, 0=paid), `isTrending`, `isNewAndPopular`.
 - **User Schema**: `id`, `fullName`, `phoneNumber` (unique, optional), `email` (unique, optional), `password` (hashed), `currentSessionId` (for single-device login). Note: Users are regular customers only. Users can register/login with either phone number OR email.
-- **Pending Phone Registration Schema**: `id`, `phoneNumber`, `fullName`, `passwordHash`, `otpHash`, `otpExpiresAt`, `attemptCount`, `resendCount`, `createdAt` - For SMS OTP verification during phone registration.
-- **Pending Email Registration Schema**: `id`, `email`, `fullName`, `passwordHash`, `otpHash`, `otpExpiresAt`, `attemptCount`, `resendCount`, `createdAt` - For email OTP verification during registration.
 - **Admin Schema**: `id`, `username` (unique), `password` (hashed), `fullName`, `role` (full/video), `currentSessionId`, `createdAt`. Admins are stored in a separate table from users.
 - **My List Schema**: `id`, `userId`, `movieId`, `addedAt`.
 - **Movie Views Schema**: `id`, `userId`, `movieId`, `viewedAt`, `watchDuration` - Tracks individual movie views and watch time for analytics.
@@ -107,23 +105,3 @@ Preferred communication style: Simple, everyday language.
 - **Development Tools**: `typescript`, `tsx`, `esbuild`, `vite`, `@replit/*`.
 - **Utilities**: `date-fns`, `cmdk`, `nanoid`, `connect-pg-simple`.
 - **Asset Management**: Custom images in `attached_assets/generated_images/` and stock images in `attached_assets/stock_images/`, served via Express.
-
-## SMS & Email OTP Verification
-
-### SMS OTP (Phone Registration)
-- **Provider**: MoceanAPI (MOCEAN_API_TOKEN environment variable)
-- **Sender ID**: "RUENG"
-- **OTP Format**: 6-digit numeric code
-- **Expiration**: 5 minutes
-- **Max Attempts**: 3 attempts per OTP code
-- **Max Resends**: 3 resends per registration session
-- **Cooldown**: 60 seconds between OTP requests, 5 minutes after max resends
-- **API Endpoints**: `/api/auth/verify-phone-otp`, `/api/auth/resend-phone-otp`
-
-### Email OTP (Email Registration)
-- **Provider**: Nodemailer (EMAIL_USER, EMAIL_PASS environment variables)
-- **OTP Format**: 6-digit numeric code
-- **Expiration**: 10 minutes
-- **Max Attempts**: 5 attempts per OTP code
-- **Max Resends**: 3 resends per registration session
-- **API Endpoints**: `/api/auth/verify-email-otp`, `/api/auth/resend-email-otp`

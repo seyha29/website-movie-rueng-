@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Movie, type InsertMovie, type MyList, type InsertMyList, type SubscriptionPlan, type UserSubscription, type InsertUserSubscription, type PaymentTransaction, type InsertPaymentTransaction, type MovieView, type InsertMovieView, type VideoPurchase, type InsertVideoPurchase, type AdBanner, type InsertAdBanner, type SecurityViolation, type InsertSecurityViolation, type UserBan, type InsertUserBan, type DailyWatchTime, type InsertDailyWatchTime, type Admin, type InsertAdmin, type PendingEmailRegistration, type PendingPhoneRegistration, users, movies, myList, subscriptionPlans, userSubscriptions, paymentTransactions, movieViews, videoPurchases, adBanners, securityViolations, userBans, dailyWatchTime, videoAccessTokens, admins, pendingEmailRegistrations, pendingPhoneRegistrations } from "@shared/schema";
+import { type User, type InsertUser, type Movie, type InsertMovie, type MyList, type InsertMyList, type SubscriptionPlan, type UserSubscription, type InsertUserSubscription, type PaymentTransaction, type InsertPaymentTransaction, type MovieView, type InsertMovieView, type VideoPurchase, type InsertVideoPurchase, type AdBanner, type InsertAdBanner, type SecurityViolation, type InsertSecurityViolation, type UserBan, type InsertUserBan, type DailyWatchTime, type InsertDailyWatchTime, type Admin, type InsertAdmin, type PendingEmailRegistration, users, movies, myList, subscriptionPlans, userSubscriptions, paymentTransactions, movieViews, videoPurchases, adBanners, securityViolations, userBans, dailyWatchTime, videoAccessTokens, admins, pendingEmailRegistrations } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -123,12 +123,6 @@ export interface IStorage {
   createPendingEmailRegistration(data: { email: string; fullName: string; passwordHash: string; otpHash: string; otpExpiresAt: number }): Promise<PendingEmailRegistration>;
   updatePendingEmailRegistration(email: string, data: Partial<{ otpHash: string; otpExpiresAt: number; attemptCount: number; resendCount: number }>): Promise<PendingEmailRegistration | undefined>;
   deletePendingEmailRegistration(email: string): Promise<boolean>;
-  
-  // Pending Phone Registration methods (SMS OTP verification)
-  getPendingPhoneRegistration(phoneNumber: string): Promise<PendingPhoneRegistration | undefined>;
-  createPendingPhoneRegistration(data: { phoneNumber: string; fullName: string; passwordHash: string; otpHash: string; otpExpiresAt: number }): Promise<PendingPhoneRegistration>;
-  updatePendingPhoneRegistration(phoneNumber: string, data: Partial<{ otpHash: string; otpExpiresAt: number; attemptCount: number; resendCount: number }>): Promise<PendingPhoneRegistration | undefined>;
-  deletePendingPhoneRegistration(phoneNumber: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -763,35 +757,6 @@ export class DatabaseStorage implements IStorage {
     const result = await this.db.delete(pendingEmailRegistrations).where(eq(pendingEmailRegistrations.email, email.toLowerCase()));
     return result.rowCount !== null && result.rowCount > 0;
   }
-
-  // Pending Phone Registration methods
-  async getPendingPhoneRegistration(phoneNumber: string): Promise<PendingPhoneRegistration | undefined> {
-    const result = await this.db.select().from(pendingPhoneRegistrations).where(eq(pendingPhoneRegistrations.phoneNumber, phoneNumber));
-    return result[0];
-  }
-
-  async createPendingPhoneRegistration(data: { phoneNumber: string; fullName: string; passwordHash: string; otpHash: string; otpExpiresAt: number }): Promise<PendingPhoneRegistration> {
-    // Delete any existing pending registration for this phone
-    await this.db.delete(pendingPhoneRegistrations).where(eq(pendingPhoneRegistrations.phoneNumber, data.phoneNumber));
-    const result = await this.db.insert(pendingPhoneRegistrations).values({
-      phoneNumber: data.phoneNumber,
-      fullName: data.fullName,
-      passwordHash: data.passwordHash,
-      otpHash: data.otpHash,
-      otpExpiresAt: data.otpExpiresAt,
-    }).returning();
-    return result[0];
-  }
-
-  async updatePendingPhoneRegistration(phoneNumber: string, data: Partial<{ otpHash: string; otpExpiresAt: number; attemptCount: number; resendCount: number }>): Promise<PendingPhoneRegistration | undefined> {
-    const result = await this.db.update(pendingPhoneRegistrations).set(data).where(eq(pendingPhoneRegistrations.phoneNumber, phoneNumber)).returning();
-    return result[0];
-  }
-
-  async deletePendingPhoneRegistration(phoneNumber: string): Promise<boolean> {
-    const result = await this.db.delete(pendingPhoneRegistrations).where(eq(pendingPhoneRegistrations.phoneNumber, phoneNumber));
-    return result.rowCount !== null && result.rowCount > 0;
-  }
 }
 
 export class MemStorage implements IStorage {
@@ -1253,41 +1218,6 @@ export class MemStorage implements IStorage {
 
   async deletePendingEmailRegistration(email: string): Promise<boolean> {
     return this.pendingEmailRegistrations.delete(email.toLowerCase());
-  }
-
-  // Pending Phone Registration methods (MemStorage stubs)
-  private pendingPhoneRegistrations: Map<string, PendingPhoneRegistration> = new Map();
-
-  async getPendingPhoneRegistration(phoneNumber: string): Promise<PendingPhoneRegistration | undefined> {
-    return this.pendingPhoneRegistrations.get(phoneNumber);
-  }
-
-  async createPendingPhoneRegistration(data: { phoneNumber: string; fullName: string; passwordHash: string; otpHash: string; otpExpiresAt: number }): Promise<PendingPhoneRegistration> {
-    const pending: PendingPhoneRegistration = {
-      id: randomUUID(),
-      phoneNumber: data.phoneNumber,
-      fullName: data.fullName,
-      passwordHash: data.passwordHash,
-      otpHash: data.otpHash,
-      otpExpiresAt: data.otpExpiresAt,
-      attemptCount: 0,
-      resendCount: 0,
-      createdAt: Math.floor(Date.now() / 1000),
-    };
-    this.pendingPhoneRegistrations.set(data.phoneNumber, pending);
-    return pending;
-  }
-
-  async updatePendingPhoneRegistration(phoneNumber: string, data: Partial<{ otpHash: string; otpExpiresAt: number; attemptCount: number; resendCount: number }>): Promise<PendingPhoneRegistration | undefined> {
-    const existing = this.pendingPhoneRegistrations.get(phoneNumber);
-    if (!existing) return undefined;
-    const updated = { ...existing, ...data };
-    this.pendingPhoneRegistrations.set(phoneNumber, updated);
-    return updated;
-  }
-
-  async deletePendingPhoneRegistration(phoneNumber: string): Promise<boolean> {
-    return this.pendingPhoneRegistrations.delete(phoneNumber);
   }
 }
 

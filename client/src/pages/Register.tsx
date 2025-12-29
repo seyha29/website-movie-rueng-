@@ -23,8 +23,6 @@ export default function Register() {
   const [otpStep, setOtpStep] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [pendingEmail, setPendingEmail] = useState("");
-  const [pendingPhone, setPendingPhone] = useState("");
-  const [otpType, setOtpType] = useState<"email" | "phone">("email");
   const { toast } = useToast();
 
   const registerMutation = useMutation({
@@ -34,23 +32,13 @@ export default function Register() {
     },
     onSuccess: (response) => {
       if (response.requiresOTP) {
-        if (response.email) {
-          setPendingEmail(response.email);
-          setOtpType("email");
-        } else if (response.phoneNumber) {
-          setPendingPhone(response.phoneNumber);
-          setOtpType("phone");
-        }
+        setPendingEmail(response.email);
         setOtpStep(true);
         toast({
           title: language === "km" ? "លេខកូដបានផ្ញើ" : "Code Sent",
-          description: response.email 
-            ? (language === "km" 
-                ? "សូមពិនិត្យអ៊ីមែលរបស់អ្នកសម្រាប់លេខកូដផ្ទៀងផ្ទាត់" 
-                : "Please check your email for the verification code")
-            : (language === "km"
-                ? "សូមពិនិត្យទូរស័ព្ទរបស់អ្នកសម្រាប់លេខកូដផ្ទៀងផ្ទាត់"
-                : "Please check your phone for the verification code"),
+          description: language === "km" 
+            ? "សូមពិនិត្យអ៊ីមែលរបស់អ្នកសម្រាប់លេខកូដផ្ទៀងផ្ទាត់" 
+            : "Please check your email for the verification code",
         });
       } else {
         queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
@@ -86,9 +74,8 @@ export default function Register() {
   });
 
   const verifyOtpMutation = useMutation({
-    mutationFn: async (data: { email?: string; phoneNumber?: string; otp: string }) => {
-      const endpoint = data.email ? "/api/auth/verify-email-otp" : "/api/auth/verify-phone-otp";
-      const result = await apiRequest("POST", endpoint, data);
+    mutationFn: async (data: { email: string; otp: string }) => {
+      const result = await apiRequest("POST", "/api/auth/verify-email-otp", data);
       return await result.json();
     },
     onSuccess: (user) => {
@@ -128,21 +115,16 @@ export default function Register() {
   });
 
   const resendOtpMutation = useMutation({
-    mutationFn: async (data: { email?: string; phoneNumber?: string; language: string }) => {
-      const endpoint = data.email ? "/api/auth/resend-email-otp" : "/api/auth/resend-phone-otp";
-      const result = await apiRequest("POST", endpoint, data);
+    mutationFn: async (data: { email: string; language: string }) => {
+      const result = await apiRequest("POST", "/api/auth/resend-email-otp", data);
       return await result.json();
     },
     onSuccess: () => {
       toast({
         title: language === "km" ? "លេខកូដបានផ្ញើម្តងទៀត" : "Code Resent",
-        description: otpType === "email"
-          ? (language === "km" 
-              ? "សូមពិនិត្យអ៊ីមែលរបស់អ្នកសម្រាប់លេខកូដថ្មី" 
-              : "Please check your email for the new code")
-          : (language === "km"
-              ? "សូមពិនិត្យទូរស័ព្ទរបស់អ្នកសម្រាប់លេខកូដថ្មី"
-              : "Please check your phone for the new code"),
+        description: language === "km" 
+          ? "សូមពិនិត្យអ៊ីមែលរបស់អ្នកសម្រាប់លេខកូដថ្មី" 
+          : "Please check your email for the new code",
       });
     },
     onError: (error: Error) => {
@@ -217,27 +199,17 @@ export default function Register() {
       });
       return;
     }
-    if (otpType === "email") {
-      verifyOtpMutation.mutate({ email: pendingEmail, otp: otpCode });
-    } else {
-      verifyOtpMutation.mutate({ phoneNumber: pendingPhone, otp: otpCode });
-    }
+    verifyOtpMutation.mutate({ email: pendingEmail, otp: otpCode });
   };
 
   const handleResendOtp = () => {
-    if (otpType === "email") {
-      resendOtpMutation.mutate({ email: pendingEmail, language });
-    } else {
-      resendOtpMutation.mutate({ phoneNumber: pendingPhone, language });
-    }
+    resendOtpMutation.mutate({ email: pendingEmail, language });
   };
 
   const handleBackToRegister = () => {
     setOtpStep(false);
     setOtpCode("");
     setPendingEmail("");
-    setPendingPhone("");
-    setOtpType("email");
   };
 
   if (otpStep) {
@@ -255,20 +227,12 @@ export default function Register() {
           </Button>
           <CardHeader className="space-y-1 px-4 sm:px-6 pt-5 sm:pt-6">
             <CardTitle className="text-xl sm:text-2xl font-bold text-center">
-              {otpType === "email" 
-                ? registerPageLabels.verifyEmailTitle[language]
-                : (language === "km" ? "ផ្ទៀងផ្ទាត់ទូរស័ព្ទ" : "Verify Phone")}
+              {registerPageLabels.verifyEmailTitle[language]}
             </CardTitle>
             <CardDescription className="text-center text-sm">
-              {otpType === "email"
-                ? registerPageLabels.verifyEmailDescription[language]
-                : (language === "km" 
-                    ? "យើងបានផ្ញើលេខកូដផ្ទៀងផ្ទាត់ទៅទូរស័ព្ទរបស់អ្នក" 
-                    : "We've sent a verification code to your phone")}
+              {registerPageLabels.verifyEmailDescription[language]}
               <br />
-              <span className="font-medium text-primary">
-                {otpType === "email" ? pendingEmail : pendingPhone}
-              </span>
+              <span className="font-medium text-primary">{pendingEmail}</span>
             </CardDescription>
           </CardHeader>
           <CardContent className="px-4 sm:px-6 pb-5 sm:pb-6">
@@ -288,9 +252,7 @@ export default function Register() {
                   autoFocus
                 />
                 <p className="text-xs text-muted-foreground text-center">
-                  {otpType === "email" 
-                    ? registerPageLabels.codeExpires[language]
-                    : (language === "km" ? "លេខកូដនឹងផុតកំណត់ក្នុង 5 នាទី" : "Code expires in 5 minutes")}
+                  {registerPageLabels.codeExpires[language]}
                 </p>
               </div>
 
