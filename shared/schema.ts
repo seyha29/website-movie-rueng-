@@ -163,6 +163,8 @@ export const movies = pgTable("movies", {
   isTrending: integer("is_trending").notNull().default(0),
   isNewAndPopular: integer("is_new_and_popular").notNull().default(0),
   isHeroBanner: integer("is_hero_banner").notNull().default(0),
+  userRatingAvg: decimal("user_rating_avg", { precision: 3, scale: 1 }).default("0"),
+  userRatingCount: integer("user_rating_count").notNull().default(0),
   createdAt: integer("created_at").notNull().default(sql`extract(epoch from now())`), // Sort new videos first
 });
 
@@ -189,6 +191,25 @@ export const insertMyListSchema = createInsertSchema(myList).omit({
 
 export type InsertMyList = z.infer<typeof insertMyListSchema>;
 export type MyList = typeof myList.$inferSelect;
+
+// Movie User Ratings - user ratings for movies
+export const movieUserRatings = pgTable("movie_user_ratings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  movieId: varchar("movie_id").notNull().references(() => movies.id, { onDelete: 'cascade' }),
+  score: decimal("score", { precision: 3, scale: 1 }).notNull(), // 1-10 rating
+  createdAt: integer("created_at").notNull().default(sql`extract(epoch from now())`),
+  updatedAt: integer("updated_at").notNull().default(sql`extract(epoch from now())`),
+});
+
+export const insertMovieUserRatingSchema = createInsertSchema(movieUserRatings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertMovieUserRating = z.infer<typeof insertMovieUserRatingSchema>;
+export type MovieUserRating = typeof movieUserRatings.$inferSelect;
 
 // Subscription Plans
 export const subscriptionPlans = pgTable("subscription_plans", {
