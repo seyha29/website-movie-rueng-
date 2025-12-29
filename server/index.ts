@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedData, ensureCriticalPlansExist, ensureDefaultAdminExists } from "./seed";
+import { smsService } from "./sms";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import compression from "compression";
@@ -122,6 +123,14 @@ app.use((req, res, next) => {
   await seedData();
   await ensureCriticalPlansExist();
   await ensureDefaultAdminExists();
+  
+  // Check SMS configuration on startup
+  if (smsService.isSMSConfigured()) {
+    console.log('[SMS] Twilio SMS service configured and ready');
+  } else {
+    console.warn('[SMS] WARNING: Twilio SMS service NOT configured. Phone registration will fail!');
+    console.warn('[SMS] Required secrets: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER');
+  }
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

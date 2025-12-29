@@ -32,10 +32,17 @@ export async function verifyOTP(otp: string, storedHash: string): Promise<boolea
   return bcrypt.compare(otp, storedHash);
 }
 
+export function isSMSConfigured(): boolean {
+  return !!(TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_PHONE_NUMBER);
+}
+
 export async function sendSMS(phoneNumber: string, message: string): Promise<SendSMSResult> {
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
-    console.error('[SMS] Twilio credentials not configured');
-    return { success: false, error: 'SMS service not configured' };
+    console.error('[SMS] Twilio credentials not configured. Required: TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER');
+    console.error('[SMS] TWILIO_ACCOUNT_SID:', TWILIO_ACCOUNT_SID ? 'SET' : 'MISSING');
+    console.error('[SMS] TWILIO_AUTH_TOKEN:', TWILIO_AUTH_TOKEN ? 'SET' : 'MISSING');
+    console.error('[SMS] TWILIO_PHONE_NUMBER:', TWILIO_PHONE_NUMBER ? 'SET' : 'MISSING');
+    return { success: false, error: 'SMS service not configured. Please contact support.' };
   }
 
   try {
@@ -91,4 +98,5 @@ export const smsService = {
   verifyOTP,
   sendSMS,
   sendOTPSMS,
+  isSMSConfigured,
 };
