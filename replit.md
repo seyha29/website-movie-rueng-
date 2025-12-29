@@ -55,7 +55,8 @@ Preferred communication style: Simple, everyday language.
 - **Development Features**: Request/response logging, Vite integration, hot module replacement, and Replit-specific error overlay.
 
 ### Data Models
-- **Movie Schema**: `id`, `title`, `description`, `rating`, `year`, `duration`, `genres`, `cast`, `director`, `country`, `posterImage`, `backdropImage`, `videoEmbedUrl` (full movie), `trailerUrl` (preview), `isFree` (1=free, 0=paid), `isTrending`, `isNewAndPopular`.
+- **Movie Schema**: `id`, `title`, `description`, `rating`, `imdbRating`, `tmdbRating`, `userRatingAvg`, `userRatingCount`, `year`, `duration`, `genres`, `cast`, `director`, `country`, `posterImage`, `backdropImage`, `videoEmbedUrl` (full movie), `trailerUrl` (preview), `isFree` (1=free, 0=paid), `isTrending`, `isNewAndPopular`.
+- **Movie User Ratings Schema**: `id`, `userId`, `movieId`, `score` (1-10), `createdAt`, `updatedAt` - Stores individual user ratings for movies with unique constraint on userId+movieId.
 - **User Schema**: `id`, `fullName`, `phoneNumber` (unique, optional), `email` (unique, optional), `password` (hashed), `currentSessionId` (for single-device login). Note: Users are regular customers only. Users can register/login with either phone number OR email.
 - **Pending Phone Registration Schema**: `id`, `phoneNumber`, `fullName`, `passwordHash`, `otpHash`, `otpExpiresAt`, `attemptCount`, `resendCount`, `createdAt` - For SMS OTP verification during phone registration.
 - **Pending Email Registration Schema**: `id`, `email`, `fullName`, `passwordHash`, `otpHash`, `otpExpiresAt`, `attemptCount`, `resendCount`, `createdAt` - For email OTP verification during registration.
