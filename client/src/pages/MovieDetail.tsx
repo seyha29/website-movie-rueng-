@@ -178,8 +178,10 @@ export default function MovieDetail() {
 
   const handlePlayMovie = () => {
     if (!user) {
-      setPendingAction("play");
-      setIsAuthModalOpen(true);
+      // Store the movie ID and action for after login
+      sessionStorage.setItem('pendingMovieId', movieId || '');
+      sessionStorage.setItem('pendingMovieAction', 'play');
+      navigate('/login');
       return;
     }
 
@@ -196,8 +198,10 @@ export default function MovieDetail() {
 
   const handleAddToList = () => {
     if (!user) {
-      setPendingAction("add");
-      setIsAuthModalOpen(true);
+      // Store the movie ID and action for after login
+      sessionStorage.setItem('pendingMovieId', movieId || '');
+      sessionStorage.setItem('pendingMovieAction', 'add');
+      navigate('/login');
       return;
     }
 

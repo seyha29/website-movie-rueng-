@@ -226,12 +226,8 @@ export default function Home() {
   }
 
   const handlePlayMovie = (movieId: string) => {
-    if (!user) {
-      // Store the movie ID to return to after login
-      sessionStorage.setItem('pendingMovieId', movieId);
-      navigate('/login');
-      return;
-    }
+    // Allow everyone to see movie details (trailers are free)
+    // Login is only required when they try to buy/watch full movie
     navigate(`/movie/${movieId}`);
   };
 

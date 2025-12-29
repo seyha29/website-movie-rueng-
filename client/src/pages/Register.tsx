@@ -49,6 +49,7 @@ export default function Register() {
         
         if (pendingMovieId) {
           sessionStorage.removeItem('pendingMovieId');
+          sessionStorage.removeItem('pendingMovieAction');
           window.location.href = `/movie/${pendingMovieId}`;
           return;
         }
@@ -90,6 +91,7 @@ export default function Register() {
       
       if (pendingMovieId) {
         sessionStorage.removeItem('pendingMovieId');
+        sessionStorage.removeItem('pendingMovieAction');
         window.location.href = `/movie/${pendingMovieId}`;
         return;
       }

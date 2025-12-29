@@ -31,17 +31,19 @@ export default function Login() {
       
       // Check for pending movie actions from before login
       const pendingMovieId = sessionStorage.getItem('pendingMovieId');
+      const pendingMovieAction = sessionStorage.getItem('pendingMovieAction');
       const pendingAddMovieId = sessionStorage.getItem('pendingAddMovieId');
       
       if (pendingMovieId) {
         sessionStorage.removeItem('pendingMovieId');
+        sessionStorage.removeItem('pendingMovieAction');
+        // Redirect back to movie detail - the action will be handled there
         window.location.href = `/movie/${pendingMovieId}`;
         return;
       }
       
       if (pendingAddMovieId) {
         sessionStorage.removeItem('pendingAddMovieId');
-        // Will add to list after redirect to home
         window.location.href = '/';
         return;
       }
