@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import VideoPlayer from "@/components/VideoPlayer";
@@ -91,6 +91,12 @@ export default function MovieDetail() {
   const [pendingAction, setPendingAction] = useState<"play" | "add" | null>(null);
   const [secureVideoUrl, setSecureVideoUrl] = useState<string | null>(null);
   
+  const [userRating, setUserRating] = useState<number | null>(null);
+  const [hoveredRating, setHoveredRating] = useState<number | null>(null);
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const [avgRating, setAvgRating] = useState<number>(0);
+  const [ratingCount, setRatingCount] = useState<number>(0);
+  
   const { inList: inMyListCheck, toggleMyList } = useMyList(movieId);
   
   const fetchSecureVideoUrl = useCallback(async (movieId: string) => {
@@ -175,6 +181,55 @@ export default function MovieDetail() {
     },
     staleTime: 5 * 60 * 1000,
   });
+
+  useEffect(() => {
+    if (movie) {
+      setAvgRating(Number(movie.userRatingAvg) || 0);
+      setRatingCount(movie.userRatingCount || 0);
+    }
+  }, [movie]);
+
+  useEffect(() => {
+    if (user && movieId) {
+      apiRequest("GET", `/api/movies/${movieId}/my-rating`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.rating !== null) {
+            setUserRating(data.rating);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user, movieId]);
+
+  const handleRatingClick = async (score: number) => {
+    if (!user || isSubmittingRating || !movieId) return;
+    
+    setIsSubmittingRating(true);
+    try {
+      const res = await apiRequest("POST", `/api/movies/${movieId}/rate`, { score });
+      const data = await res.json();
+      if (data.success) {
+        setUserRating(data.rating);
+        setAvgRating(data.averageRating);
+        setRatingCount(data.totalRatings);
+        toast({
+          title: language === 'km' ? "ជោគជ័យ" : "Success",
+          description: language === 'km' ? "បានវាយតម្លៃភាពយន្ត" : "Movie rated successfully",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: language === 'km' ? "បរាជ័យ" : "Error",
+        description: language === 'km' ? "មិនអាចវាយតម្លៃបាន" : "Failed to submit rating",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
+
+  const displayRating = hoveredRating || userRating || 0;
 
   const handlePlayMovie = () => {
     if (!user) {
@@ -388,6 +443,61 @@ export default function MovieDetail() {
                           {genre}
                         </Badge>
                       ))}
+                    </div>
+
+                    {/* Rating Badges */}
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {movie.imdbRating && (
+                        <Badge className="text-xs bg-yellow-600 hover:bg-yellow-700" data-testid="badge-imdb-rating">
+                          IMDb {movie.imdbRating}
+                        </Badge>
+                      )}
+                      {movie.tmdbRating && (
+                        <Badge className="text-xs bg-blue-600 hover:bg-blue-700" data-testid="badge-tmdb-rating">
+                          TMDb {movie.tmdbRating}
+                        </Badge>
+                      )}
+                      {avgRating > 0 && (
+                        <Badge className="text-xs bg-green-600 hover:bg-green-700" data-testid="badge-user-rating">
+                          {language === 'km' ? 'អ្នកប្រើ' : 'Users'} {avgRating.toFixed(1)}/10 ({ratingCount} {language === 'km' ? 'សម្លេង' : 'votes'})
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* User Rating Section */}
+                    <div className="bg-muted/50 rounded-lg p-4 mb-4" data-testid="container-user-rating">
+                      <p className="text-sm font-medium mb-2">
+                        {userRating 
+                          ? (language === 'km' ? 'ការវាយតម្លៃរបស់អ្នក' : 'Your Rating')
+                          : (language === 'km' ? 'វាយតម្លៃភាពយន្តនេះ' : 'Rate this movie')}
+                        {!user && <span className="text-muted-foreground ml-2">({language === 'km' ? 'ចូលដើម្បីវាយតម្លៃ' : 'Login to rate'})</span>}
+                      </p>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
+                          <button
+                            key={score}
+                            disabled={!user || isSubmittingRating}
+                            onClick={() => handleRatingClick(score)}
+                            onMouseEnter={() => user && setHoveredRating(score)}
+                            onMouseLeave={() => setHoveredRating(null)}
+                            className={`p-0.5 transition-all ${
+                              user ? 'cursor-pointer hover:scale-110' : 'cursor-not-allowed opacity-50'
+                            }`}
+                            data-testid={`button-rate-${score}`}
+                          >
+                            <Star
+                              className={`h-6 w-6 transition-colors ${
+                                score <= displayRating 
+                                  ? 'fill-yellow-400 text-yellow-400' 
+                                  : 'text-gray-400'
+                              }`}
+                            />
+                          </button>
+                        ))}
+                        {displayRating > 0 && (
+                          <span className="ml-3 text-lg font-semibold text-yellow-400">{displayRating}/10</span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Cast Section */}
