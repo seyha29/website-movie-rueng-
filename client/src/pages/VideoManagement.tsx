@@ -344,6 +344,8 @@ function VideoForm({ movie, onSuccess }: VideoFormProps) {
     title: movie?.title || "",
     description: movie?.description || "",
     rating: movie?.rating || "7.5",
+    imdbRating: movie?.imdbRating || "",
+    tmdbRating: movie?.tmdbRating || "",
     year: movie?.year || new Date().getFullYear(),
     duration: movie?.duration || "2h 00m",
     genres: movie?.genres.map(g => ENGLISH_TO_KHMER[g] || g) || [],
@@ -366,6 +368,8 @@ function VideoForm({ movie, onSuccess }: VideoFormProps) {
       const payload = {
         ...data,
         rating: data.rating.toString(),
+        imdbRating: data.imdbRating ? data.imdbRating.toString() : null,
+        tmdbRating: data.tmdbRating ? data.tmdbRating.toString() : null,
         year: parseInt(data.year.toString()),
         genres: data.genres.map(g => GENRE_MAPPING[g] || g),
         cast: data.cast.split(",").map((c) => c.trim()).filter(Boolean),
@@ -620,6 +624,36 @@ function VideoForm({ movie, onSuccess }: VideoFormProps) {
             onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
             required
             data-testid="input-video-rating"
+            className="text-sm"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs sm:text-sm font-medium">IMDb Rating (0-10)</label>
+          <Input
+            type="number"
+            step="0.1"
+            min="0"
+            max="10"
+            value={formData.imdbRating}
+            onChange={(e) => setFormData({ ...formData, imdbRating: e.target.value })}
+            placeholder="e.g., 8.5"
+            data-testid="input-video-imdb-rating"
+            className="text-sm"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs sm:text-sm font-medium">TMDb Rating (0-10)</label>
+          <Input
+            type="number"
+            step="0.1"
+            min="0"
+            max="10"
+            value={formData.tmdbRating}
+            onChange={(e) => setFormData({ ...formData, tmdbRating: e.target.value })}
+            placeholder="e.g., 7.8"
+            data-testid="input-video-tmdb-rating"
             className="text-sm"
           />
         </div>

@@ -146,6 +146,8 @@ export const movies = pgTable("movies", {
   title: text("title").notNull(),
   description: text("description").notNull(),
   rating: decimal("rating", { precision: 3, scale: 1 }).notNull(),
+  imdbRating: decimal("imdb_rating", { precision: 3, scale: 1 }),
+  tmdbRating: decimal("tmdb_rating", { precision: 3, scale: 1 }),
   year: integer("year").notNull(),
   duration: text("duration").notNull(),
   genres: text("genres").array().notNull(),

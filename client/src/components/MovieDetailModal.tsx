@@ -15,6 +15,8 @@ interface MovieDetailModalProps {
     image: string;
     backdropImage: string;
     rating: number;
+    imdbRating?: string | null;
+    tmdbRating?: string | null;
     year: number;
     duration: string;
     genres: string[];
@@ -84,6 +86,16 @@ export default function MovieDetailModal({ isOpen, onClose, movie, onPlay }: Mov
         <DialogHeader className="p-4 space-y-4">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge className="text-xs" data-testid="badge-modal-rating">{movie.rating}/10</Badge>
+            {movie.imdbRating && (
+              <Badge className="text-xs bg-yellow-600 hover:bg-yellow-700" data-testid="badge-modal-imdb-rating">
+                IMDb {movie.imdbRating}
+              </Badge>
+            )}
+            {movie.tmdbRating && (
+              <Badge className="text-xs bg-blue-600 hover:bg-blue-700" data-testid="badge-modal-tmdb-rating">
+                TMDb {movie.tmdbRating}
+              </Badge>
+            )}
             <span className="text-xs text-muted-foreground" data-testid="text-modal-year">{movie.year}</span>
             <span className="text-xs text-muted-foreground" data-testid="text-modal-duration">{movie.duration}</span>
             {movie.genres.slice(0, 3).map((genre) => (
