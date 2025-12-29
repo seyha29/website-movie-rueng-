@@ -35,6 +35,7 @@ export default function Header() {
   const [location, setLocation] = useLocation();
   const [, params] = useRoute("/search/:query");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const { toast } = useToast();
   const { isSubscribed, subscription, isLoading: isSubLoading } = useSubscription();
   const { language, setLanguage } = useLanguage();
@@ -117,20 +118,31 @@ export default function Header() {
             />
           </Link>
           
-          {/* Search - Visible on all screens */}
-          <form onSubmit={handleSearch} className="flex flex-1 max-w-md mx-2 md:mx-8">
+          {/* Desktop Search - Hidden on mobile */}
+          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
             <div className="relative w-full">
-              <Search className="absolute left-2 md:left-3 top-1/2 -translate-y-1/2 h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder={searchLabels.placeholder[language]}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-7 md:pl-10 bg-secondary border-secondary focus:bg-accent focus:border-border text-xs md:text-sm h-8 md:h-10"
+                className="pl-10 bg-secondary border-secondary focus:bg-accent focus:border-border text-sm h-10"
                 data-testid="input-search"
               />
             </div>
           </form>
+
+          {/* Mobile Search Icon - Visible only on mobile */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden hover-elevate"
+            onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+            data-testid="button-mobile-search"
+          >
+            <Search className="h-5 w-5" />
+          </Button>
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-2">
@@ -339,6 +351,26 @@ export default function Header() {
             )}
           </div>
         </div>
+
+        {/* Mobile Search Dropdown */}
+        {isMobileSearchOpen && (
+          <div className="md:hidden px-4 pb-3 pt-1 border-t border-border/50">
+            <form onSubmit={(e) => { handleSearch(e); setIsMobileSearchOpen(false); }} className="w-full">
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="search"
+                  placeholder={searchLabels.placeholder[language]}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-secondary border-secondary focus:bg-accent focus:border-border text-sm h-10 w-full"
+                  data-testid="input-mobile-search"
+                  autoFocus
+                />
+              </div>
+            </form>
+          </div>
+        )}
       </div>
 
     </header>
