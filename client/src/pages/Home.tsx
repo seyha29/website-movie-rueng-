@@ -269,15 +269,15 @@ export default function Home() {
       <div className="pt-14 lg:pt-16 border-b border-border">
         <div className="px-4 lg:px-12 py-4 lg:py-6">
           <div className="flex flex-col items-center gap-4">
-            {/* Centered Filter Box - Grid on mobile, row on desktop */}
-            <div ref={filterRef} className="w-full max-w-4xl mx-auto bg-secondary/30 border border-border rounded-lg px-3 lg:px-4 py-2 lg:py-3 shadow-sm">
-              <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:justify-center sm:gap-4 lg:gap-6">
+            {/* Centered Filter Box - Single row on all screens */}
+            <div ref={filterRef} className="w-full max-w-4xl mx-auto bg-secondary/30 border border-border rounded-lg px-2 lg:px-4 py-2 lg:py-3 shadow-sm">
+              <div className="flex flex-nowrap items-center justify-center gap-1 sm:gap-4 lg:gap-6">
                 {/* Genre Filter */}
                 <div className="relative">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full sm:w-auto flex items-center justify-center gap-1 hover-elevate h-auto sm:h-9 px-3 sm:px-3 py-2 sm:py-0 text-xs sm:text-sm"
+                    className="flex items-center justify-center gap-0.5 sm:gap-1 hover-elevate h-auto sm:h-9 px-2 sm:px-3 py-1.5 sm:py-0 text-[10px] sm:text-sm"
                     onClick={() => setIsGenreDropdownOpen(!isGenreDropdownOpen)}
                     data-testid="button-genre-filter"
                   >
@@ -306,7 +306,7 @@ export default function Home() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full sm:w-auto flex items-center justify-center gap-1 hover-elevate h-auto sm:h-9 px-3 sm:px-3 py-2 sm:py-0 text-xs sm:text-sm"
+                    className="flex items-center justify-center gap-0.5 sm:gap-1 hover-elevate h-auto sm:h-9 px-2 sm:px-3 py-1.5 sm:py-0 text-[10px] sm:text-sm"
                     onClick={() => setIsRatingDropdownOpen(!isRatingDropdownOpen)}
                     data-testid="button-rating-filter"
                   >
@@ -339,7 +339,7 @@ export default function Home() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full sm:w-auto flex items-center justify-center gap-1 hover-elevate h-auto sm:h-9 px-3 sm:px-3 py-2 sm:py-0 text-xs sm:text-sm"
+                    className="flex items-center justify-center gap-0.5 sm:gap-1 hover-elevate h-auto sm:h-9 px-2 sm:px-3 py-1.5 sm:py-0 text-[10px] sm:text-sm"
                     onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
                     data-testid="button-year-filter"
                   >
@@ -372,7 +372,7 @@ export default function Home() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full sm:w-auto flex items-center justify-center gap-1 hover-elevate h-auto sm:h-9 px-3 sm:px-3 py-2 sm:py-0 text-xs sm:text-sm"
+                    className="flex items-center justify-center gap-0.5 sm:gap-1 hover-elevate h-auto sm:h-9 px-2 sm:px-3 py-1.5 sm:py-0 text-[10px] sm:text-sm"
                     onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
                     data-testid="button-country-filter"
                   >
