@@ -40,22 +40,21 @@ export async function sendSMS(phoneNumber: string, message: string): Promise<Sen
   try {
     const formattedPhone = phoneNumber.replace('+', '');
     
-    const params = new URLSearchParams();
-    params.append('mocean-api-key', MOCEAN_API_TOKEN);
-    params.append('mocean-api-secret', MOCEAN_API_TOKEN);
-    params.append('mocean-from', SMS_SENDER);
-    params.append('mocean-to', formattedPhone);
-    params.append('mocean-text', message);
-    params.append('mocean-resp-format', 'json');
+    const requestBody = {
+      'mocean-from': SMS_SENDER,
+      'mocean-to': formattedPhone,
+      'mocean-text': message,
+    };
 
     console.log(`[SMS] Sending to ${formattedPhone}: ${message.substring(0, 50)}...`);
 
     const response = await fetch('https://rest.moceanapi.com/rest/2/sms', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${MOCEAN_API_TOKEN}`,
       },
-      body: params.toString(),
+      body: JSON.stringify(requestBody),
     });
 
     const responseText = await response.text();
