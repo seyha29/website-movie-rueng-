@@ -122,8 +122,8 @@ export default function Header() {
             />
           </Link>
           
-          {/* Desktop Search - Hidden on mobile */}
-          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
+          {/* Search Bar - Always visible on desktop, visible on mobile only when logged in */}
+          <form onSubmit={handleSearch} className={`${user ? 'flex' : 'hidden md:flex'} flex-1 max-w-md mx-2 md:mx-8`}>
             <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -131,22 +131,24 @@ export default function Header() {
                 placeholder={searchLabels.placeholder[language]}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-secondary border-secondary focus:bg-accent focus:border-border text-sm h-10"
+                className="pl-10 bg-secondary border-secondary focus:bg-accent focus:border-border text-sm h-9 md:h-10"
                 data-testid="input-search"
               />
             </div>
           </form>
 
-          {/* Mobile Search Icon - Visible only on mobile */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden hover-elevate"
-            onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-            data-testid="button-mobile-search"
-          >
-            <Search className="h-5 w-5" />
-          </Button>
+          {/* Mobile Search Icon - Visible only on mobile when NOT logged in */}
+          {!user && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden hover-elevate"
+              onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+              data-testid="button-mobile-search"
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+          )}
 
           {/* Right Side Actions */}
           <div className="flex items-center gap-2">
