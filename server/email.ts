@@ -26,7 +26,7 @@ export async function sendOTPEmail(
     ? `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 20px; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0; text-align: center;">Reoung Movies Flix</h1>
+          <h1 style="color: white; margin: 0; text-align: center;">RUENG</h1>
         </div>
         <div style="background: #1a1a1a; padding: 30px; border-radius: 0 0 10px 10px; color: #fff;">
           <p style="font-size: 16px;">សួស្តី ${fullName},</p>
@@ -42,7 +42,7 @@ export async function sendOTPEmail(
     : `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 20px; border-radius: 10px 10px 0 0;">
-          <h1 style="color: white; margin: 0; text-align: center;">Reoung Movies Flix</h1>
+          <h1 style="color: white; margin: 0; text-align: center;">RUENG</h1>
         </div>
         <div style="background: #1a1a1a; padding: 30px; border-radius: 0 0 10px 10px; color: #fff;">
           <p style="font-size: 16px;">Hello ${fullName},</p>
