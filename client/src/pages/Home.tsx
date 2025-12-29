@@ -11,7 +11,7 @@ import { PaymentModal } from "@/components/PaymentModal";
 import { useMyList } from "@/hooks/use-my-list";
 import { useVideoPurchaseGate, useVideoPurchase } from "@/hooks/use-video-purchase";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, Play, Plus } from "lucide-react";
+import { ChevronDown, Play, Plus, Info } from "lucide-react";
 import type { Movie } from "@shared/schema";
 import { countryMapping } from "@shared/countries";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -468,6 +468,18 @@ export default function Home() {
                     data-testid={`button-add-to-list-${movie.id}`}
                   >
                     <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="secondary"
+                    className="h-10 w-10 rounded-full backdrop-blur-sm bg-background/80 hover-elevate"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleShowDetails(movie.id);
+                    }}
+                    data-testid={`button-info-${movie.id}`}
+                  >
+                    <Info className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
