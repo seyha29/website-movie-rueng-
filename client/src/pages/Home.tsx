@@ -277,15 +277,13 @@ export default function Home() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full sm:w-auto flex flex-col sm:flex-row items-start sm:items-center gap-0 sm:gap-1 hover-elevate h-auto sm:h-9 px-2 sm:px-3 py-1.5 sm:py-0 text-xs sm:text-sm"
+                    className="w-full sm:w-auto flex items-center gap-1 hover-elevate h-auto sm:h-9 px-2 sm:px-3 py-1.5 sm:py-0 text-xs sm:text-sm"
                     onClick={() => setIsGenreDropdownOpen(!isGenreDropdownOpen)}
                     data-testid="button-genre-filter"
                   >
                     <span className="text-muted-foreground text-[10px] sm:text-xs">{filterLabels.genre[language]}</span>
-                    <div className="flex items-center gap-1">
-                      <span className="font-medium">{selectedGenre}</span>
-                      <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                    </div>
+                    <span className="font-medium">{selectedGenre}</span>
+                    <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                   </Button>
                   {isGenreDropdownOpen && (
                     <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[160px] max-h-[300px] overflow-y-auto z-[100]">
@@ -308,15 +306,13 @@ export default function Home() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full sm:w-auto flex flex-col sm:flex-row items-start sm:items-center gap-0 sm:gap-1 hover-elevate h-auto sm:h-9 px-2 sm:px-3 py-1.5 sm:py-0 text-xs sm:text-sm"
+                    className="w-full sm:w-auto flex items-center gap-1 hover-elevate h-auto sm:h-9 px-2 sm:px-3 py-1.5 sm:py-0 text-xs sm:text-sm"
                     onClick={() => setIsRatingDropdownOpen(!isRatingDropdownOpen)}
                     data-testid="button-rating-filter"
                   >
                     <span className="text-muted-foreground text-[10px] sm:text-xs">{filterLabels.rating[language]}</span>
-                    <div className="flex items-center gap-1">
-                      <span className="font-medium">{selectedRating}</span>
-                      <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                    </div>
+                    <span className="font-medium">{selectedRating}</span>
+                    <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                   </Button>
                   {isRatingDropdownOpen && (
                     <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[120px] z-[100]">
@@ -343,15 +339,13 @@ export default function Home() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full sm:w-auto flex flex-col sm:flex-row items-start sm:items-center gap-0 sm:gap-1 hover-elevate h-auto sm:h-9 px-2 sm:px-3 py-1.5 sm:py-0 text-xs sm:text-sm"
+                    className="w-full sm:w-auto flex items-center gap-1 hover-elevate h-auto sm:h-9 px-2 sm:px-3 py-1.5 sm:py-0 text-xs sm:text-sm"
                     onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
                     data-testid="button-year-filter"
                   >
                     <span className="text-muted-foreground text-[10px] sm:text-xs">{filterLabels.year[language]}</span>
-                    <div className="flex items-center gap-1">
-                      <span className="font-medium">{selectedYear}</span>
-                      <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                    </div>
+                    <span className="font-medium">{selectedYear}</span>
+                    <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                   </Button>
                   {isYearDropdownOpen && (
                     <div className="absolute top-full left-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[140px] z-[100]">
@@ -378,15 +372,13 @@ export default function Home() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full sm:w-auto flex flex-col sm:flex-row items-start sm:items-center gap-0 sm:gap-1 hover-elevate h-auto sm:h-9 px-2 sm:px-3 py-1.5 sm:py-0 text-xs sm:text-sm"
+                    className="w-full sm:w-auto flex items-center gap-1 hover-elevate h-auto sm:h-9 px-2 sm:px-3 py-1.5 sm:py-0 text-xs sm:text-sm"
                     onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
                     data-testid="button-country-filter"
                   >
                     <span className="text-muted-foreground text-[10px] sm:text-xs">{filterLabels.country[language]}</span>
-                    <div className="flex items-center gap-1">
-                      <span className="font-medium">{selectedCountry}</span>
-                      <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                    </div>
+                    <span className="font-medium">{selectedCountry}</span>
+                    <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                   </Button>
                   {isCountryDropdownOpen && (
                     <div className="absolute top-full right-0 mt-1 bg-card border border-border rounded-md shadow-lg min-w-[140px] max-h-[300px] overflow-y-auto z-[100]">
