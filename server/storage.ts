@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Movie, type InsertMovie, type MyList, type InsertMyList, type SubscriptionPlan, type UserSubscription, type InsertUserSubscription, type PaymentTransaction, type InsertPaymentTransaction, type MovieView, type InsertMovieView, type VideoPurchase, type InsertVideoPurchase, type AdBanner, type InsertAdBanner, type SecurityViolation, type InsertSecurityViolation, type UserBan, type InsertUserBan, type DailyWatchTime, type InsertDailyWatchTime, type Admin, type InsertAdmin, type PendingEmailRegistration, type PendingPhoneRegistration, users, movies, myList, subscriptionPlans, userSubscriptions, paymentTransactions, movieViews, videoPurchases, adBanners, securityViolations, userBans, dailyWatchTime, videoAccessTokens, admins, pendingEmailRegistrations, pendingPhoneRegistrations } from "@shared/schema";
+import { type User, type InsertUser, type Movie, type InsertMovie, type MyList, type InsertMyList, type SubscriptionPlan, type UserSubscription, type InsertUserSubscription, type PaymentTransaction, type InsertPaymentTransaction, type MovieView, type InsertMovieView, type VideoPurchase, type InsertVideoPurchase, type AdBanner, type InsertAdBanner, type SecurityViolation, type InsertSecurityViolation, type UserBan, type InsertUserBan, type DailyWatchTime, type InsertDailyWatchTime, type Admin, type InsertAdmin, type PendingEmailRegistration, type PendingPhoneRegistration, type PendingPasswordReset, users, movies, myList, subscriptionPlans, userSubscriptions, paymentTransactions, movieViews, videoPurchases, adBanners, securityViolations, userBans, dailyWatchTime, videoAccessTokens, admins, pendingEmailRegistrations, pendingPhoneRegistrations, pendingPasswordResets } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -129,6 +129,12 @@ export interface IStorage {
   createPendingPhoneRegistration(data: { phoneNumber: string; fullName: string; passwordHash: string; otpHash: string; otpExpiresAt: number }): Promise<PendingPhoneRegistration>;
   updatePendingPhoneRegistration(phoneNumber: string, data: Partial<{ otpHash: string; otpExpiresAt: number; attemptCount: number; resendCount: number }>): Promise<PendingPhoneRegistration | undefined>;
   deletePendingPhoneRegistration(phoneNumber: string): Promise<boolean>;
+  
+  // Pending Password Reset methods (forgot password OTP verification)
+  getPendingPasswordReset(userId: string): Promise<PendingPasswordReset | undefined>;
+  createPendingPasswordReset(data: { userId: string; email?: string; phoneNumber?: string; otpHash: string; otpExpiresAt: number }): Promise<PendingPasswordReset>;
+  updatePendingPasswordReset(userId: string, data: Partial<{ otpHash: string; otpExpiresAt: number; attemptCount: number; resendCount: number }>): Promise<PendingPasswordReset | undefined>;
+  deletePendingPasswordReset(userId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -792,6 +798,34 @@ export class DatabaseStorage implements IStorage {
     const result = await this.db.delete(pendingPhoneRegistrations).where(eq(pendingPhoneRegistrations.phoneNumber, phoneNumber));
     return result.rowCount !== null && result.rowCount > 0;
   }
+
+  // Pending Password Reset methods
+  async getPendingPasswordReset(userId: string): Promise<PendingPasswordReset | undefined> {
+    const result = await this.db.select().from(pendingPasswordResets).where(eq(pendingPasswordResets.userId, userId));
+    return result[0];
+  }
+
+  async createPendingPasswordReset(data: { userId: string; email?: string; phoneNumber?: string; otpHash: string; otpExpiresAt: number }): Promise<PendingPasswordReset> {
+    await this.db.delete(pendingPasswordResets).where(eq(pendingPasswordResets.userId, data.userId));
+    const result = await this.db.insert(pendingPasswordResets).values({
+      userId: data.userId,
+      email: data.email || null,
+      phoneNumber: data.phoneNumber || null,
+      otpHash: data.otpHash,
+      otpExpiresAt: data.otpExpiresAt,
+    }).returning();
+    return result[0];
+  }
+
+  async updatePendingPasswordReset(userId: string, data: Partial<{ otpHash: string; otpExpiresAt: number; attemptCount: number; resendCount: number }>): Promise<PendingPasswordReset | undefined> {
+    const result = await this.db.update(pendingPasswordResets).set(data).where(eq(pendingPasswordResets.userId, userId)).returning();
+    return result[0];
+  }
+
+  async deletePendingPasswordReset(userId: string): Promise<boolean> {
+    const result = await this.db.delete(pendingPasswordResets).where(eq(pendingPasswordResets.userId, userId));
+    return result.rowCount !== null && result.rowCount > 0;
+  }
 }
 
 export class MemStorage implements IStorage {
@@ -1288,6 +1322,41 @@ export class MemStorage implements IStorage {
 
   async deletePendingPhoneRegistration(phoneNumber: string): Promise<boolean> {
     return this.pendingPhoneRegistrations.delete(phoneNumber);
+  }
+
+  // Pending Password Reset methods (MemStorage stubs)
+  private pendingPasswordResets: Map<string, PendingPasswordReset> = new Map();
+
+  async getPendingPasswordReset(userId: string): Promise<PendingPasswordReset | undefined> {
+    return this.pendingPasswordResets.get(userId);
+  }
+
+  async createPendingPasswordReset(data: { userId: string; email?: string; phoneNumber?: string; otpHash: string; otpExpiresAt: number }): Promise<PendingPasswordReset> {
+    const pending: PendingPasswordReset = {
+      id: randomUUID(),
+      userId: data.userId,
+      email: data.email || null,
+      phoneNumber: data.phoneNumber || null,
+      otpHash: data.otpHash,
+      otpExpiresAt: data.otpExpiresAt,
+      attemptCount: 0,
+      resendCount: 0,
+      createdAt: Math.floor(Date.now() / 1000),
+    };
+    this.pendingPasswordResets.set(data.userId, pending);
+    return pending;
+  }
+
+  async updatePendingPasswordReset(userId: string, data: Partial<{ otpHash: string; otpExpiresAt: number; attemptCount: number; resendCount: number }>): Promise<PendingPasswordReset | undefined> {
+    const existing = this.pendingPasswordResets.get(userId);
+    if (!existing) return undefined;
+    const updated = { ...existing, ...data };
+    this.pendingPasswordResets.set(userId, updated);
+    return updated;
+  }
+
+  async deletePendingPasswordReset(userId: string): Promise<boolean> {
+    return this.pendingPasswordResets.delete(userId);
   }
 }
 

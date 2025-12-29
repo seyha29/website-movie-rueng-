@@ -118,6 +118,29 @@ export const insertPendingPhoneRegistrationSchema = createInsertSchema(pendingPh
 export type InsertPendingPhoneRegistration = z.infer<typeof insertPendingPhoneRegistrationSchema>;
 export type PendingPhoneRegistration = typeof pendingPhoneRegistrations.$inferSelect;
 
+// Pending Password Resets - for forgot password OTP verification
+export const pendingPasswordResets = pgTable("pending_password_resets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  email: text("email"),
+  phoneNumber: text("phone_number"),
+  otpHash: text("otp_hash").notNull(),
+  otpExpiresAt: integer("otp_expires_at").notNull(),
+  attemptCount: integer("attempt_count").notNull().default(0),
+  resendCount: integer("resend_count").notNull().default(0),
+  createdAt: integer("created_at").notNull().default(sql`extract(epoch from now())`),
+});
+
+export const insertPendingPasswordResetSchema = createInsertSchema(pendingPasswordResets).omit({
+  id: true,
+  attemptCount: true,
+  resendCount: true,
+  createdAt: true,
+});
+
+export type InsertPendingPasswordReset = z.infer<typeof insertPendingPasswordResetSchema>;
+export type PendingPasswordReset = typeof pendingPasswordResets.$inferSelect;
+
 export const movies = pgTable("movies", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),

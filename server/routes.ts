@@ -583,6 +583,239 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Forgot Password - Request OTP
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { phoneNumber, email, language } = req.body;
+      
+      if (!phoneNumber && !email) {
+        return res.status(400).json({ error: "Phone number or email is required" });
+      }
+
+      let user;
+      let formattedPhone: string | undefined;
+      
+      if (phoneNumber) {
+        const digitsOnly = phoneNumber.replace(/^(\+855|855|0)/, '');
+        formattedPhone = `+855${digitsOnly}`;
+        user = await storage.getUserByPhoneNumber(formattedPhone);
+      } else if (email) {
+        user = await storage.getUserByEmail(email.toLowerCase());
+      }
+      
+      if (!user) {
+        return res.status(404).json({ error: "No account found with this phone number or email" });
+      }
+
+      // Check for existing pending reset
+      const existingPending = await storage.getPendingPasswordReset(user.id);
+      if (existingPending) {
+        const now = Math.floor(Date.now() / 1000);
+        const timeSinceCreated = now - existingPending.createdAt;
+        
+        if (timeSinceCreated < 60) {
+          return res.status(429).json({ 
+            error: "Please wait before requesting a new code",
+            retryAfter: 60 - timeSinceCreated
+          });
+        }
+        
+        if (existingPending.resendCount >= 3) {
+          const cooldownSeconds = 300;
+          if (timeSinceCreated < cooldownSeconds) {
+            return res.status(429).json({ 
+              error: "Too many attempts. Please wait 5 minutes before trying again.",
+              retryAfter: cooldownSeconds - timeSinceCreated
+            });
+          }
+        }
+      }
+
+      if (phoneNumber && formattedPhone) {
+        const otp = smsService.generateOTP();
+        const otpHash = await smsService.hashOTP(otp);
+        const otpExpiresAt = smsService.getOTPExpiryTime();
+        
+        await storage.createPendingPasswordReset({
+          userId: user.id,
+          phoneNumber: formattedPhone,
+          otpHash,
+          otpExpiresAt,
+        });
+        
+        const smsResult = await smsService.sendOTPSMS(formattedPhone, otp);
+        
+        if (!smsResult.success) {
+          console.error(`Failed to send SMS to ${formattedPhone}:`, smsResult.error);
+          return res.status(500).json({ error: "Failed to send verification SMS. Please try again." });
+        }
+        
+        console.log(`Password reset OTP sent to ${formattedPhone}`);
+        return res.status(200).json({ 
+          success: true,
+          userId: user.id,
+          phoneNumber: formattedPhone,
+          message: "Verification code sent to your phone" 
+        });
+      } else if (email) {
+        const otp = generateOTP();
+        const otpHash = await bcrypt.hash(otp, 10);
+        const otpExpiresAt = Math.floor(Date.now() / 1000) + 600;
+        
+        await storage.createPendingPasswordReset({
+          userId: user.id,
+          email: email.toLowerCase(),
+          otpHash,
+          otpExpiresAt,
+        });
+        
+        const lang = language === "km" ? "km" : "en";
+        const emailSent = await sendOTPEmail(email.toLowerCase(), otp, user.fullName, lang);
+        
+        if (!emailSent) {
+          return res.status(500).json({ error: "Failed to send verification email. Please try again." });
+        }
+        
+        console.log(`Password reset OTP sent to ${email}`);
+        return res.status(200).json({ 
+          success: true,
+          userId: user.id,
+          email: email.toLowerCase(),
+          message: "Verification code sent to your email" 
+        });
+      }
+    } catch (error) {
+      console.error("Forgot password error:", error);
+      res.status(500).json({ error: "Failed to process request" });
+    }
+  });
+
+  // Verify OTP and reset password
+  app.post("/api/auth/reset-password", async (req, res) => {
+    try {
+      const { userId, otp, newPassword } = req.body;
+      
+      if (!userId || !otp || !newPassword) {
+        return res.status(400).json({ error: "User ID, OTP, and new password are required" });
+      }
+      
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: "Password must be at least 6 characters" });
+      }
+      
+      const pending = await storage.getPendingPasswordReset(userId);
+      if (!pending) {
+        return res.status(400).json({ error: "No password reset request found. Please request a new code." });
+      }
+      
+      const now = Math.floor(Date.now() / 1000);
+      if (now > pending.otpExpiresAt) {
+        return res.status(400).json({ error: "Verification code expired. Please request a new one." });
+      }
+      
+      if (pending.attemptCount >= 5) {
+        await storage.deletePendingPasswordReset(userId);
+        return res.status(400).json({ error: "Too many attempts. Please request a new code." });
+      }
+      
+      let isOTPValid = false;
+      if (pending.phoneNumber) {
+        isOTPValid = await smsService.verifyOTP(otp, pending.otpHash);
+      } else {
+        isOTPValid = await bcrypt.compare(otp, pending.otpHash);
+      }
+      
+      if (!isOTPValid) {
+        await storage.updatePendingPasswordReset(userId, { 
+          attemptCount: pending.attemptCount + 1 
+        });
+        return res.status(400).json({ error: "Invalid verification code" });
+      }
+      
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await storage.updateUser(userId, { password: hashedPassword });
+      
+      await storage.deletePendingPasswordReset(userId);
+      
+      console.log(`Password reset successful for user: ${userId}`);
+      res.json({ success: true, message: "Password reset successful" });
+    } catch (error) {
+      console.error("Reset password error:", error);
+      res.status(500).json({ error: "Failed to reset password" });
+    }
+  });
+
+  // Resend password reset OTP
+  app.post("/api/auth/resend-reset-otp", async (req, res) => {
+    try {
+      const { userId, language } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+      
+      const pending = await storage.getPendingPasswordReset(userId);
+      if (!pending) {
+        return res.status(400).json({ error: "No password reset request found. Please start over." });
+      }
+      
+      if (pending.resendCount >= 3) {
+        return res.status(400).json({ error: "Maximum resend attempts reached. Please start over." });
+      }
+      
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(400).json({ error: "User not found" });
+      }
+
+      if (pending.phoneNumber) {
+        const otp = smsService.generateOTP();
+        const otpHash = await smsService.hashOTP(otp);
+        const otpExpiresAt = smsService.getOTPExpiryTime();
+        
+        await storage.updatePendingPasswordReset(userId, {
+          otpHash,
+          otpExpiresAt,
+          attemptCount: 0,
+          resendCount: pending.resendCount + 1,
+        });
+        
+        const smsResult = await smsService.sendOTPSMS(pending.phoneNumber, otp);
+        
+        if (!smsResult.success) {
+          return res.status(500).json({ error: "Failed to send verification SMS. Please try again." });
+        }
+        
+        console.log(`Password reset OTP resent to ${pending.phoneNumber}`);
+        res.json({ success: true, message: "Verification code resent" });
+      } else if (pending.email) {
+        const otp = generateOTP();
+        const otpHash = await bcrypt.hash(otp, 10);
+        const otpExpiresAt = Math.floor(Date.now() / 1000) + 600;
+        
+        await storage.updatePendingPasswordReset(userId, {
+          otpHash,
+          otpExpiresAt,
+          attemptCount: 0,
+          resendCount: pending.resendCount + 1,
+        });
+        
+        const lang = language === "km" ? "km" : "en";
+        const emailSent = await sendOTPEmail(pending.email, otp, user.fullName, lang);
+        
+        if (!emailSent) {
+          return res.status(500).json({ error: "Failed to send verification email. Please try again." });
+        }
+        
+        console.log(`Password reset OTP resent to ${pending.email}`);
+        res.json({ success: true, message: "Verification code resent" });
+      }
+    } catch (error) {
+      console.error("Resend reset OTP error:", error);
+      res.status(500).json({ error: "Failed to resend code" });
+    }
+  });
+
   // Admin Authentication Routes (separate from user auth)
   app.post("/api/admin/auth/login", async (req, res) => {
     try {

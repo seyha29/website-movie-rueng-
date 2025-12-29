@@ -118,7 +118,43 @@ export const loginPageLabels = {
   passwordPlaceholder: { km: "បញ្ចូលលេខសំងាត់", en: "Enter your password" },
   loginButton: { km: "ចូល", en: "Login" },
   noAccount: { km: "មិនទាន់មានអាខោន?", en: "Don't have an account?" },
-  registerLink: { km: "ចុះឈ្មោះ", en: "Register" }
+  registerLink: { km: "ចុះឈ្មោះ", en: "Register" },
+  forgotPassword: { km: "ភ្លេចលេខសំងាត់?", en: "Forgot Password?" }
+};
+
+export const forgotPasswordLabels = {
+  title: { km: "ភ្លេចលេខសំងាត់", en: "Forgot Password" },
+  description: { km: "បញ្ចូលលេខទូរស័ព្ទ ឬអ៊ីមែលរបស់អ្នកដើម្បីកំណត់លេខសំងាត់ឡើងវិញ", en: "Enter your phone number or email to reset your password" },
+  phoneTab: { km: "លេខទូរស័ព្ទ", en: "Phone" },
+  emailTab: { km: "អ៊ីមែល", en: "Email" },
+  phoneNumber: { km: "លេខទូរស័ព្ទ", en: "Phone Number" },
+  phoneNumberPlaceholder: { km: "012345678", en: "012345678" },
+  phoneNumberHelper: { km: "បញ្ចូលដោយគ្មាន +855 (ឧទាហរណ៍៖ 012345678)", en: "Enter without +855 prefix (e.g., 012345678)" },
+  email: { km: "អ៊ីមែល", en: "Email" },
+  emailPlaceholder: { km: "example@email.com", en: "example@email.com" },
+  sendCode: { km: "ផ្ញើលេខកូដ", en: "Send Code" },
+  sending: { km: "កំពុងផ្ញើ...", en: "Sending..." },
+  verifyTitle: { km: "បញ្ជាក់លេខកូដ", en: "Verify Code" },
+  verifyDescription: { km: "យើងបានផ្ញើលេខកូដផ្ទៀងផ្ទាត់ទៅ", en: "We've sent a verification code to" },
+  enterCode: { km: "បញ្ចូលលេខកូដផ្ទៀងផ្ទាត់", en: "Enter Verification Code" },
+  codePlaceholder: { km: "បញ្ចូលលេខកូដ 6 ខ្ទង់", en: "Enter 6-digit code" },
+  verifyButton: { km: "បញ្ជាក់", en: "Verify" },
+  verifying: { km: "កំពុងផ្ទៀងផ្ទាត់...", en: "Verifying..." },
+  resendCode: { km: "ផ្ញើលេខកូដម្តងទៀត", en: "Resend Code" },
+  resending: { km: "កំពុងផ្ញើម្តងទៀត...", en: "Resending..." },
+  codeExpires: { km: "លេខកូដនឹងផុតកំណត់ក្នុង 10 នាទី", en: "Code expires in 10 minutes" },
+  newPasswordTitle: { km: "កំណត់លេខសំងាត់ថ្មី", en: "Set New Password" },
+  newPassword: { km: "លេខសំងាត់ថ្មី", en: "New Password" },
+  newPasswordPlaceholder: { km: "បញ្ចូលលេខសំងាត់ថ្មី", en: "Enter new password" },
+  confirmPassword: { km: "បញ្ជាក់លេខសំងាត់", en: "Confirm Password" },
+  confirmPasswordPlaceholder: { km: "បញ្ជាក់លេខសំងាត់ថ្មី", en: "Confirm new password" },
+  resetButton: { km: "កំណត់លេខសំងាត់ឡើងវិញ", en: "Reset Password" },
+  resetting: { km: "កំពុងកំណត់ឡើងវិញ...", en: "Resetting..." },
+  passwordHelper: { km: "យ៉ាងហោចណាស់ 8 ខ្ទង់", en: "At least 8 characters" },
+  backToLogin: { km: "ត្រលប់ទៅចូល", en: "Back to Login" },
+  rememberPassword: { km: "ចាំលេខសំងាត់វិញ?", en: "Remember your password?" },
+  success: { km: "លេខសំងាត់បានកំណត់ឡើងវិញដោយជោគជ័យ!", en: "Password reset successful!" },
+  successDescription: { km: "អ្នកអាចចូលដោយប្រើលេខសំងាត់ថ្មីរបស់អ្នកឥឡូវនេះ។", en: "You can now login with your new password." }
 };
 
 export const registerPageLabels = {

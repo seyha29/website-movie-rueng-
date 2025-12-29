@@ -186,6 +186,17 @@ export default function Login() {
             </Button>
 
             <div className="text-center text-sm">
+              <button
+                type="button"
+                className="text-primary hover:underline"
+                onClick={() => setLocation("/forgot-password")}
+                data-testid="link-forgot-password"
+              >
+                {loginPageLabels.forgotPassword[language]}
+              </button>
+            </div>
+
+            <div className="text-center text-sm">
               <span className="text-muted-foreground">{loginPageLabels.noAccount[language]} </span>
               <button
                 type="button"

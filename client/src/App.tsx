@@ -12,6 +12,7 @@ const MovieDetail = lazy(() => import("@/pages/MovieDetail"));
 const SearchResults = lazy(() => import("@/pages/SearchResults"));
 const Login = lazy(() => import("@/pages/Login"));
 const Register = lazy(() => import("@/pages/Register"));
+const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
 const Profile = lazy(() => import("@/pages/Profile"));
 const AdminPanel = lazy(() => import("@/pages/AdminPanel"));
 const AdminLogin = lazy(() => import("@/pages/AdminLogin"));
@@ -45,6 +46,7 @@ function Router() {
         <Route path="/search/:query" component={SearchResults} />
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
+        <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/profile" component={Profile} />
         <Route path="/payments/result" component={PaymentResult} />
         <Route path="/admin/login" component={AdminLogin} />
