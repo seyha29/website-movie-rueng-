@@ -41,11 +41,10 @@ export async function sendSMS(phoneNumber: string, message: string): Promise<Sen
     const formattedPhone = phoneNumber.replace('+', '');
     
     const params = new URLSearchParams();
-    params.append('mocean-api-key', MOCEAN_API_TOKEN.split('-')[0] || '');
-    params.append('mocean-api-secret', MOCEAN_API_TOKEN);
     params.append('mocean-from', SMS_SENDER);
     params.append('mocean-to', formattedPhone);
     params.append('mocean-text', message);
+    params.append('mocean-resp-format', 'json');
 
     console.log(`[SMS] Sending to ${formattedPhone}: ${message.substring(0, 50)}...`);
 
@@ -53,11 +52,19 @@ export async function sendSMS(phoneNumber: string, message: string): Promise<Sen
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Bearer ${MOCEAN_API_TOKEN}`,
       },
       body: params.toString(),
     });
 
-    const result = await response.json();
+    const responseText = await response.text();
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch {
+      console.error(`[SMS] Invalid response format: ${responseText.substring(0, 200)}`);
+      return { success: false, error: 'Invalid API response format' };
+    }
     
     if (response.ok && result.messages && result.messages[0]?.status === '0') {
       console.log(`[SMS] Sent successfully to ${formattedPhone}`);
