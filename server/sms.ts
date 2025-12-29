@@ -41,6 +41,8 @@ export async function sendSMS(phoneNumber: string, message: string): Promise<Sen
     const formattedPhone = phoneNumber.replace('+', '');
     
     const params = new URLSearchParams();
+    params.append('mocean-api-key', MOCEAN_API_TOKEN);
+    params.append('mocean-api-secret', MOCEAN_API_TOKEN);
     params.append('mocean-from', SMS_SENDER);
     params.append('mocean-to', formattedPhone);
     params.append('mocean-text', message);
@@ -52,12 +54,13 @@ export async function sendSMS(phoneNumber: string, message: string): Promise<Sen
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Bearer ${MOCEAN_API_TOKEN}`,
       },
       body: params.toString(),
     });
 
     const responseText = await response.text();
+    console.log(`[SMS] API Response: ${responseText.substring(0, 300)}`);
+    
     let result;
     try {
       result = JSON.parse(responseText);
