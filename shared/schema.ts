@@ -95,6 +95,29 @@ export const insertPendingEmailRegistrationSchema = createInsertSchema(pendingEm
 export type InsertPendingEmailRegistration = z.infer<typeof insertPendingEmailRegistrationSchema>;
 export type PendingEmailRegistration = typeof pendingEmailRegistrations.$inferSelect;
 
+// Pending Phone Registrations - for SMS OTP verification
+export const pendingPhoneRegistrations = pgTable("pending_phone_registrations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  phoneNumber: text("phone_number").notNull().unique(),
+  fullName: text("full_name").notNull(),
+  passwordHash: text("password_hash").notNull(),
+  otpHash: text("otp_hash").notNull(),
+  otpExpiresAt: integer("otp_expires_at").notNull(), // Unix timestamp
+  attemptCount: integer("attempt_count").notNull().default(0),
+  resendCount: integer("resend_count").notNull().default(0),
+  createdAt: integer("created_at").notNull().default(sql`extract(epoch from now())`),
+});
+
+export const insertPendingPhoneRegistrationSchema = createInsertSchema(pendingPhoneRegistrations).omit({
+  id: true,
+  attemptCount: true,
+  resendCount: true,
+  createdAt: true,
+});
+
+export type InsertPendingPhoneRegistration = z.infer<typeof insertPendingPhoneRegistrationSchema>;
+export type PendingPhoneRegistration = typeof pendingPhoneRegistrations.$inferSelect;
+
 export const movies = pgTable("movies", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   title: text("title").notNull(),

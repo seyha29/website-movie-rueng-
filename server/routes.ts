@@ -8,6 +8,7 @@ import { createPaymentProvider } from "./payment-provider";
 import { PaymentService } from "./payment-service";
 import { securityService, type ViolationType } from "./security-service";
 import { generateOTP, sendOTPEmail } from "./email";
+import { smsService } from "./sms";
 
 // Initialize payment service
 const paymentProvider = createPaymentProvider();
@@ -189,46 +190,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // PHONE REGISTRATION: Immediate registration (no OTP)
-      // Check if this is the first user - grant admin privileges
-      const allUsers = await storage.getAllUsers();
-      const isFirstUser = allUsers.length === 0;
-
-      // Hash password before storing
-      const hashedPassword = await bcrypt.hash(password, 10);
-      
-      // Prepare user data
-      const userData: any = {
-        fullName,
-        password: hashedPassword,
-      };
-      
+      // PHONE REGISTRATION: Requires SMS OTP verification
       if (phoneNumber) {
         const digitsOnly = phoneNumber.replace(/^(\+855|855|0)/, '');
-        userData.phoneNumber = `+855${digitsOnly}`;
-      }
-
-      const user = await storage.createUser(userData);
-      req.session.userId = user.id;
-      
-      if (isFirstUser) {
-        console.log('First user registered - granted admin privileges:', userData.phoneNumber);
-      }
-      
-      // Explicitly save session before responding
-      req.session.save(async (err) => {
-        if (err) {
-          return res.status(500).json({ error: "Failed to save session" });
+        const formattedPhone = `+855${digitsOnly}`;
+        
+        // Check for existing pending registration to prevent SMS spam
+        const existingPending = await storage.getPendingPhoneRegistration(formattedPhone);
+        if (existingPending) {
+          const now = Math.floor(Date.now() / 1000);
+          const timeSinceCreated = now - existingPending.createdAt;
+          
+          // If pending registration exists and was created less than 60 seconds ago, reject
+          if (timeSinceCreated < 60) {
+            return res.status(429).json({ 
+              error: "Please wait before requesting a new code",
+              retryAfter: 60 - timeSinceCreated
+            });
+          }
+          
+          // If too many resends already, reject
+          if (existingPending.resendCount >= 3) {
+            const cooldownSeconds = 300; // 5 minutes
+            if (timeSinceCreated < cooldownSeconds) {
+              return res.status(429).json({ 
+                error: "Too many attempts. Please wait 5 minutes before trying again.",
+                retryAfter: cooldownSeconds - timeSinceCreated
+              });
+            }
+          }
         }
         
-        // Single-device login: Save the current session ID to user record
-        await storage.updateUser(user.id, { currentSessionId: req.sessionID });
-        console.log("Session saved for new user:", user.id, "sessionID:", req.sessionID);
+        // Hash password before storing in pending registration
+        const hashedPassword = await bcrypt.hash(password, 10);
         
-        // Don't send password in response
-        const { password: _, ...userWithoutPassword } = user;
-        res.status(201).json(userWithoutPassword);
-      });
+        // Generate OTP (6 digits)
+        const otp = smsService.generateOTP();
+        const otpHash = await smsService.hashOTP(otp);
+        const otpExpiresAt = smsService.getOTPExpiryTime();
+        
+        // Create pending registration (replaces any existing one for this phone)
+        await storage.createPendingPhoneRegistration({
+          phoneNumber: formattedPhone,
+          fullName,
+          passwordHash: hashedPassword,
+          otpHash,
+          otpExpiresAt,
+        });
+        
+        // Send OTP SMS
+        const smsResult = await smsService.sendOTPSMS(formattedPhone, otp);
+        
+        if (!smsResult.success) {
+          console.error(`Failed to send SMS to ${formattedPhone}:`, smsResult.error);
+          return res.status(500).json({ error: "Failed to send verification SMS. Please try again." });
+        }
+        
+        console.log(`SMS OTP sent to ${formattedPhone} for registration`);
+        return res.status(200).json({ 
+          requiresOTP: true, 
+          phoneNumber: formattedPhone,
+          message: "Verification code sent to your phone" 
+        });
+      }
     } catch (error) {
       console.error("Registration error:", error);
       if (error instanceof z.ZodError) {
@@ -308,6 +332,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Email OTP verification error:", error);
       res.status(500).json({ error: "Failed to verify code" });
+    }
+  });
+
+  // Verify phone OTP and complete registration
+  app.post("/api/auth/verify-phone-otp", async (req, res) => {
+    try {
+      const { phoneNumber, otp } = req.body;
+      
+      if (!phoneNumber || !otp) {
+        return res.status(400).json({ error: "Phone number and OTP are required" });
+      }
+      
+      const pending = await storage.getPendingPhoneRegistration(phoneNumber);
+      if (!pending) {
+        return res.status(400).json({ error: "No pending registration found. Please register again." });
+      }
+      
+      // Check if OTP expired (5 minutes for SMS)
+      const now = Math.floor(Date.now() / 1000);
+      if (now > pending.otpExpiresAt) {
+        return res.status(400).json({ error: "Verification code expired. Please request a new one." });
+      }
+      
+      // Check attempt count (max 3 attempts for SMS)
+      if (pending.attemptCount >= 3) {
+        await storage.deletePendingPhoneRegistration(phoneNumber);
+        return res.status(400).json({ error: "Too many attempts. Please register again." });
+      }
+      
+      // Verify OTP
+      const isOTPValid = await smsService.verifyOTP(otp, pending.otpHash);
+      if (!isOTPValid) {
+        await storage.updatePendingPhoneRegistration(phoneNumber, { 
+          attemptCount: pending.attemptCount + 1 
+        });
+        return res.status(400).json({ error: "Invalid verification code" });
+      }
+      
+      // OTP valid - create user account
+      const allUsers = await storage.getAllUsers();
+      const isFirstUser = allUsers.length === 0;
+      
+      const user = await storage.createUser({
+        fullName: pending.fullName,
+        phoneNumber: pending.phoneNumber,
+        password: pending.passwordHash, // Already hashed
+      });
+      
+      // Delete pending registration
+      await storage.deletePendingPhoneRegistration(phoneNumber);
+      
+      // Set session
+      req.session.userId = user.id;
+      
+      if (isFirstUser) {
+        console.log('First user registered via phone - granted admin privileges:', pending.phoneNumber);
+      }
+      
+      req.session.save(async (err) => {
+        if (err) {
+          return res.status(500).json({ error: "Failed to save session" });
+        }
+        
+        await storage.updateUser(user.id, { currentSessionId: req.sessionID });
+        console.log("Session saved for new phone user:", user.id);
+        
+        const { password: _, ...userWithoutPassword } = user;
+        res.status(201).json(userWithoutPassword);
+      });
+    } catch (error) {
+      console.error("Phone OTP verification error:", error);
+      res.status(500).json({ error: "Failed to verify code" });
+    }
+  });
+
+  // Resend phone OTP
+  app.post("/api/auth/resend-phone-otp", async (req, res) => {
+    try {
+      const { phoneNumber } = req.body;
+      
+      if (!phoneNumber) {
+        return res.status(400).json({ error: "Phone number is required" });
+      }
+      
+      const pending = await storage.getPendingPhoneRegistration(phoneNumber);
+      if (!pending) {
+        return res.status(400).json({ error: "No pending registration found. Please register again." });
+      }
+      
+      // Check resend count (max 3 resends)
+      if (pending.resendCount >= 3) {
+        return res.status(400).json({ error: "Maximum resend attempts reached. Please register again." });
+      }
+      
+      // Generate new OTP
+      const otp = smsService.generateOTP();
+      const otpHash = await smsService.hashOTP(otp);
+      const otpExpiresAt = smsService.getOTPExpiryTime();
+      
+      // Update pending registration
+      await storage.updatePendingPhoneRegistration(phoneNumber, {
+        otpHash,
+        otpExpiresAt,
+        attemptCount: 0, // Reset attempt count on resend
+        resendCount: pending.resendCount + 1,
+      });
+      
+      // Send SMS
+      const smsResult = await smsService.sendOTPSMS(phoneNumber, otp);
+      
+      if (!smsResult.success) {
+        return res.status(500).json({ error: "Failed to send verification SMS. Please try again." });
+      }
+      
+      console.log(`Phone OTP resent to ${phoneNumber}`);
+      res.json({ success: true, message: "Verification code resent" });
+    } catch (error) {
+      console.error("Resend phone OTP error:", error);
+      res.status(500).json({ error: "Failed to resend code" });
     }
   });
 
