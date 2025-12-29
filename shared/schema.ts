@@ -27,7 +27,7 @@ export const insertAdminSchema = createInsertSchema(admins).omit({
   createdAt: true,
 }).extend({
   username: z.string().min(3, "Username must be at least 3 characters"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 export type InsertAdmin = z.infer<typeof insertAdminSchema>;
@@ -66,7 +66,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
     .optional()
     .nullable(),
   email: z.string().email("Invalid email address").optional().nullable(),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

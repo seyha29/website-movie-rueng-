@@ -135,7 +135,7 @@ export const registerPageLabels = {
   emailPlaceholder: { km: "example@email.com", en: "example@email.com" },
   password: { km: "លេខសំងាត់", en: "Password" },
   passwordPlaceholder: { km: "បញ្ចូលលេខសំងាត់", en: "Enter your password" },
-  passwordHelper: { km: "យ៉ាងហោចណាស់ 6 ខ្ទង់", en: "At least 6 characters" },
+  passwordHelper: { km: "យ៉ាងហោចណាស់ 8 ខ្ទង់", en: "At least 8 characters" },
   registerButton: { km: "ចុះឈ្មោះ", en: "Register" },
   haveAccount: { km: "មានអាខោនរួចហើយ?", en: "Already have an account?" },
   loginLink: { km: "ចូល", en: "Login" },

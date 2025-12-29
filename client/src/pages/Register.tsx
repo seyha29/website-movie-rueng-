@@ -121,10 +121,10 @@ export default function Register() {
       return;
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       toast({
         title: language === "km" ? "លេខសំងាត់ខ្លីពេក" : "Password too short",
-        description: language === "km" ? "លេខសំងាត់ត្រូវមានយ៉ាងហោចណាស់ 6 ខ្ទង់" : "Password must be at least 6 characters",
+        description: language === "km" ? "លេខសំងាត់ត្រូវមានយ៉ាងហោចណាស់ 8 ខ្ទង់" : "Password must be at least 8 characters",
         variant: "destructive",
       });
       return;

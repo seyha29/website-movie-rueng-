@@ -625,7 +625,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fullName: z.string().optional(),
         phoneNumber: z.string().regex(/^\+855\d{8,9}$/, "Phone number must be in format +855xxxxxxxx").optional(),
         currentPassword: z.string().optional(),
-        newPassword: z.string().min(6, "New password must be at least 6 characters").optional(),
+        newPassword: z.string().min(8, "New password must be at least 8 characters").optional(),
       });
 
       // Validate request body and reject any extra fields
