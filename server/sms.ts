@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import bcrypt from 'bcrypt';
 
 const MOCEAN_API_TOKEN = process.env.MOCEAN_API_TOKEN;
 const SMS_SENDER = process.env.SMS_SENDER || 'RUENG';
@@ -14,8 +15,8 @@ export function generateOTP(): string {
   return crypto.randomInt(100000, 999999).toString();
 }
 
-export function hashOTP(otp: string): string {
-  return crypto.createHash('sha256').update(otp).digest('hex');
+export async function hashOTP(otp: string): Promise<string> {
+  return bcrypt.hash(otp, 10);
 }
 
 export function getOTPExpiryTime(): number {
@@ -24,6 +25,10 @@ export function getOTPExpiryTime(): number {
 
 export function isOTPExpired(expiresAt: number): boolean {
   return Math.floor(Date.now() / 1000) > expiresAt;
+}
+
+export async function verifyOTP(otp: string, storedHash: string): Promise<boolean> {
+  return bcrypt.compare(otp, storedHash);
 }
 
 export async function sendSMS(phoneNumber: string, message: string): Promise<SendSMSResult> {
@@ -78,6 +83,7 @@ export const smsService = {
   hashOTP,
   getOTPExpiryTime,
   isOTPExpired,
+  verifyOTP,
   sendSMS,
   sendOTPSMS,
 };
