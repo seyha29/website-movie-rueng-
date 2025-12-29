@@ -277,12 +277,12 @@ export default function Home() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full sm:w-auto flex items-center gap-1 hover-elevate h-auto sm:h-9 px-2 sm:px-3 py-1.5 sm:py-0 text-xs sm:text-sm"
+                    className="w-full sm:w-auto flex items-center justify-center gap-1 hover-elevate h-auto sm:h-9 px-3 sm:px-3 py-2 sm:py-0 text-xs sm:text-sm"
                     onClick={() => setIsGenreDropdownOpen(!isGenreDropdownOpen)}
                     data-testid="button-genre-filter"
                   >
-                    <span className="text-muted-foreground text-[10px] sm:text-xs">{filterLabels.genre[language]}</span>
-                    <span className="font-medium">{selectedGenre}</span>
+                    <span className="font-medium sm:text-muted-foreground sm:font-normal">{filterLabels.genre[language]}</span>
+                    <span className="hidden sm:inline font-medium">{selectedGenre}</span>
                     <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                   </Button>
                   {isGenreDropdownOpen && (
@@ -306,12 +306,12 @@ export default function Home() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full sm:w-auto flex items-center gap-1 hover-elevate h-auto sm:h-9 px-2 sm:px-3 py-1.5 sm:py-0 text-xs sm:text-sm"
+                    className="w-full sm:w-auto flex items-center justify-center gap-1 hover-elevate h-auto sm:h-9 px-3 sm:px-3 py-2 sm:py-0 text-xs sm:text-sm"
                     onClick={() => setIsRatingDropdownOpen(!isRatingDropdownOpen)}
                     data-testid="button-rating-filter"
                   >
-                    <span className="text-muted-foreground text-[10px] sm:text-xs">{filterLabels.rating[language]}</span>
-                    <span className="font-medium">{selectedRating}</span>
+                    <span className="font-medium sm:text-muted-foreground sm:font-normal">{filterLabels.rating[language]}</span>
+                    <span className="hidden sm:inline font-medium">{selectedRating}</span>
                     <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                   </Button>
                   {isRatingDropdownOpen && (
@@ -339,12 +339,12 @@ export default function Home() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full sm:w-auto flex items-center gap-1 hover-elevate h-auto sm:h-9 px-2 sm:px-3 py-1.5 sm:py-0 text-xs sm:text-sm"
+                    className="w-full sm:w-auto flex items-center justify-center gap-1 hover-elevate h-auto sm:h-9 px-3 sm:px-3 py-2 sm:py-0 text-xs sm:text-sm"
                     onClick={() => setIsYearDropdownOpen(!isYearDropdownOpen)}
                     data-testid="button-year-filter"
                   >
-                    <span className="text-muted-foreground text-[10px] sm:text-xs">{filterLabels.year[language]}</span>
-                    <span className="font-medium">{selectedYear}</span>
+                    <span className="font-medium sm:text-muted-foreground sm:font-normal">{filterLabels.year[language]}</span>
+                    <span className="hidden sm:inline font-medium">{selectedYear}</span>
                     <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                   </Button>
                   {isYearDropdownOpen && (
@@ -372,12 +372,12 @@ export default function Home() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full sm:w-auto flex items-center gap-1 hover-elevate h-auto sm:h-9 px-2 sm:px-3 py-1.5 sm:py-0 text-xs sm:text-sm"
+                    className="w-full sm:w-auto flex items-center justify-center gap-1 hover-elevate h-auto sm:h-9 px-3 sm:px-3 py-2 sm:py-0 text-xs sm:text-sm"
                     onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
                     data-testid="button-country-filter"
                   >
-                    <span className="text-muted-foreground text-[10px] sm:text-xs">{filterLabels.country[language]}</span>
-                    <span className="font-medium">{selectedCountry}</span>
+                    <span className="font-medium sm:text-muted-foreground sm:font-normal">{filterLabels.country[language]}</span>
+                    <span className="hidden sm:inline font-medium">{selectedCountry}</span>
                     <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                   </Button>
                   {isCountryDropdownOpen && (
