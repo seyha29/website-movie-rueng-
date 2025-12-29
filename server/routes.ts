@@ -1978,6 +1978,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to fetch movie" });
     }
   });
+
+  // User movie ratings endpoints
+  app.get("/api/movies/:id/my-rating", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const movieId = req.params.id;
+      const rating = await storage.getUserMovieRating(userId, movieId);
+      res.json({ rating: rating ? Number(rating.score) : null });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch your rating" });
+    }
+  });
+
+  app.post("/api/movies/:id/rate", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const movieId = req.params.id;
+      const { score } = req.body;
+      
+      if (typeof score !== 'number' || score < 1 || score > 10) {
+        return res.status(400).json({ error: "Score must be a number between 1 and 10" });
+      }
+      
+      const movie = await storage.getMovieById(movieId);
+      if (!movie) {
+        return res.status(404).json({ error: "Movie not found" });
+      }
+      
+      const rating = await storage.submitUserMovieRating(userId, movieId, score);
+      const stats = await storage.getMovieRatingStats(movieId);
+      
+      res.json({
+        success: true,
+        rating: Number(rating.score),
+        averageRating: stats.average,
+        totalRatings: stats.count,
+      });
+    } catch (error) {
+      console.error("Rating error:", error);
+      res.status(500).json({ error: "Failed to submit rating" });
+    }
+  });
+
+  app.get("/api/movies/:id/rating-stats", async (req, res) => {
+    try {
+      const movieId = req.params.id;
+      const stats = await storage.getMovieRatingStats(movieId);
+      res.json({
+        averageRating: stats.average,
+        totalRatings: stats.count,
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch rating stats" });
+    }
+  });
   
   // Secure endpoint to get video access token (not the URL)
   app.get("/api/videos/:movieId/stream", requireAuth, async (req, res) => {

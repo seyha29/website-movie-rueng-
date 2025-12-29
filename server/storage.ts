@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Movie, type InsertMovie, type MyList, type InsertMyList, type SubscriptionPlan, type UserSubscription, type InsertUserSubscription, type PaymentTransaction, type InsertPaymentTransaction, type MovieView, type InsertMovieView, type VideoPurchase, type InsertVideoPurchase, type AdBanner, type InsertAdBanner, type SecurityViolation, type InsertSecurityViolation, type UserBan, type InsertUserBan, type DailyWatchTime, type InsertDailyWatchTime, type Admin, type InsertAdmin, type PendingEmailRegistration, type PendingPhoneRegistration, type PendingPasswordReset, users, movies, myList, subscriptionPlans, userSubscriptions, paymentTransactions, movieViews, videoPurchases, adBanners, securityViolations, userBans, dailyWatchTime, videoAccessTokens, admins, pendingEmailRegistrations, pendingPhoneRegistrations, pendingPasswordResets } from "@shared/schema";
+import { type User, type InsertUser, type Movie, type InsertMovie, type MyList, type InsertMyList, type SubscriptionPlan, type UserSubscription, type InsertUserSubscription, type PaymentTransaction, type InsertPaymentTransaction, type MovieView, type InsertMovieView, type VideoPurchase, type InsertVideoPurchase, type AdBanner, type InsertAdBanner, type SecurityViolation, type InsertSecurityViolation, type UserBan, type InsertUserBan, type DailyWatchTime, type InsertDailyWatchTime, type Admin, type InsertAdmin, type PendingEmailRegistration, type PendingPhoneRegistration, type PendingPasswordReset, type MovieUserRating, users, movies, myList, subscriptionPlans, userSubscriptions, paymentTransactions, movieViews, videoPurchases, adBanners, securityViolations, userBans, dailyWatchTime, videoAccessTokens, admins, pendingEmailRegistrations, pendingPhoneRegistrations, pendingPasswordResets, movieUserRatings } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -135,6 +135,11 @@ export interface IStorage {
   createPendingPasswordReset(data: { userId: string; email?: string; phoneNumber?: string; otpHash: string; otpExpiresAt: number }): Promise<PendingPasswordReset>;
   updatePendingPasswordReset(userId: string, data: Partial<{ otpHash: string; otpExpiresAt: number; attemptCount: number; resendCount: number }>): Promise<PendingPasswordReset | undefined>;
   deletePendingPasswordReset(userId: string): Promise<boolean>;
+  
+  // Movie User Rating methods
+  getUserMovieRating(userId: string, movieId: string): Promise<MovieUserRating | undefined>;
+  submitUserMovieRating(userId: string, movieId: string, score: number): Promise<MovieUserRating>;
+  getMovieRatingStats(movieId: string): Promise<{ average: number; count: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -826,6 +831,53 @@ export class DatabaseStorage implements IStorage {
     const result = await this.db.delete(pendingPasswordResets).where(eq(pendingPasswordResets.userId, userId));
     return result.rowCount !== null && result.rowCount > 0;
   }
+
+  // Movie User Rating methods
+  async getUserMovieRating(userId: string, movieId: string): Promise<MovieUserRating | undefined> {
+    const result = await this.db.select().from(movieUserRatings)
+      .where(and(eq(movieUserRatings.userId, userId), eq(movieUserRatings.movieId, movieId)));
+    return result[0];
+  }
+
+  async submitUserMovieRating(userId: string, movieId: string, score: number): Promise<MovieUserRating> {
+    const existing = await this.getUserMovieRating(userId, movieId);
+    const now = Math.floor(Date.now() / 1000);
+    
+    let rating: MovieUserRating;
+    if (existing) {
+      const result = await this.db.update(movieUserRatings)
+        .set({ score: score.toString(), updatedAt: now })
+        .where(and(eq(movieUserRatings.userId, userId), eq(movieUserRatings.movieId, movieId)))
+        .returning();
+      rating = result[0];
+    } else {
+      const result = await this.db.insert(movieUserRatings)
+        .values({ userId, movieId, score: score.toString() })
+        .returning();
+      rating = result[0];
+    }
+
+    // Update movie's aggregate rating
+    const stats = await this.getMovieRatingStats(movieId);
+    await this.db.update(movies).set({
+      userRatingAvg: stats.average.toFixed(1),
+      userRatingCount: stats.count,
+    }).where(eq(movies.id, movieId));
+
+    return rating;
+  }
+
+  async getMovieRatingStats(movieId: string): Promise<{ average: number; count: number }> {
+    const result = await this.db.select({
+      average: sql<number>`COALESCE(AVG(${movieUserRatings.score}::numeric), 0)`,
+      count: sql<number>`COUNT(*)::integer`,
+    }).from(movieUserRatings).where(eq(movieUserRatings.movieId, movieId));
+    
+    return {
+      average: Number(result[0]?.average || 0),
+      count: Number(result[0]?.count || 0),
+    };
+  }
 }
 
 export class MemStorage implements IStorage {
@@ -988,6 +1040,8 @@ export class MemStorage implements IStorage {
       ...insertMovie, 
       id,
       rating: insertMovie.rating.toString(),
+      imdbRating: insertMovie.imdbRating || null,
+      tmdbRating: insertMovie.tmdbRating || null,
       country: insertMovie.country || "USA",
       videoEmbedUrl: insertMovie.videoEmbedUrl || null,
       trailerUrl: insertMovie.trailerUrl || null,
@@ -996,6 +1050,8 @@ export class MemStorage implements IStorage {
       isTrending: insertMovie.isTrending || 0,
       isNewAndPopular: insertMovie.isNewAndPopular || 0,
       isHeroBanner: insertMovie.isHeroBanner || 0,
+      userRatingAvg: "0",
+      userRatingCount: 0,
       createdAt: Math.floor(Date.now() / 1000) // Unix timestamp
     };
     this.movies.set(id, movie);
@@ -1357,6 +1413,38 @@ export class MemStorage implements IStorage {
 
   async deletePendingPasswordReset(userId: string): Promise<boolean> {
     return this.pendingPasswordResets.delete(userId);
+  }
+
+  // Movie User Rating methods (MemStorage implementation)
+  private movieUserRatings: Map<string, MovieUserRating> = new Map();
+
+  async getUserMovieRating(userId: string, movieId: string): Promise<MovieUserRating | undefined> {
+    const key = `${userId}:${movieId}`;
+    return this.movieUserRatings.get(key);
+  }
+
+  async submitUserMovieRating(userId: string, movieId: string, score: number): Promise<MovieUserRating> {
+    const key = `${userId}:${movieId}`;
+    const now = Math.floor(Date.now() / 1000);
+    const existing = this.movieUserRatings.get(key);
+    
+    const rating: MovieUserRating = {
+      id: existing?.id || randomUUID(),
+      userId,
+      movieId,
+      score: score.toString(),
+      createdAt: existing?.createdAt || now,
+      updatedAt: now,
+    };
+    this.movieUserRatings.set(key, rating);
+    return rating;
+  }
+
+  async getMovieRatingStats(movieId: string): Promise<{ average: number; count: number }> {
+    const ratings = Array.from(this.movieUserRatings.values()).filter(r => r.movieId === movieId);
+    if (ratings.length === 0) return { average: 0, count: 0 };
+    const total = ratings.reduce((sum, r) => sum + Number(r.score), 0);
+    return { average: total / ratings.length, count: ratings.length };
   }
 }
 
