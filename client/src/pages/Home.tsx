@@ -226,13 +226,20 @@ export default function Home() {
   }
 
   const handlePlayMovie = (movieId: string) => {
+    if (!user) {
+      // Store the movie ID to return to after login
+      sessionStorage.setItem('pendingMovieId', movieId);
+      navigate('/login');
+      return;
+    }
     navigate(`/movie/${movieId}`);
   };
 
   const handleAddToList = (movieId: string) => {
     if (!user) {
-      setPendingAddMovie(movieId);
-      setIsAuthModalOpen(true);
+      // Store the movie ID to add after login
+      sessionStorage.setItem('pendingAddMovieId', movieId);
+      navigate('/login');
       return;
     }
     toggleMyList(movieId);

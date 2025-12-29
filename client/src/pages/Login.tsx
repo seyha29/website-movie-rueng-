@@ -27,8 +27,26 @@ export default function Login() {
       return await result.json();
     },
     onSuccess: (user) => {
-      const redirectPath = user.isAdmin === 1 ? "/admin" : "/";
       queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      
+      // Check for pending movie actions from before login
+      const pendingMovieId = sessionStorage.getItem('pendingMovieId');
+      const pendingAddMovieId = sessionStorage.getItem('pendingAddMovieId');
+      
+      if (pendingMovieId) {
+        sessionStorage.removeItem('pendingMovieId');
+        window.location.href = `/movie/${pendingMovieId}`;
+        return;
+      }
+      
+      if (pendingAddMovieId) {
+        sessionStorage.removeItem('pendingAddMovieId');
+        // Will add to list after redirect to home
+        window.location.href = '/';
+        return;
+      }
+      
+      const redirectPath = user.isAdmin === 1 ? "/admin" : "/";
       window.location.href = redirectPath;
     },
     onError: (error: Error) => {

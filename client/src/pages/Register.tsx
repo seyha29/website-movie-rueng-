@@ -42,6 +42,23 @@ export default function Register() {
         });
       } else {
         queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+        
+        // Check for pending movie actions from before registration
+        const pendingMovieId = sessionStorage.getItem('pendingMovieId');
+        const pendingAddMovieId = sessionStorage.getItem('pendingAddMovieId');
+        
+        if (pendingMovieId) {
+          sessionStorage.removeItem('pendingMovieId');
+          window.location.href = `/movie/${pendingMovieId}`;
+          return;
+        }
+        
+        if (pendingAddMovieId) {
+          sessionStorage.removeItem('pendingAddMovieId');
+          window.location.href = '/';
+          return;
+        }
+        
         const redirectPath = response.isAdmin === 1 ? "/admin" : "/";
         window.location.href = redirectPath;
       }
@@ -66,6 +83,23 @@ export default function Register() {
         title: language === "km" ? "គណនីបានបង្កើត!" : "Account Created!",
         description: language === "km" ? "សូមស្វាគមន៍មកកាន់ Reoung Movies Flix" : "Welcome to Reoung Movies Flix",
       });
+      
+      // Check for pending movie actions from before registration
+      const pendingMovieId = sessionStorage.getItem('pendingMovieId');
+      const pendingAddMovieId = sessionStorage.getItem('pendingAddMovieId');
+      
+      if (pendingMovieId) {
+        sessionStorage.removeItem('pendingMovieId');
+        window.location.href = `/movie/${pendingMovieId}`;
+        return;
+      }
+      
+      if (pendingAddMovieId) {
+        sessionStorage.removeItem('pendingAddMovieId');
+        window.location.href = '/';
+        return;
+      }
+      
       const redirectPath = user.isAdmin === 1 ? "/admin" : "/";
       window.location.href = redirectPath;
     },
