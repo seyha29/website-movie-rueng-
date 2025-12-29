@@ -465,14 +465,14 @@ export default function MovieDetail() {
                     </div>
 
                     {/* User Rating Section */}
-                    <div className="bg-muted/50 rounded-lg p-4 mb-4" data-testid="container-user-rating">
-                      <p className="text-sm font-medium mb-2">
+                    <div className="bg-muted/50 rounded-lg p-3 sm:p-4 mb-4" data-testid="container-user-rating">
+                      <p className="text-xs sm:text-sm font-medium mb-2">
                         {userRating 
                           ? (language === 'km' ? 'ការវាយតម្លៃរបស់អ្នក' : 'Your Rating')
                           : (language === 'km' ? 'វាយតម្លៃភាពយន្តនេះ' : 'Rate this movie')}
-                        {!user && <span className="text-muted-foreground ml-2">({language === 'km' ? 'ចូលដើម្បីវាយតម្លៃ' : 'Login to rate'})</span>}
+                        {!user && <span className="text-muted-foreground ml-1 sm:ml-2">({language === 'km' ? 'ចូលដើម្បីវាយតម្លៃ' : 'Login to rate'})</span>}
                       </p>
-                      <div className="flex items-center gap-1">
+                      <div className="flex flex-wrap items-center gap-0.5 sm:gap-1">
                         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((score) => (
                           <button
                             key={score}
@@ -486,7 +486,7 @@ export default function MovieDetail() {
                             data-testid={`button-rate-${score}`}
                           >
                             <Star
-                              className={`h-6 w-6 transition-colors ${
+                              className={`h-5 w-5 sm:h-6 sm:w-6 transition-colors ${
                                 score <= displayRating 
                                   ? 'fill-yellow-400 text-yellow-400' 
                                   : 'text-gray-400'
@@ -495,7 +495,7 @@ export default function MovieDetail() {
                           </button>
                         ))}
                         {displayRating > 0 && (
-                          <span className="ml-3 text-lg font-semibold text-yellow-400">{displayRating}/10</span>
+                          <span className="ml-2 sm:ml-3 text-base sm:text-lg font-semibold text-yellow-400">{displayRating}/10</span>
                         )}
                       </div>
                     </div>
