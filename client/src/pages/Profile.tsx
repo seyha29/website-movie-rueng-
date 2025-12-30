@@ -6,12 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Wallet, Gift, ShoppingCart, Clock } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+interface CreditTransaction {
+  id: string;
+  type: string;
+  amount: string;
+  balanceAfter: string;
+  description: string | null;
+  createdAt: number;
+}
 
 export default function Profile() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { language } = useLanguage();
 
   // Fetch current user
   const { data: user, isLoading } = useQuery({
@@ -23,6 +34,19 @@ export default function Profile() {
       if (!res.ok) throw new Error("Not authenticated");
       return await res.json();
     },
+  });
+
+  // Fetch credit transaction history
+  const { data: creditHistory } = useQuery<CreditTransaction[]>({
+    queryKey: ["/api/credits/history"],
+    queryFn: async () => {
+      const res = await fetch("/api/credits/history?limit=10", {
+        credentials: "include"
+      });
+      if (!res.ok) return [];
+      return await res.json();
+    },
+    enabled: !!user,
   });
 
   const [fullName, setFullName] = useState("");
@@ -170,7 +194,62 @@ export default function Profile() {
           Back to Home
         </Button>
 
-        <h1 className="text-3xl font-bold mb-6">Profile Settings</h1>
+        <h1 className="text-3xl font-bold mb-6">{language === 'km' ? 'ការកំណត់ប្រវត្តិរូប' : 'Profile Settings'}</h1>
+
+        {/* Credit Balance Card */}
+        <Card className="mb-6 border-orange-500/30 bg-gradient-to-r from-orange-500/10 to-transparent">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Wallet className="h-5 w-5 text-orange-500" />
+                <CardTitle>{language === 'km' ? 'សមតុល្យឥណទាន' : 'Credit Balance'}</CardTitle>
+              </div>
+              <div className="text-3xl font-bold text-orange-500">
+                ${parseFloat(user?.balance || "0").toFixed(2)}
+              </div>
+            </div>
+            <CardDescription>
+              {language === 'km' 
+                ? 'ប្រើឥណទានរបស់អ្នកដើម្បីទិញភាពយន្ត ($1 ក្នុងមួយភាពយន្ត)'
+                : 'Use your credits to buy movies ($1 per movie)'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {creditHistory && creditHistory.length > 0 && (
+              <>
+                <Separator className="mb-4" />
+                <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  {language === 'km' ? 'ប្រវត្តិប្រតិបត្តិការថ្មីៗ' : 'Recent Transactions'}
+                </h4>
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {creditHistory.slice(0, 5).map((tx) => (
+                    <div key={tx.id} className="flex items-center justify-between text-sm p-2 rounded bg-muted/50">
+                      <div className="flex items-center gap-2">
+                        {tx.type === 'welcome_bonus' && <Gift className="h-4 w-4 text-green-500" />}
+                        {tx.type === 'admin_gift' && <Gift className="h-4 w-4 text-blue-500" />}
+                        {tx.type === 'purchase' && <ShoppingCart className="h-4 w-4 text-red-500" />}
+                        <span className="text-muted-foreground truncate max-w-[180px]">
+                          {tx.description || tx.type}
+                        </span>
+                      </div>
+                      <span className={parseFloat(tx.amount) >= 0 ? 'text-green-500' : 'text-red-500'}>
+                        {parseFloat(tx.amount) >= 0 ? '+' : ''}${tx.amount}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            {(!creditHistory || creditHistory.length === 0) && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                {language === 'km' 
+                  ? 'អ្នកទទួលបាន $5 ជាប្រាក់រង្វាន់ស្វាគមន៍នៅពេលចុះឈ្មោះ!'
+                  : 'You received $5 as a welcome bonus when you registered!'}
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Profile Information */}
         <Card className="mb-6">

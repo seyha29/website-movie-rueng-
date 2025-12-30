@@ -989,6 +989,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user's credit transaction history
+  app.get("/api/credits/history", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const limit = parseInt(req.query.limit as string) || 20;
+      
+      const transactions = await storage.getUserCreditTransactions(userId, limit);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Failed to fetch credit history:", error);
+      res.status(500).json({ error: "Failed to fetch credit history" });
+    }
+  });
+
   app.put("/api/auth/profile", requireAuth, async (req, res) => {
     try {
       const user = await storage.getUser(req.session.userId!);
@@ -1166,13 +1180,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.session.userId!;
       const { movieId } = req.params;
+      const { useCredits } = req.body; // Optional: if true, use credits instead of payment
       
-      // Use RaksmeyPay for video purchase - redirects to RaksmeyPay page with QR code
+      // Get movie details
+      const movie = await storage.getMovieById(movieId);
+      if (!movie) {
+        return res.status(404).json({ error: "Movie not found" });
+      }
+      
+      // Check if already purchased
+      const alreadyPurchased = await storage.hasUserPurchasedVideo(userId, movieId);
+      if (alreadyPurchased) {
+        return res.json({ success: true, message: "Already purchased", isPurchased: true });
+      }
+      
+      // Check if movie is free
+      if (movie.isFree === 1) {
+        return res.json({ success: true, message: "Movie is free", isFree: true });
+      }
+      
+      const moviePrice = parseFloat(movie.price || "1.00");
+      
+      // Get user's current balance
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      const userBalance = parseFloat(user.balance || "0");
+      
+      // If useCredits is true or user has enough balance, use credits
+      if (useCredits && userBalance >= moviePrice) {
+        // Deduct credits and complete purchase
+        await storage.deductUserCredits(userId, moviePrice, `Purchased: ${movie.title}`, movieId);
+        
+        // Record the video purchase
+        await storage.createVideoPurchase({
+          userId,
+          movieId,
+          amount: moviePrice.toFixed(2),
+          currency: "USD",
+          transactionRef: `credit_${Date.now()}`,
+        });
+        
+        // Add to user's list
+        const isInList = await storage.isInMyList(userId, movieId);
+        if (!isInList) {
+          await storage.addToMyList(userId, movieId);
+        }
+        
+        console.log(`[Credits] User ${userId} purchased movie ${movieId} using $${moviePrice.toFixed(2)} credits`);
+        
+        return res.json({ 
+          success: true, 
+          message: "Purchased with credits",
+          isPurchased: true,
+          usedCredits: true,
+          amountDeducted: moviePrice.toFixed(2),
+          newBalance: (userBalance - moviePrice).toFixed(2)
+        });
+      }
+      
+      // Not enough credits or useCredits not specified - use RaksmeyPay
       const result = await paymentService.initiateVideoPurchase(userId, movieId);
       
       console.log(`[RaksmeyPay] Video purchase initiated for movie ${movieId}, checkout: ${result.checkoutUrl}`);
       
-      res.status(201).json(result);
+      res.status(201).json({ 
+        ...result, 
+        userBalance: userBalance.toFixed(2),
+        moviePrice: moviePrice.toFixed(2),
+        canUseCredits: userBalance >= moviePrice
+      });
     } catch (error) {
       console.error("Failed to initiate video purchase:", error);
       if (error instanceof Error) {
@@ -1536,6 +1615,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/users/give-credits", requireAdminRole("full"), async (req, res) => {
     try {
       const { amount } = req.body;
+      const adminId = req.session.adminId;
       
       // Validate amount (1-100 USD)
       const creditAmount = parseFloat(amount);
@@ -1543,14 +1623,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Amount must be between $1 and $100" });
       }
       
-      // Get all users and add credits
+      // Get all users and add credits with transaction tracking
       const users = await storage.getAllUsers();
       let updatedCount = 0;
       
       for (const user of users) {
-        const currentBalance = parseFloat(user.balance || "0");
-        const newBalance = currentBalance + creditAmount;
-        await storage.updateUserBalance(user.id, newBalance.toFixed(2));
+        await storage.addUserCredits(
+          user.id, 
+          creditAmount, 
+          'admin_gift', 
+          `Admin gift: $${creditAmount.toFixed(2)} to all users`,
+          adminId
+        );
         updatedCount++;
       }
       
@@ -1571,6 +1655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const { amount } = req.body;
+      const adminId = req.session.adminId;
       
       // Validate amount (0.5-100 USD)
       const creditAmount = parseFloat(amount);
@@ -1583,14 +1668,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
       
-      const currentBalance = parseFloat(user.balance || "0");
-      const newBalance = currentBalance + creditAmount;
-      await storage.updateUserBalance(id, newBalance.toFixed(2));
+      const { user: updatedUser } = await storage.addUserCredits(
+        id, 
+        creditAmount, 
+        'admin_gift', 
+        `Admin gift: $${creditAmount.toFixed(2)}`,
+        adminId
+      );
       
       res.json({ 
         success: true, 
         message: `Added $${creditAmount.toFixed(2)} to ${user.fullName}`,
-        newBalance: newBalance.toFixed(2)
+        newBalance: updatedUser.balance
       });
     } catch (error) {
       console.error("Failed to add credit:", error);
