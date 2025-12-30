@@ -260,8 +260,14 @@ export default function UserManagement() {
           <Card key={user.id} data-testid={`card-user-${user.id}`}>
             <CardHeader className="flex flex-row items-center justify-between gap-3 sm:gap-4 space-y-0 pb-2">
               <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
-                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  {user.isAdmin === 1 ? (
+                <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+                  {user.avatarUrl ? (
+                    <img 
+                      src={user.avatarUrl} 
+                      alt={user.fullName || 'User'} 
+                      className="h-full w-full object-cover"
+                    />
+                  ) : user.isAdmin === 1 ? (
                     <Shield className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                   ) : (
                     <UserIcon className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
