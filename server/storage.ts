@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Movie, type InsertMovie, type MyList, type InsertMyList, type SubscriptionPlan, type UserSubscription, type InsertUserSubscription, type PaymentTransaction, type InsertPaymentTransaction, type MovieView, type InsertMovieView, type VideoPurchase, type InsertVideoPurchase, type AdBanner, type InsertAdBanner, type SecurityViolation, type InsertSecurityViolation, type UserBan, type InsertUserBan, type DailyWatchTime, type InsertDailyWatchTime, type Admin, type InsertAdmin, type PendingEmailRegistration, type PendingPhoneRegistration, type PendingPasswordReset, type MovieUserRating, users, movies, myList, subscriptionPlans, userSubscriptions, paymentTransactions, movieViews, videoPurchases, adBanners, securityViolations, userBans, dailyWatchTime, videoAccessTokens, admins, pendingEmailRegistrations, pendingPhoneRegistrations, pendingPasswordResets, movieUserRatings } from "@shared/schema";
+import { type User, type InsertUser, type Movie, type InsertMovie, type MyList, type InsertMyList, type SubscriptionPlan, type UserSubscription, type InsertUserSubscription, type PaymentTransaction, type InsertPaymentTransaction, type MovieView, type InsertMovieView, type VideoPurchase, type InsertVideoPurchase, type AdBanner, type InsertAdBanner, type SecurityViolation, type InsertSecurityViolation, type UserBan, type InsertUserBan, type DailyWatchTime, type InsertDailyWatchTime, type Admin, type InsertAdmin, type PendingEmailRegistration, type PendingPhoneRegistration, type PendingPasswordReset, type MovieUserRating, type CreditTransaction, type InsertCreditTransaction, users, movies, myList, subscriptionPlans, userSubscriptions, paymentTransactions, movieViews, videoPurchases, adBanners, securityViolations, userBans, dailyWatchTime, videoAccessTokens, admins, pendingEmailRegistrations, pendingPhoneRegistrations, pendingPasswordResets, movieUserRatings, creditTransactions } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
@@ -140,6 +140,12 @@ export interface IStorage {
   getUserMovieRating(userId: string, movieId: string): Promise<MovieUserRating | undefined>;
   submitUserMovieRating(userId: string, movieId: string, score: number): Promise<MovieUserRating>;
   getMovieRatingStats(movieId: string): Promise<{ average: number; count: number }>;
+  
+  // Credit Transaction methods
+  createCreditTransaction(data: InsertCreditTransaction): Promise<CreditTransaction>;
+  getUserCreditTransactions(userId: string, limit?: number): Promise<CreditTransaction[]>;
+  addUserCredits(userId: string, amount: number, type: string, description: string, adminId?: string): Promise<{ user: User; transaction: CreditTransaction }>;
+  deductUserCredits(userId: string, amount: number, description: string, movieId?: string): Promise<{ user: User; transaction: CreditTransaction }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -878,6 +884,68 @@ export class DatabaseStorage implements IStorage {
       count: Number(result[0]?.count || 0),
     };
   }
+
+  // Credit Transaction methods
+  async createCreditTransaction(data: InsertCreditTransaction): Promise<CreditTransaction> {
+    const result = await this.db.insert(creditTransactions).values(data).returning();
+    return result[0];
+  }
+
+  async getUserCreditTransactions(userId: string, limit: number = 50): Promise<CreditTransaction[]> {
+    return await this.db.select()
+      .from(creditTransactions)
+      .where(eq(creditTransactions.userId, userId))
+      .orderBy(sql`${creditTransactions.createdAt} DESC`)
+      .limit(limit);
+  }
+
+  async addUserCredits(userId: string, amount: number, type: string, description: string, adminId?: string): Promise<{ user: User; transaction: CreditTransaction }> {
+    const user = await this.getUser(userId);
+    if (!user) throw new Error("User not found");
+    
+    const currentBalance = parseFloat(user.balance);
+    const newBalance = currentBalance + amount;
+    
+    const updatedUser = await this.updateUserBalance(userId, newBalance.toFixed(2));
+    if (!updatedUser) throw new Error("Failed to update user balance");
+    
+    const transaction = await this.createCreditTransaction({
+      userId,
+      type,
+      amount: amount.toFixed(2),
+      balanceAfter: newBalance.toFixed(2),
+      description,
+      adminId: adminId || null,
+      movieId: null,
+    });
+    
+    return { user: updatedUser, transaction };
+  }
+
+  async deductUserCredits(userId: string, amount: number, description: string, movieId?: string): Promise<{ user: User; transaction: CreditTransaction }> {
+    const user = await this.getUser(userId);
+    if (!user) throw new Error("User not found");
+    
+    const currentBalance = parseFloat(user.balance);
+    if (currentBalance < amount) throw new Error("Insufficient balance");
+    
+    const newBalance = currentBalance - amount;
+    
+    const updatedUser = await this.updateUserBalance(userId, newBalance.toFixed(2));
+    if (!updatedUser) throw new Error("Failed to update user balance");
+    
+    const transaction = await this.createCreditTransaction({
+      userId,
+      type: 'purchase',
+      amount: (-amount).toFixed(2),
+      balanceAfter: newBalance.toFixed(2),
+      description,
+      movieId: movieId || null,
+      adminId: null,
+    });
+    
+    return { user: updatedUser, transaction };
+  }
 }
 
 export class MemStorage implements IStorage {
@@ -1445,6 +1513,81 @@ export class MemStorage implements IStorage {
     if (ratings.length === 0) return { average: 0, count: 0 };
     const total = ratings.reduce((sum, r) => sum + Number(r.score), 0);
     return { average: total / ratings.length, count: ratings.length };
+  }
+
+  // Credit Transaction methods (MemStorage implementation)
+  private creditTransactions: Map<string, CreditTransaction> = new Map();
+
+  async createCreditTransaction(data: InsertCreditTransaction): Promise<CreditTransaction> {
+    const id = randomUUID();
+    const transaction: CreditTransaction = {
+      id,
+      userId: data.userId,
+      type: data.type,
+      amount: data.amount,
+      balanceAfter: data.balanceAfter,
+      description: data.description || null,
+      movieId: data.movieId || null,
+      adminId: data.adminId || null,
+      createdAt: Math.floor(Date.now() / 1000),
+    };
+    this.creditTransactions.set(id, transaction);
+    return transaction;
+  }
+
+  async getUserCreditTransactions(userId: string, limit: number = 50): Promise<CreditTransaction[]> {
+    return Array.from(this.creditTransactions.values())
+      .filter(t => t.userId === userId)
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, limit);
+  }
+
+  async addUserCredits(userId: string, amount: number, type: string, description: string, adminId?: string): Promise<{ user: User; transaction: CreditTransaction }> {
+    const user = await this.getUser(userId);
+    if (!user) throw new Error("User not found");
+    
+    const currentBalance = parseFloat(user.balance);
+    const newBalance = currentBalance + amount;
+    
+    const updatedUser = await this.updateUserBalance(userId, newBalance.toFixed(2));
+    if (!updatedUser) throw new Error("Failed to update user balance");
+    
+    const transaction = await this.createCreditTransaction({
+      userId,
+      type,
+      amount: amount.toFixed(2),
+      balanceAfter: newBalance.toFixed(2),
+      description,
+      adminId: adminId || null,
+      movieId: null,
+    });
+    
+    return { user: updatedUser, transaction };
+  }
+
+  async deductUserCredits(userId: string, amount: number, description: string, movieId?: string): Promise<{ user: User; transaction: CreditTransaction }> {
+    const user = await this.getUser(userId);
+    if (!user) throw new Error("User not found");
+    
+    const currentBalance = parseFloat(user.balance);
+    if (currentBalance < amount) throw new Error("Insufficient balance");
+    
+    const newBalance = currentBalance - amount;
+    
+    const updatedUser = await this.updateUserBalance(userId, newBalance.toFixed(2));
+    if (!updatedUser) throw new Error("Failed to update user balance");
+    
+    const transaction = await this.createCreditTransaction({
+      userId,
+      type: 'purchase',
+      amount: (-amount).toFixed(2),
+      balanceAfter: newBalance.toFixed(2),
+      description,
+      movieId: movieId || null,
+      adminId: null,
+    });
+    
+    return { user: updatedUser, transaction };
   }
 }
 
