@@ -1,4 +1,4 @@
-import { Search, User, Menu, X, LogOut, List, LayoutDashboard, CreditCard, CheckCircle2 } from "lucide-react";
+import { Search, User, Menu, X, LogOut, List, LayoutDashboard, CreditCard, CheckCircle2, Wallet } from "lucide-react";
 import { Link, useLocation, useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -207,10 +207,30 @@ export default function Header() {
                           </div>
                           <div className="flex flex-col">
                             <span className="font-medium text-sm">{user.fullName}</span>
-                            <span className="text-xs text-muted-foreground">{user.phoneNumber}</span>
+                            <span className="text-xs text-muted-foreground">{user.phoneNumber || user.email}</span>
                           </div>
                         </div>
                       </div>
+
+                      {/* Credit Balance - Clickable */}
+                      <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)}>
+                        <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/30 cursor-pointer hover:bg-orange-500/20 transition-colors">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Wallet className="h-5 w-5 text-orange-500" />
+                              <span className="font-medium text-sm">
+                                {language === 'km' ? 'សមតុល្យ' : 'Balance'}
+                              </span>
+                            </div>
+                            <span className="text-orange-500 font-bold text-lg">
+                              ${parseFloat(user.balance || "0").toFixed(2)}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {language === 'km' ? 'ចុចដើម្បីមើលប្រវត្តិ' : 'Tap to view history'}
+                          </p>
+                        </div>
+                      </Link>
 
                       {/* Navigation */}
                       <nav className="flex flex-col gap-2">
@@ -286,6 +306,22 @@ export default function Header() {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     
+                    {/* Credit Balance - Clickable */}
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link href="/profile" className="flex items-center gap-2 w-full">
+                        <Wallet className="h-4 w-4 text-orange-500" />
+                        <div className="flex flex-col flex-1">
+                          <span className="text-sm font-medium">
+                            {language === 'km' ? 'សមតុល្យ' : 'Balance'}
+                          </span>
+                        </div>
+                        <span className="text-orange-500 font-bold">
+                          ${parseFloat(user.balance || "0").toFixed(2)}
+                        </span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+
                     {!isSubLoading && (
                       <>
                         <DropdownMenuItem disabled className="flex items-center gap-2">
