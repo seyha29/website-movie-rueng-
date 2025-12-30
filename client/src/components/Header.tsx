@@ -195,18 +195,23 @@ export default function Header() {
                       </SheetTitle>
                     </SheetHeader>
                     <div className="flex flex-col gap-4 mt-6">
-                      {/* User Profile Section */}
-                      <div className="p-3 rounded-lg bg-card border border-border">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
-                            <User className="h-5 w-5 text-primary" />
+                      {/* User Profile Section - Clickable */}
+                      <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)}>
+                        <div className="p-3 rounded-lg bg-card border border-border cursor-pointer hover:bg-accent transition-colors">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                              <User className="h-5 w-5 text-primary" />
+                            </div>
+                            <div className="flex flex-col flex-1">
+                              <span className="font-medium text-sm">{user.fullName}</span>
+                              <span className="text-xs text-muted-foreground">{user.phoneNumber || user.email}</span>
+                            </div>
                           </div>
-                          <div className="flex flex-col">
-                            <span className="font-medium text-sm">{user.fullName}</span>
-                            <span className="text-xs text-muted-foreground">{user.phoneNumber || user.email}</span>
-                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {language === 'km' ? 'ចុចដើម្បីមើលគណនី' : 'Tap to view profile'}
+                          </p>
                         </div>
-                      </div>
+                      </Link>
 
                       {/* Credit Balance - Clickable */}
                       <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)}>
@@ -270,13 +275,21 @@ export default function Header() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>
-                      <div className="flex flex-col gap-1">
+                    <DropdownMenuLabel asChild className="cursor-pointer">
+                      <Link href="/profile" className="flex flex-col gap-1 hover:bg-accent rounded-sm transition-colors">
                         <span className="font-medium">{user.fullName}</span>
-                        <span className="text-xs text-muted-foreground">{user.phoneNumber}</span>
-                      </div>
+                        <span className="text-xs text-muted-foreground">{user.phoneNumber || user.email}</span>
+                      </Link>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
+                    
+                    {/* Profile Link */}
+                    <DropdownMenuItem asChild className="cursor-pointer">
+                      <Link href="/profile" className="flex items-center gap-2 w-full">
+                        <User className="h-4 w-4" />
+                        <span>{language === 'km' ? 'គណនី' : 'Profile'}</span>
+                      </Link>
+                    </DropdownMenuItem>
                     
                     {/* Credit Balance - Clickable */}
                     <DropdownMenuItem asChild className="cursor-pointer">
