@@ -381,14 +381,21 @@ export default function VideoPlayer({
       style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
     >
       <div ref={containerRef} className="relative bg-black overflow-hidden w-full h-full flex flex-col">
-        <div className="relative w-full h-full flex-1 bg-black">
+        <div className="relative w-full h-full flex-1 bg-black flex items-center justify-center">
           {embedUrl ? (
             <>
               <iframe
                 src={embedUrl}
                 title={title}
-                className="w-full h-full"
-                style={{ colorScheme: 'normal', border: 'none', aspectRatio: '16/9' }}
+                className="max-w-full max-h-full"
+                style={{ 
+                  colorScheme: 'normal', 
+                  border: 'none', 
+                  aspectRatio: '16/9',
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain'
+                }}
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                 allowFullScreen
                 data-testid="iframe-video"
