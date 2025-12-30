@@ -107,9 +107,9 @@ export default function Browse() {
         <Header />
         <div className="pt-24 pb-16 px-4 lg:px-8 max-w-screen-2xl mx-auto">
           <div className="h-10 w-48 bg-muted/20 rounded animate-pulse mb-8" />
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
-              <div key={i} className="aspect-[16/9] bg-muted/20 rounded animate-pulse" />
+              <div key={i} className="aspect-[2/3] bg-muted/20 rounded-lg animate-pulse" />
             ))}
           </div>
         </div>
@@ -162,7 +162,7 @@ export default function Browse() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" data-testid="grid-browse-movies">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4" data-testid="grid-browse-movies">
           {filteredMovies.map((movie) => (
             <MovieCard
               key={movie.id}
