@@ -161,6 +161,7 @@ export const movies = pgTable("movies", {
   trailerUrl: text("trailer_url"),
   isFree: integer("is_free").notNull().default(0),
   price: decimal("price", { precision: 10, scale: 2 }).notNull().default("1.00"), // Custom price per movie in USD
+  allowCreditPurchase: integer("allow_credit_purchase").notNull().default(1), // 1=allow, 0=disable credit purchase
   isTrending: integer("is_trending").notNull().default(0),
   isNewAndPopular: integer("is_new_and_popular").notNull().default(0),
   isHeroBanner: integer("is_hero_banner").notNull().default(0),

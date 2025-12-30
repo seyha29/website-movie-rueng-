@@ -25,6 +25,7 @@ export function useVideoPurchaseGate() {
   const [currentMovieId, setCurrentMovieId] = useState<string | null>(null);
   const [currentMovieTitle, setCurrentMovieTitle] = useState<string>("");
   const [currentMoviePrice, setCurrentMoviePrice] = useState<string>("1.00");
+  const [currentAllowCreditPurchase, setCurrentAllowCreditPurchase] = useState<boolean>(true);
 
   const initiatePaymentMutation = useMutation({
     mutationFn: async (movieId: string) => {
@@ -32,7 +33,7 @@ export function useVideoPurchaseGate() {
     },
   });
 
-  const checkAndExecute = async (movieId: string, movieTitle: string, action: () => void, moviePrice?: string) => {
+  const checkAndExecute = async (movieId: string, movieTitle: string, action: () => void, moviePrice?: string, allowCreditPurchase?: boolean) => {
     try {
       // Check if video is already purchased
       const response = await fetch(`/api/videos/${movieId}/purchased`, {
@@ -53,6 +54,7 @@ export function useVideoPurchaseGate() {
         setCurrentMovieId(movieId);
         setCurrentMovieTitle(movieTitle);
         setCurrentMoviePrice(moviePrice || "1.00");
+        setCurrentAllowCreditPurchase(allowCreditPurchase !== false); // Default to true
         setPendingAction(() => action);
         setShowPaymentModal(true);
       }
@@ -70,6 +72,7 @@ export function useVideoPurchaseGate() {
     setCurrentMovieId(null);
     setCurrentMovieTitle("");
     setCurrentMoviePrice("1.00");
+    setCurrentAllowCreditPurchase(true);
   };
 
   const handlePaymentCancel = () => {
@@ -78,6 +81,7 @@ export function useVideoPurchaseGate() {
     setCurrentMovieId(null);
     setCurrentMovieTitle("");
     setCurrentMoviePrice("1.00");
+    setCurrentAllowCreditPurchase(true);
   };
 
   return {
@@ -88,6 +92,7 @@ export function useVideoPurchaseGate() {
     currentMovieId,
     currentMovieTitle,
     currentMoviePrice,
+    currentAllowCreditPurchase,
     initiatePayment: initiatePaymentMutation.mutate,
     isInitiatingPayment: initiatePaymentMutation.isPending,
   };

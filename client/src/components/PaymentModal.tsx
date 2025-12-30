@@ -16,6 +16,7 @@ interface PaymentModalProps {
   movieId?: string | null;
   movieTitle?: string;
   moviePrice?: string;
+  allowCreditPurchase?: boolean;
 }
 
 export function PaymentModal({ 
@@ -26,6 +27,7 @@ export function PaymentModal({
   movieId = null,
   movieTitle = '',
   moviePrice = '1.00',
+  allowCreditPurchase = true,
 }: PaymentModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
@@ -611,8 +613,8 @@ export function PaymentModal({
             </div>
               )}
 
-              {/* Credit Balance Display - Only for video purchases */}
-              {isVideoMode && user && (
+              {/* Credit Balance Display - Only for video purchases when credits allowed */}
+              {isVideoMode && user && allowCreditPurchase && (
                 <div className={`rounded-lg border p-4 ${hasEnoughCredits ? 'border-green-500/50 bg-green-500/10' : 'border-orange-500/30 bg-orange-500/10'}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -638,11 +640,22 @@ export function PaymentModal({
                   )}
                 </div>
               )}
+              
+              {/* Message when credit purchase is disabled */}
+              {isVideoMode && !allowCreditPurchase && (
+                <div className="rounded-lg border border-muted bg-muted/30 p-4">
+                  <p className="text-sm text-muted-foreground text-center">
+                    {language === 'km' 
+                      ? 'ភាពយន្តនេះត្រូវបង់តាម QR កូដតែប៉ុណ្ណោះ'
+                      : 'This movie requires QR payment only'}
+                  </p>
+                </div>
+              )}
 
               {/* Action Buttons */}
               <div className="flex flex-col gap-3">
-                {/* Buy with Credits Button - Primary option if enough balance */}
-                {isVideoMode && hasEnoughCredits && (
+                {/* Buy with Credits Button - Primary option if enough balance and allowed */}
+                {isVideoMode && hasEnoughCredits && allowCreditPurchase && (
                   <Button
                     className="w-full bg-green-600 hover:bg-green-700"
                     onClick={handleBuyWithCredits}

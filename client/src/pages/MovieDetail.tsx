@@ -131,6 +131,7 @@ export default function MovieDetail() {
     currentMovieId,
     currentMovieTitle,
     currentMoviePrice,
+    currentAllowCreditPurchase,
   } = useVideoPurchaseGate();
 
   // Check if this movie is already purchased
@@ -248,7 +249,7 @@ export default function MovieDetail() {
         setSecureVideoUrl(videoUrl);
         setIsPlayerOpen(true);
       }
-    }, movie.price || "1.00");
+    }, movie.price || "1.00", movie.allowCreditPurchase !== 0);
   };
 
   const handleAddToList = () => {
@@ -666,6 +667,7 @@ export default function MovieDetail() {
         movieId={currentMovieId}
         movieTitle={currentMovieTitle}
         moviePrice={currentMoviePrice}
+        allowCreditPurchase={currentAllowCreditPurchase}
       />
     </div>
   );

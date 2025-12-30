@@ -117,6 +117,8 @@ export default function Home() {
     handlePaymentCancel,
     currentMovieId,
     currentMovieTitle,
+    currentMoviePrice,
+    currentAllowCreditPurchase,
   } = useVideoPurchaseGate();
 
   // Check if selected movie is purchased
@@ -601,6 +603,8 @@ export default function Home() {
         mode="video"
         movieId={currentMovieId}
         movieTitle={currentMovieTitle}
+        moviePrice={currentMoviePrice}
+        allowCreditPurchase={currentAllowCreditPurchase}
       />
 
       {/* Click outside to close dropdowns */}

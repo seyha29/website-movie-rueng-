@@ -358,6 +358,7 @@ function VideoForm({ movie, onSuccess }: VideoFormProps) {
     trailerUrl: movie?.trailerUrl || "",
     isFree: movie?.isFree === 1,
     price: movie?.price || "1.00",
+    allowCreditPurchase: movie?.allowCreditPurchase !== 0, // Default to true
     isTrending: movie?.isTrending === 1,
     isNewAndPopular: movie?.isNewAndPopular === 1,
     isHeroBanner: movie?.isHeroBanner === 1,
@@ -375,6 +376,7 @@ function VideoForm({ movie, onSuccess }: VideoFormProps) {
         cast: data.cast.split(",").map((c) => c.trim()).filter(Boolean),
         isFree: data.isFree ? 1 : 0,
         price: data.isFree ? "0.00" : data.price.toString(),
+        allowCreditPurchase: data.allowCreditPurchase ? 1 : 0,
         isTrending: data.isTrending ? 1 : 0,
         isNewAndPopular: data.isNewAndPopular ? 1 : 0,
         isHeroBanner: data.isHeroBanner ? 1 : 0,
@@ -554,23 +556,36 @@ function VideoForm({ movie, onSuccess }: VideoFormProps) {
             </div>
 
             {!formData.isFree && (
-              <div className="flex items-center gap-2">
-                <Label htmlFor="price" className="text-xs sm:text-sm font-medium whitespace-nowrap">
-                  Price ($):
-                </Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.50"
-                  min="0.50"
-                  max="100"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  className="w-24 text-sm"
-                  placeholder="1.00"
-                  data-testid="input-movie-price"
-                />
-              </div>
+              <>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="price" className="text-xs sm:text-sm font-medium whitespace-nowrap">
+                    Price ($):
+                  </Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    step="0.50"
+                    min="0.50"
+                    max="100"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    className="w-24 text-sm"
+                    placeholder="1.00"
+                    data-testid="input-movie-price"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="allow-credit-purchase"
+                    checked={formData.allowCreditPurchase}
+                    onCheckedChange={(checked) => setFormData({ ...formData, allowCreditPurchase: checked })}
+                    data-testid="switch-allow-credit-purchase"
+                  />
+                  <Label htmlFor="allow-credit-purchase" className="text-xs sm:text-sm">
+                    Allow Credit Purchase
+                  </Label>
+                </div>
+              </>
             )}
           </div>
         </div>
