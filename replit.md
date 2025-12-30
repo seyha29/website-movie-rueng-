@@ -7,10 +7,11 @@ RUENG (formerly Reoung Movies Flix) is an iFlix KH-inspired, single-page streami
 ### 🎯 Core Features
 - **Free Trailers**: All movie trailers are free to watch - no login or payment required. Trailers are embedded directly on the movie detail page with a "FREE TO WATCH" badge
 - **Pay-Per-Video**: Full movies require a one-time $1 purchase (unless marked as free with isFree=1)
+- **Credit Wallet System**: Users have a credit balance that can be used to purchase movies. New users receive $5 welcome bonus on registration. Admins can gift credits to individual users or all users.
 - **Forever Playback**: Once a user purchases a video for $1, they can watch it unlimited times forever - no re-payment required
 - **Auto-Add to My List**: After successful payment, purchased videos automatically appear in the user's "My List" profile section
 - **Smart Play Button**: Button text adapts based on video type - "Play Full Movie" for free content, "Watch Full Movie ($1)" for paid content
-- **RaksmeyPay Integration**: Secure payment processing with QR code support for mobile payments
+- **RaksmeyPay Integration**: Secure payment processing with QR code support for mobile payments (used when credit balance is insufficient)
 - **Single-Device Login**: One account can only be logged in on one device at a time. Logging in on a new device automatically logs out the previous device to prevent account sharing
 
 ### 🎨 Design & UX
@@ -57,7 +58,8 @@ Preferred communication style: Simple, everyday language.
 ### Data Models
 - **Movie Schema**: `id`, `title`, `description`, `rating`, `imdbRating`, `tmdbRating`, `userRatingAvg`, `userRatingCount`, `year`, `duration`, `genres`, `cast`, `director`, `country`, `posterImage`, `backdropImage`, `videoEmbedUrl` (full movie), `trailerUrl` (preview), `isFree` (1=free, 0=paid), `isTrending`, `isNewAndPopular`.
 - **Movie User Ratings Schema**: `id`, `userId`, `movieId`, `score` (1-10), `createdAt`, `updatedAt` - Stores individual user ratings for movies with unique constraint on userId+movieId.
-- **User Schema**: `id`, `fullName`, `phoneNumber` (unique, optional), `email` (unique, optional), `password` (hashed), `currentSessionId` (for single-device login). Note: Users are regular customers only. Users can register/login with either phone number OR email.
+- **User Schema**: `id`, `fullName`, `phoneNumber` (unique, optional), `email` (unique, optional), `password` (hashed), `currentSessionId` (for single-device login), `balance` (credit balance, default $5.00). Note: Users are regular customers only. Users can register/login with either phone number OR email.
+- **Credit Transactions Schema**: `id`, `userId`, `type` (welcome_bonus, admin_gift, purchase), `amount`, `balanceAfter`, `description`, `movieId` (optional), `adminId` (optional), `createdAt` - Tracks all credit balance changes for audit trail.
 - **Pending Phone Registration Schema**: `id`, `phoneNumber`, `fullName`, `passwordHash`, `otpHash`, `otpExpiresAt`, `attemptCount`, `resendCount`, `createdAt` - For SMS OTP verification during phone registration.
 - **Pending Email Registration Schema**: `id`, `email`, `fullName`, `passwordHash`, `otpHash`, `otpExpiresAt`, `attemptCount`, `resendCount`, `createdAt` - For email OTP verification during registration.
 - **Admin Schema**: `id`, `username` (unique), `password` (hashed), `fullName`, `role` (full/video), `currentSessionId`, `createdAt`. Admins are stored in a separate table from users.
