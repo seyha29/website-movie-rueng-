@@ -39,6 +39,7 @@ export const users = pgTable("users", {
   phoneNumber: text("phone_number").unique(), // Optional - user can register with phone OR email
   email: text("email").unique(), // Optional - user can register with phone OR email
   password: text("password").notNull(),
+  avatarUrl: text("avatar_url"), // Profile picture URL
   isAdmin: integer("is_admin").notNull().default(0),
   adminRole: text("admin_role"), // "full" = full admin access, "video" = video management only, null = regular user
   currentSessionId: text("current_session_id"), // Track active session for single-device login

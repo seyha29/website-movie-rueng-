@@ -87,6 +87,7 @@ const staticOptions = {
 };
 app.use('/generated_images', express.static(path.join(process.cwd(), 'attached_assets/generated_images'), staticOptions));
 app.use('/stock_images', express.static(path.join(process.cwd(), 'attached_assets/stock_images'), staticOptions));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads'), staticOptions));
 
 app.use((req, res, next) => {
   const start = Date.now();

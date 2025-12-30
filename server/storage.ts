@@ -6,8 +6,8 @@ import { eq, ilike, or, sql, and } from "drizzle-orm";
 
 const { Pool } = pg;
 
-// Type for user updates that includes session management fields
-type UserUpdateData = Partial<InsertUser> & { currentSessionId?: string | null };
+// Type for user updates that includes session management fields and avatar
+type UserUpdateData = Partial<InsertUser> & { currentSessionId?: string | null; avatarUrl?: string };
 
 export interface IStorage {
   // User methods
@@ -986,6 +986,7 @@ export class MemStorage implements IStorage {
       id, 
       phoneNumber: insertUser.phoneNumber || null,
       email: insertUser.email || null,
+      avatarUrl: null,
       isAdmin: 0, 
       adminRole: null, 
       currentSessionId: null, 

@@ -4,11 +4,42 @@ import { storage } from "./storage";
 import { insertMovieSchema, insertUserSchema, insertAdBannerSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcrypt";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import { createPaymentProvider } from "./payment-provider";
 import { PaymentService } from "./payment-service";
 import { securityService, type ViolationType } from "./security-service";
 import { generateOTP, sendOTPEmail } from "./email";
 import { smsService } from "./sms";
+
+// Configure multer for avatar uploads
+const avatarStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = './uploads/avatars';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `avatar-${uniqueSuffix}${path.extname(file.originalname)}`);
+  }
+});
+
+const avatarUpload = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files (JPEG, PNG, GIF, WebP) are allowed'));
+    }
+  }
+});
 
 // Initialize payment service
 const paymentProvider = createPaymentProvider();
@@ -1068,6 +1099,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Profile update error:", error);
       res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
+  // Avatar upload endpoint
+  app.post("/api/auth/avatar", requireAuth, avatarUpload.single('avatar'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+      
+      // Update user's avatar URL in database
+      const updatedUser = await storage.updateUser(req.session.userId!, { avatarUrl });
+      if (!updatedUser) {
+        return res.status(500).json({ error: "Failed to update avatar" });
+      }
+
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json({ avatarUrl, user: userWithoutPassword });
+    } catch (error) {
+      console.error("Avatar upload error:", error);
+      res.status(500).json({ error: "Failed to upload avatar" });
     }
   });
 
