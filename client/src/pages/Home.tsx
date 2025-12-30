@@ -404,10 +404,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Movie count */}
-            <span className="text-base text-muted-foreground" data-testid="text-movie-count">
-              <span className="hidden sm:inline">{paginationLabels.showing[language]} </span>{displayCount}<span className="hidden sm:inline"> {paginationLabels.of[language]} {total}</span>
-            </span>
           </div>
         </div>
       </div>
