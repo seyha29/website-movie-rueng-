@@ -1269,6 +1269,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all movies purchased by user with credits
+  app.get("/api/purchased-movies", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const movies = await storage.getUserPurchasedVideos(userId);
+      res.json({ movies });
+    } catch (error) {
+      console.error("Failed to fetch purchased movies:", error);
+      res.status(500).json({ error: "Failed to fetch purchased movies" });
+    }
+  });
+
   // Video purchase routes (pay-per-view)
   app.get("/api/videos/:movieId/purchased", requireAuth, async (req, res) => {
     try {

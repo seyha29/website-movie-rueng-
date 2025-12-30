@@ -20,6 +20,7 @@ const PaymentResult = lazy(() => import("@/pages/PaymentResult"));
 const TermsOfService = lazy(() => import("@/pages/TermsOfService"));
 const PrivacyPolicy = lazy(() => import("@/pages/PrivacyPolicy"));
 const CookiePreferences = lazy(() => import("@/pages/CookiePreferences"));
+const PurchasedMovies = lazy(() => import("@/pages/PurchasedMovies"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 function PageLoader() {
@@ -43,6 +44,7 @@ function Router() {
         <Route path="/tv-shows" component={Browse} />
         <Route path="/new" component={Browse} />
         <Route path="/my-list" component={Browse} />
+        <Route path="/purchased" component={PurchasedMovies} />
         <Route path="/search/:query" component={SearchResults} />
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />

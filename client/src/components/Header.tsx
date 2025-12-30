@@ -1,4 +1,4 @@
-import { Search, User, Menu, LogOut, List, LayoutDashboard, Wallet } from "lucide-react";
+import { Search, User, Menu, LogOut, List, LayoutDashboard, Wallet, CreditCard } from "lucide-react";
 import { Link, useLocation, useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,6 +93,7 @@ export default function Header() {
     { label: navLabels.movies[language], path: "/movies" },
     { label: navLabels.newAndPopular[language], path: "/new" },
     { label: navLabels.myList[language], path: "/my-list" },
+    { label: language === 'km' ? 'ភាពយន្តបានទិញ' : 'Purchased Movies', path: "/purchased" },
   ];
 
   return (
@@ -327,6 +328,13 @@ export default function Header() {
                       <Link href="/my-list">
                         <List className="h-4 w-4 mr-2" />
                         {navLabels.myList[language]}
+                      </Link>
+                    </DropdownMenuItem>
+                    
+                    <DropdownMenuItem asChild>
+                      <Link href="/purchased">
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        {language === 'km' ? 'ភាពយន្តបានទិញ' : 'Purchased Movies'}
                       </Link>
                     </DropdownMenuItem>
                     
