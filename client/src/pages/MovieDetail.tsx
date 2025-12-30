@@ -445,23 +445,14 @@ export default function MovieDetail() {
                       ))}
                     </div>
 
-                    {/* Rating Badges */}
+                    {/* Rating Badge - User Rating in IMDb style */}
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {movie.imdbRating && (
-                        <Badge className="text-xs bg-yellow-600 hover:bg-yellow-700" data-testid="badge-imdb-rating">
-                          IMDb {movie.imdbRating}
-                        </Badge>
-                      )}
-                      {movie.tmdbRating && (
-                        <Badge className="text-xs bg-blue-600 hover:bg-blue-700" data-testid="badge-tmdb-rating">
-                          TMDb {movie.tmdbRating}
-                        </Badge>
-                      )}
-                      {avgRating > 0 && (
-                        <Badge className="text-xs bg-green-600 hover:bg-green-700" data-testid="badge-user-rating">
-                          {language === 'km' ? 'អ្នកប្រើ' : 'Users'} {avgRating.toFixed(1)}/10 ({ratingCount} {language === 'km' ? 'សម្លេង' : 'votes'})
-                        </Badge>
-                      )}
+                      <Badge className="text-xs bg-yellow-600 hover:bg-yellow-700" data-testid="badge-imdb-rating">
+                        <Star className="h-3 w-3 mr-1 fill-current" />
+                        {avgRating > 0 
+                          ? `${avgRating.toFixed(1)}/10 (${ratingCount} ${language === 'km' ? 'សម្លេង' : 'votes'})`
+                          : (language === 'km' ? 'មិនទាន់មានវាយតម្លៃ' : 'No ratings yet')}
+                      </Badge>
                     </div>
 
                     {/* User Rating Section */}
