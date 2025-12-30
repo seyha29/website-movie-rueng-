@@ -2,30 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@font-face {
-  font-family: 'Khmer OS Battambang';
-  src: url('/attached_assets/KhmerOSBattambang-Regular_1763919089247.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-/* Custom Khmer Fonts */
-@font-face {
-  font-family: 'Moul';
-  src: url('/fonts/Moul.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Angkor';
-  src: url('/fonts/Angkor.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
+/* Note: Khmer fonts (Battambang, Noto Sans Khmer) are loaded from Google Fonts in index.html */
 
 /* LIGHT MODE - Netflix inspired dark theme as default */
 :root {
@@ -68,8 +45,8 @@
   --chart-3: 173 68% 55%;
   --chart-4: 197 81% 58%;
   --chart-5: 43 84% 60%;
-  --font-sans: Inter, 'Angkor', 'Noto Sans Khmer', sans-serif;
-  --font-title: Inter, 'Moul', 'Angkor', sans-serif;
+  --font-sans: Inter, Battambang, 'Noto Sans Khmer', sans-serif;
+  --font-title: Inter, Battambang, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: .5rem;

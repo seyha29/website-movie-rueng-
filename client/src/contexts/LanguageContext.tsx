@@ -35,16 +35,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   };
 
   // Apply fonts based on language
-  // Khmer OS Battambang is always included for Khmer text rendering in both languages
+  // Battambang (from Google Fonts) is always included for Khmer text rendering
   useEffect(() => {
     if (language === "km") {
       // Khmer mode: Khmer font first, Inter as fallback for English text
-      document.documentElement.style.setProperty('--font-sans', "'Khmer OS Battambang', 'Noto Sans Khmer', Inter, sans-serif");
-      document.documentElement.style.setProperty('--font-title', "'Khmer OS Battambang', Inter, sans-serif");
+      document.documentElement.style.setProperty('--font-sans', "Battambang, 'Noto Sans Khmer', Inter, sans-serif");
+      document.documentElement.style.setProperty('--font-title', "Battambang, Inter, sans-serif");
     } else {
-      // English mode: Inter first, but include Khmer OS Battambang for any Khmer text
-      document.documentElement.style.setProperty('--font-sans', "Inter, 'Khmer OS Battambang', 'Noto Sans Khmer', sans-serif");
-      document.documentElement.style.setProperty('--font-title', "Inter, 'Khmer OS Battambang', sans-serif");
+      // English mode: Inter first, but include Battambang for any Khmer text
+      document.documentElement.style.setProperty('--font-sans', "Inter, Battambang, 'Noto Sans Khmer', sans-serif");
+      document.documentElement.style.setProperty('--font-title', "Inter, Battambang, sans-serif");
     }
   }, [language]);
 
