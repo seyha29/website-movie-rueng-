@@ -199,9 +199,17 @@ export default function Header() {
                       <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)}>
                         <div className="p-3 rounded-lg bg-card border border-border cursor-pointer hover:bg-accent transition-colors">
                           <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
-                              <User className="h-5 w-5 text-primary" />
-                            </div>
+                            {user.avatarUrl ? (
+                              <img 
+                                src={user.avatarUrl} 
+                                alt={user.fullName} 
+                                className="h-10 w-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                                <User className="h-5 w-5 text-primary" />
+                              </div>
+                            )}
                             <div className="flex flex-col flex-1">
                               <span className="font-medium text-sm">{user.fullName}</span>
                               <span className="text-xs text-muted-foreground">{user.phoneNumber || user.email}</span>
@@ -268,10 +276,18 @@ export default function Header() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="hidden lg:flex hover-elevate rounded-full"
+                      className="hidden lg:flex hover-elevate rounded-full overflow-hidden"
                       data-testid="button-user-menu"
                     >
-                      <User className="h-5 w-5" />
+                      {user.avatarUrl ? (
+                        <img 
+                          src={user.avatarUrl} 
+                          alt={user.fullName} 
+                          className="h-8 w-8 rounded-full object-cover"
+                        />
+                      ) : (
+                        <User className="h-5 w-5" />
+                      )}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
