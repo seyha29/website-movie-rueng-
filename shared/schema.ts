@@ -42,7 +42,7 @@ export const users = pgTable("users", {
   isAdmin: integer("is_admin").notNull().default(0),
   adminRole: text("admin_role"), // "full" = full admin access, "video" = video management only, null = regular user
   currentSessionId: text("current_session_id"), // Track active session for single-device login
-  balance: decimal("balance", { precision: 10, scale: 2 }).notNull().default("0.00"), // User credit balance in USD
+  balance: decimal("balance", { precision: 10, scale: 2 }).notNull().default("5.00"), // User credit balance in USD - new users get $5 welcome bonus
   trustedUser: integer("trusted_user").notNull().default(0), // 1 = skip DevTools detection, 0 = normal security
   noWatermark: integer("no_watermark").notNull().default(0), // 1 = remove watermark from videos, 0 = show watermark
 });
@@ -398,3 +398,24 @@ export const videoAccessTokens = pgTable("video_access_tokens", {
   expiresAt: integer("expires_at").notNull(),
   used: integer("used").notNull().default(0),
 });
+
+// Credit Transactions - track all credit operations (welcome bonus, admin gifts, purchases)
+export const creditTransactions = pgTable("credit_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  type: text("type").notNull(), // welcome_bonus, admin_gift, purchase, refund
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(), // Positive for credits, negative for debits
+  balanceAfter: decimal("balance_after", { precision: 10, scale: 2 }).notNull(), // Balance after transaction
+  description: text("description"), // e.g., "Welcome bonus", "Admin gift from John", "Purchased: Movie Title"
+  movieId: varchar("movie_id").references(() => movies.id, { onDelete: 'set null' }), // For purchase transactions
+  adminId: varchar("admin_id").references(() => admins.id, { onDelete: 'set null' }), // For admin gift transactions
+  createdAt: integer("created_at").notNull().default(sql`extract(epoch from now())`),
+});
+
+export const insertCreditTransactionSchema = createInsertSchema(creditTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
+export type CreditTransaction = typeof creditTransactions.$inferSelect;
