@@ -43,7 +43,7 @@ export const users = pgTable("users", {
   isAdmin: integer("is_admin").notNull().default(0),
   adminRole: text("admin_role"), // "full" = full admin access, "video" = video management only, null = regular user
   currentSessionId: text("current_session_id"), // Track active session for single-device login
-  balance: decimal("balance", { precision: 10, scale: 2 }).notNull().default("5.00"), // User credit balance in USD - new users get $5 welcome bonus
+  balance: decimal("balance", { precision: 10, scale: 2 }).notNull().default("0.00"), // User credit balance in USD - welcome bonus added via credit transaction
   trustedUser: integer("trusted_user").notNull().default(0), // 1 = skip DevTools detection, 0 = normal security
   noWatermark: integer("no_watermark").notNull().default(0), // 1 = remove watermark from videos, 0 = show watermark
 });
@@ -420,3 +420,21 @@ export const insertCreditTransactionSchema = createInsertSchema(creditTransactio
 
 export type InsertCreditTransaction = z.infer<typeof insertCreditTransactionSchema>;
 export type CreditTransaction = typeof creditTransactions.$inferSelect;
+
+// App Settings - configurable system settings
+export const appSettings = pgTable("app_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: text("key").notNull().unique(), // Setting key (e.g., welcome_credit_amount)
+  value: text("value").notNull(), // Setting value (stored as string, parsed by application)
+  description: text("description"), // Human-readable description
+  updatedAt: integer("updated_at").notNull().default(sql`extract(epoch from now())`),
+  updatedBy: varchar("updated_by").references(() => admins.id, { onDelete: 'set null' }), // Last admin to update
+});
+
+export const insertAppSettingSchema = createInsertSchema(appSettings).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertAppSetting = z.infer<typeof insertAppSettingSchema>;
+export type AppSetting = typeof appSettings.$inferSelect;

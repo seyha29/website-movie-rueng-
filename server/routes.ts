@@ -339,6 +339,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: pending.passwordHash, // Already hashed
       });
       
+      // Add welcome bonus credits
+      const welcomeAmount = await storage.getAppSetting('welcome_credit_amount') || '5.00';
+      const bonusAmount = parseFloat(welcomeAmount);
+      if (bonusAmount > 0) {
+        await storage.addUserCredits(user.id, bonusAmount, 'welcome_bonus', 'Welcome bonus on registration');
+      }
+      
       // Delete pending registration
       await storage.deletePendingEmailRegistration(email.toLowerCase());
       
@@ -410,6 +417,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phoneNumber: pending.phoneNumber,
         password: pending.passwordHash, // Already hashed
       });
+      
+      // Add welcome bonus credits
+      const phoneWelcomeAmount = await storage.getAppSetting('welcome_credit_amount') || '5.00';
+      const phoneBonusAmount = parseFloat(phoneWelcomeAmount);
+      if (phoneBonusAmount > 0) {
+        await storage.addUserCredits(user.id, phoneBonusAmount, 'welcome_bonus', 'Welcome bonus on registration');
+      }
       
       // Delete pending registration
       await storage.deletePendingPhoneRegistration(phoneNumber);
@@ -1003,6 +1017,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Delete admin error:", error);
       res.status(500).json({ error: "Failed to delete admin" });
+    }
+  });
+
+  // Admin Settings API
+  app.get("/api/admin/settings", requireAdminRole("full"), async (req, res) => {
+    try {
+      const settings = await storage.getAllAppSettings();
+      res.json(settings);
+    } catch (error) {
+      console.error("Get settings error:", error);
+      res.status(500).json({ error: "Failed to get settings" });
+    }
+  });
+
+  app.put("/api/admin/settings/:key", requireAdminRole("full"), async (req, res) => {
+    try {
+      const { key } = req.params;
+      const { value, description } = req.body;
+      
+      if (value === undefined || value === null) {
+        return res.status(400).json({ error: "Value is required" });
+      }
+
+      await storage.setAppSetting(key, value.toString(), description, req.session.adminId);
+      res.json({ message: "Setting updated successfully" });
+    } catch (error) {
+      console.error("Update setting error:", error);
+      res.status(500).json({ error: "Failed to update setting" });
+    }
+  });
+
+  // Admin Credit Transactions View
+  app.get("/api/admin/credits/transactions", requireAdminRole("full"), async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      const transactions = await storage.getAllCreditTransactions(limit);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Get credit transactions error:", error);
+      res.status(500).json({ error: "Failed to get credit transactions" });
     }
   });
 

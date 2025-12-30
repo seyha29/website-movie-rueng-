@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocation, Route, Switch } from "wouter";
 import { Admin } from "@shared/schema";
 import { Button } from "@/components/ui/button";
-import { Film, Users as UsersIcon, LogOut, BarChart3, Image, Key, Shield } from "lucide-react";
+import { Film, Users as UsersIcon, LogOut, BarChart3, Image, Key, Shield, Settings } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +11,7 @@ import UserManagement from "@/pages/UserManagement";
 import Analytics from "@/pages/Analytics";
 import AdBannerManagement from "@/pages/AdBannerManagement";
 import AdminManagement from "@/components/AdminManagement";
+import AdminSettings from "@/pages/AdminSettings";
 import logoImage from "@assets/logo Reung_1764364561043.png";
 
 export default function AdminPanel() {
@@ -58,7 +59,7 @@ export default function AdminPanel() {
   const currentPath = location.split("/")[2] || "videos";
 
   // Redirect video-only admins to videos page if they try to access restricted sections
-  if (!isFullAdmin && (currentPath === "analytics" || currentPath === "users" || currentPath === "banners" || currentPath === "admins")) {
+  if (!isFullAdmin && (currentPath === "analytics" || currentPath === "users" || currentPath === "banners" || currentPath === "admins" || currentPath === "settings")) {
     setLocation("/admin/videos");
     return null;
   }
@@ -135,6 +136,18 @@ export default function AdminPanel() {
                     Admins
                   </Button>
                 )}
+                {isFullAdmin && (
+                  <Button
+                    variant={currentPath === "settings" ? "default" : "ghost"}
+                    onClick={() => setLocation("/admin/settings")}
+                    data-testid="button-nav-settings"
+                    size="sm"
+                    className="text-xs sm:text-sm"
+                  >
+                    <Settings className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    Settings
+                  </Button>
+                )}
               </nav>
             </div>
             <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-between sm:justify-end">
@@ -162,6 +175,7 @@ export default function AdminPanel() {
           {isFullAdmin && <Route path="/admin/users" component={UserManagement} />}
           {isFullAdmin && <Route path="/admin/banners" component={AdBannerManagement} />}
           {isFullAdmin && <Route path="/admin/admins" component={AdminManagement} />}
+          {isFullAdmin && <Route path="/admin/settings" component={AdminSettings} />}
           <Route path="/admin" component={isFullAdmin ? Analytics : VideoManagement} />
         </Switch>
       </div>

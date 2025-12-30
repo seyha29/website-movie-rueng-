@@ -58,8 +58,9 @@ Preferred communication style: Simple, everyday language.
 ### Data Models
 - **Movie Schema**: `id`, `title`, `description`, `rating`, `imdbRating`, `tmdbRating`, `userRatingAvg`, `userRatingCount`, `year`, `duration`, `genres`, `cast`, `director`, `country`, `posterImage`, `backdropImage`, `videoEmbedUrl` (full movie), `trailerUrl` (preview), `isFree` (1=free, 0=paid), `isTrending`, `isNewAndPopular`.
 - **Movie User Ratings Schema**: `id`, `userId`, `movieId`, `score` (1-10), `createdAt`, `updatedAt` - Stores individual user ratings for movies with unique constraint on userId+movieId.
-- **User Schema**: `id`, `fullName`, `phoneNumber` (unique, optional), `email` (unique, optional), `password` (hashed), `currentSessionId` (for single-device login), `balance` (credit balance, default $5.00). Note: Users are regular customers only. Users can register/login with either phone number OR email.
+- **User Schema**: `id`, `fullName`, `phoneNumber` (unique, optional), `email` (unique, optional), `password` (hashed), `avatarUrl` (profile picture URL), `currentSessionId` (for single-device login), `balance` (credit balance, starts at $0, welcome bonus added via transaction). Note: Users are regular customers only. Users can register/login with either phone number OR email.
 - **Credit Transactions Schema**: `id`, `userId`, `type` (welcome_bonus, admin_gift, purchase), `amount`, `balanceAfter`, `description`, `movieId` (optional), `adminId` (optional), `createdAt` - Tracks all credit balance changes for audit trail.
+- **App Settings Schema**: `id`, `key`, `value`, `description`, `updatedAt`, `updatedBy` - Configurable system settings (e.g., welcome_credit_amount for new user bonus).
 - **Pending Phone Registration Schema**: `id`, `phoneNumber`, `fullName`, `passwordHash`, `otpHash`, `otpExpiresAt`, `attemptCount`, `resendCount`, `createdAt` - For SMS OTP verification during phone registration.
 - **Pending Email Registration Schema**: `id`, `email`, `fullName`, `passwordHash`, `otpHash`, `otpExpiresAt`, `attemptCount`, `resendCount`, `createdAt` - For email OTP verification during registration.
 - **Admin Schema**: `id`, `username` (unique), `password` (hashed), `fullName`, `role` (full/video), `currentSessionId`, `createdAt`. Admins are stored in a separate table from users.
@@ -92,7 +93,7 @@ Preferred communication style: Simple, everyday language.
 - **Visualization**: Uses Recharts library for bar charts, line charts, and pie charts
 
 ### Routing Structure
-- **Frontend Routes**: `/`, `/register`, `/login`, `/profile`, `/movies`, `/tv-shows`, `/new`, `/my-list`, `/search/:query`, `/admin`, `/admin/login`, `/admin/analytics`, `/admin/videos`, `/admin/users`, `/admin/banners`, `/admin/admins`.
+- **Frontend Routes**: `/`, `/register`, `/login`, `/profile`, `/movies`, `/new`, `/my-list`, `/search/:query`, `/admin`, `/admin/login`, `/admin/analytics`, `/admin/videos`, `/admin/users`, `/admin/banners`, `/admin/admins`, `/admin/settings`.
 - **Component Organization**: Pages in `client/src/pages/`, reusable components in `client/src/components/`, Shadcn UI in `client/src/components/ui/`.
 
 ### Performance Optimizations

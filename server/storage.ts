@@ -146,6 +146,12 @@ export interface IStorage {
   getUserCreditTransactions(userId: string, limit?: number): Promise<CreditTransaction[]>;
   addUserCredits(userId: string, amount: number, type: string, description: string, adminId?: string): Promise<{ user: User; transaction: CreditTransaction }>;
   deductUserCredits(userId: string, amount: number, description: string, movieId?: string): Promise<{ user: User; transaction: CreditTransaction }>;
+  getAllCreditTransactions(limit?: number): Promise<CreditTransaction[]>;
+  
+  // App Settings methods
+  getAppSetting(key: string): Promise<string | undefined>;
+  setAppSetting(key: string, value: string, description?: string, adminId?: string): Promise<void>;
+  getAllAppSettings(): Promise<Array<{ key: string; value: string; description: string | null; updatedAt: number }>>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -946,17 +952,61 @@ export class DatabaseStorage implements IStorage {
     
     return { user: updatedUser, transaction };
   }
+
+  async getAllCreditTransactions(limit: number = 100): Promise<CreditTransaction[]> {
+    return await this.db.select()
+      .from(creditTransactions)
+      .orderBy(sql`${creditTransactions.createdAt} DESC`)
+      .limit(limit);
+  }
+
+  async getAppSetting(key: string): Promise<string | undefined> {
+    const result = await this.db.execute(sql`
+      SELECT value FROM app_settings WHERE key = ${key}
+    `);
+    return result.rows[0]?.value as string | undefined;
+  }
+
+  async setAppSetting(key: string, value: string, description?: string, adminId?: string): Promise<void> {
+    await this.db.execute(sql`
+      INSERT INTO app_settings (key, value, description, updated_by, updated_at)
+      VALUES (${key}, ${value}, ${description || null}, ${adminId || null}, extract(epoch from now()))
+      ON CONFLICT (key) DO UPDATE SET 
+        value = ${value},
+        description = COALESCE(${description || null}, app_settings.description),
+        updated_by = ${adminId || null},
+        updated_at = extract(epoch from now())
+    `);
+  }
+
+  async getAllAppSettings(): Promise<Array<{ key: string; value: string; description: string | null; updatedAt: number }>> {
+    const result = await this.db.execute(sql`
+      SELECT key, value, description, updated_at as "updatedAt" FROM app_settings ORDER BY key
+    `);
+    return result.rows as Array<{ key: string; value: string; description: string | null; updatedAt: number }>;
+  }
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private movies: Map<string, Movie>;
   private myListEntries: Map<string, { userId: string, movieId: string, addedAt: number }>;
+  private creditTransactions: Map<string, CreditTransaction>;
+  private appSettings: Map<string, { key: string; value: string; description: string | null; updatedAt: number }>;
 
   constructor() {
     this.users = new Map();
     this.movies = new Map();
     this.myListEntries = new Map();
+    this.creditTransactions = new Map();
+    this.appSettings = new Map();
+    // Set default welcome credit amount
+    this.appSettings.set('welcome_credit_amount', { 
+      key: 'welcome_credit_amount', 
+      value: '5.00', 
+      description: 'Amount of credits given to new users on registration', 
+      updatedAt: Math.floor(Date.now() / 1000) 
+    });
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -990,7 +1040,7 @@ export class MemStorage implements IStorage {
       isAdmin: 0, 
       adminRole: null, 
       currentSessionId: null, 
-      balance: "0.00", 
+      balance: "0.00", // Welcome bonus added via credit transaction after user creation 
       trustedUser: 0, 
       noWatermark: 0 
     };
@@ -1517,8 +1567,6 @@ export class MemStorage implements IStorage {
   }
 
   // Credit Transaction methods (MemStorage implementation)
-  private creditTransactions: Map<string, CreditTransaction> = new Map();
-
   async createCreditTransaction(data: InsertCreditTransaction): Promise<CreditTransaction> {
     const id = randomUUID();
     const transaction: CreditTransaction = {
@@ -1589,6 +1637,29 @@ export class MemStorage implements IStorage {
     });
     
     return { user: updatedUser, transaction };
+  }
+
+  async getAllCreditTransactions(limit: number = 100): Promise<CreditTransaction[]> {
+    return Array.from(this.creditTransactions.values())
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, limit);
+  }
+
+  async getAppSetting(key: string): Promise<string | undefined> {
+    return this.appSettings.get(key)?.value;
+  }
+
+  async setAppSetting(key: string, value: string, description?: string, adminId?: string): Promise<void> {
+    this.appSettings.set(key, { 
+      key, 
+      value, 
+      description: description || null, 
+      updatedAt: Math.floor(Date.now() / 1000) 
+    });
+  }
+
+  async getAllAppSettings(): Promise<Array<{ key: string; value: string; description: string | null; updatedAt: number }>> {
+    return Array.from(this.appSettings.values()).sort((a, b) => a.key.localeCompare(b.key));
   }
 }
 
