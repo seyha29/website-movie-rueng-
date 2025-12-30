@@ -1,10 +1,10 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, X, CheckCircle } from "lucide-react";
+import { Loader2, X, CheckCircle, Wallet } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { paymentLabels } from "@/lib/translations";
 
@@ -44,6 +44,70 @@ export function PaymentModal({
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const paymentRefRef = useRef<string | null>(null);
   const paymentCountdownRef = useRef<NodeJS.Timeout | null>(null);
+  const [isBuyingWithCredits, setIsBuyingWithCredits] = useState(false);
+
+  // Fetch user balance for credit purchase option
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/me"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/me", { credentials: "include" });
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: open && !!isVideoMode,
+  });
+
+  const userBalance = parseFloat(user?.balance || "0");
+  const priceNum = parseFloat(moviePrice);
+  const hasEnoughCredits = userBalance >= priceNum;
+
+  // Buy with credits mutation
+  const buyWithCreditsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', `/api/videos/${movieId}/purchase`, { useCredits: true });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to purchase with credits');
+      }
+      return response.json();
+    },
+    onSuccess: async (data) => {
+      if (data.success && data.usedCredits) {
+        toast({
+          title: language === 'km' ? "ទិញដោយជោគជ័យ!" : "Purchase Successful!",
+          description: language === 'km' 
+            ? `អ្នកអាចមើល "${movieTitle}" ឥឡូវនេះ។ សមតុល្យថ្មី: $${data.newBalance}`
+            : `You can now watch "${movieTitle}". New balance: $${data.newBalance}`,
+        });
+        
+        // Invalidate queries
+        await queryClient.invalidateQueries({ queryKey: ['/api/videos', movieId, 'purchased'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/my-list'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/auth/me'] });
+        await queryClient.invalidateQueries({ queryKey: ['/api/credits/history'] });
+        
+        setIsBuyingWithCredits(false);
+        onOpenChange(false);
+        
+        if (onSuccess) {
+          onSuccess();
+        }
+      }
+    },
+    onError: (error: any) => {
+      setIsBuyingWithCredits(false);
+      toast({
+        title: language === 'km' ? "ការទិញបរាជ័យ" : "Purchase Failed",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleBuyWithCredits = () => {
+    setIsBuyingWithCredits(true);
+    buyWithCreditsMutation.mutate();
+  };
 
   const initiatePaymentMutation = useMutation({
     mutationFn: async () => {
@@ -538,7 +602,7 @@ export function PaymentModal({
           </div>
 
               {/* Payment Processing Status */}
-              {isProcessing && (
+              {(isProcessing || isBuyingWithCredits) && (
             <div className="rounded-md border border-border bg-muted/50 p-4">
               <div className="flex items-center justify-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -547,32 +611,87 @@ export function PaymentModal({
             </div>
               )}
 
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => onOpenChange(false)}
-              disabled={initiatePaymentMutation.isPending || isProcessing}
-              data-testid="button-cancel-payment"
-            >
-              {t.cancel[language]}
-            </Button>
-            <Button
-              className="flex-1"
-              onClick={handlePayNow}
-              disabled={initiatePaymentMutation.isPending || isProcessing}
-              data-testid="button-pay-now"
-            >
-              {initiatePaymentMutation.isPending || isProcessing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {isProcessing ? 'Processing...' : 'Starting...'}
-                </>
-              ) : (
-                `${t.payNow[language]} ${paymentAmount}`
+              {/* Credit Balance Display - Only for video purchases */}
+              {isVideoMode && user && (
+                <div className={`rounded-lg border p-4 ${hasEnoughCredits ? 'border-green-500/50 bg-green-500/10' : 'border-orange-500/30 bg-orange-500/10'}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="h-5 w-5 text-orange-500" />
+                      <span className="font-medium">
+                        {language === 'km' ? 'សមតុល្យរបស់អ្នក' : 'Your Balance'}
+                      </span>
+                    </div>
+                    <span className={`font-bold text-lg ${hasEnoughCredits ? 'text-green-500' : 'text-orange-500'}`}>
+                      ${userBalance.toFixed(2)}
+                    </span>
+                  </div>
+                  {hasEnoughCredits ? (
+                    <p className="text-sm text-green-500 mt-1">
+                      {language === 'km' ? 'អ្នកមានសមតុល្យគ្រប់គ្រាន់ដើម្បីទិញ!' : 'You have enough balance to purchase!'}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {language === 'km' 
+                        ? `ត្រូវការបន្ថែម $${(priceNum - userBalance).toFixed(2)} ទៀត`
+                        : `Need $${(priceNum - userBalance).toFixed(2)} more`}
+                    </p>
+                  )}
+                </div>
               )}
-            </Button>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-3">
+                {/* Buy with Credits Button - Primary option if enough balance */}
+                {isVideoMode && hasEnoughCredits && (
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    onClick={handleBuyWithCredits}
+                    disabled={isBuyingWithCredits || initiatePaymentMutation.isPending || isProcessing}
+                    data-testid="button-buy-with-credits"
+                  >
+                    {isBuyingWithCredits ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {language === 'km' ? 'កំពុងដំណើរការ...' : 'Processing...'}
+                      </>
+                    ) : (
+                      <>
+                        <Wallet className="mr-2 h-4 w-4" />
+                        {language === 'km' ? `ទិញដោយប្រើសមតុល្យ ${paymentAmount}` : `Buy with Credits ${paymentAmount}`}
+                      </>
+                    )}
+                  </Button>
+                )}
+
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => onOpenChange(false)}
+                    disabled={initiatePaymentMutation.isPending || isProcessing || isBuyingWithCredits}
+                    data-testid="button-cancel-payment"
+                  >
+                    {t.cancel[language]}
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    variant={hasEnoughCredits && isVideoMode ? "outline" : "default"}
+                    onClick={handlePayNow}
+                    disabled={initiatePaymentMutation.isPending || isProcessing || isBuyingWithCredits}
+                    data-testid="button-pay-now"
+                  >
+                    {initiatePaymentMutation.isPending || isProcessing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {isProcessing ? 'Processing...' : 'Starting...'}
+                      </>
+                    ) : (
+                      hasEnoughCredits && isVideoMode 
+                        ? (language === 'km' ? 'បង់តាម QR' : 'Pay via QR')
+                        : `${t.payNow[language]} ${paymentAmount}`
+                    )}
+                  </Button>
+                </div>
               </div>
             </>
           )}
