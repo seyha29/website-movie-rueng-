@@ -240,6 +240,17 @@ export default function Profile() {
       <Header />
       
       <div className="pt-20 pb-16 px-4 max-w-4xl mx-auto">
+        {/* Back Button */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setLocation("/")}
+          className="mb-4 -ml-2 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          {language === 'km' ? 'ត្រឡប់ទៅទំព័រដើម' : 'Back to Home'}
+        </Button>
+
         {/* Profile Header */}
         <div className="flex items-center gap-6 mb-8">
           <div className="relative group">
