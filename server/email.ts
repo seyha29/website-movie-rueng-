@@ -19,8 +19,8 @@ export async function sendOTPEmail(
   language: "km" | "en" = "en"
 ): Promise<boolean> {
   const subject = language === "km" 
-    ? "លេខកូដផ្ទៀងផ្ទាត់ Reoung Movies Flix" 
-    : "Reoung Movies Flix - Verification Code";
+    ? "លេខកូដផ្ទៀងផ្ទាត់ - Rueng" 
+    : "Rueng - Verification Code";
 
   const htmlContent = language === "km" 
     ? `
@@ -58,7 +58,7 @@ export async function sendOTPEmail(
 
   try {
     await transporter.sendMail({
-      from: `"Reoung Movies Flix" <${process.env.EMAIL_USER}>`,
+      from: `"Rueng" <${process.env.EMAIL_USER}>`,
       to,
       subject,
       html: htmlContent,
