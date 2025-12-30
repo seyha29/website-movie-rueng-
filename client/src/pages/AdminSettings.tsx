@@ -20,6 +20,7 @@ interface AppSetting {
 interface CreditTransaction {
   id: string;
   userId: string;
+  userName: string;
   type: string;
   amount: string;
   balanceAfter: string;
@@ -242,7 +243,7 @@ export default function AdminSettings() {
                       <TableHead>Amount</TableHead>
                       <TableHead>Balance After</TableHead>
                       <TableHead>Description</TableHead>
-                      <TableHead>User ID</TableHead>
+                      <TableHead>User Name</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -268,8 +269,8 @@ export default function AdminSettings() {
                           <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
                             {tx.description || '-'}
                           </TableCell>
-                          <TableCell className="font-mono text-xs text-muted-foreground">
-                            {tx.userId.slice(0, 8)}...
+                          <TableCell className="text-sm font-medium">
+                            {tx.userName}
                           </TableCell>
                         </TableRow>
                       );

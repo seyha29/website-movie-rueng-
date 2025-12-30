@@ -1053,7 +1053,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const limit = parseInt(req.query.limit as string) || 100;
       const transactions = await storage.getAllCreditTransactions(limit);
-      res.json(transactions);
+      
+      // Fetch user names for each transaction
+      const transactionsWithUserNames = await Promise.all(
+        transactions.map(async (tx) => {
+          const user = await storage.getUser(tx.userId);
+          return {
+            ...tx,
+            userName: user?.fullName || 'Unknown User'
+          };
+        })
+      );
+      
+      res.json(transactionsWithUserNames);
     } catch (error) {
       console.error("Get credit transactions error:", error);
       res.status(500).json({ error: "Failed to get credit transactions" });
