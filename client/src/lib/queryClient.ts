@@ -1,9 +1,29 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// Parse error response and return a clean, user-friendly message
+async function parseErrorMessage(res: Response): Promise<string> {
+  const text = await res.text();
+  
+  // Try to parse as JSON and extract the error message
+  try {
+    const json = JSON.parse(text);
+    // Handle common error response formats
+    if (json.error) return json.error;
+    if (json.message) return json.message;
+    if (typeof json === 'string') return json;
+  } catch {
+    // Not JSON, use the text directly if it's meaningful
+    if (text && text.length < 200) return text;
+  }
+  
+  // Fallback to status text
+  return res.statusText || 'Something went wrong';
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    const message = await parseErrorMessage(res);
+    throw new Error(message);
   }
 }
 
