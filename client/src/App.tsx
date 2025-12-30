@@ -44,7 +44,7 @@ function Router() {
         <Route path="/tv-shows" component={Browse} />
         <Route path="/new" component={Browse} />
         <Route path="/my-list" component={Browse} />
-        <Route path="/purchased" component={PurchasedMovies} />
+        <Route path="/credit-movies" component={PurchasedMovies} />
         <Route path="/search/:query" component={SearchResults} />
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />

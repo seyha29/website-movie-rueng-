@@ -58,6 +58,7 @@ export interface IStorage {
   hasUserPurchasedVideo(userId: string, movieId: string): Promise<boolean>;
   createVideoPurchase(purchase: InsertVideoPurchase): Promise<VideoPurchase>;
   getUserPurchasedVideos(userId: string): Promise<Movie[]>;
+  getMoviesWithCreditPurchase(): Promise<Movie[]>;
   
   // Analytics methods
   trackMovieView(view: InsertMovieView): Promise<MovieView>;
@@ -414,6 +415,14 @@ export class DatabaseStorage implements IStorage {
       .innerJoin(movies, eq(videoPurchases.movieId, movies.id))
       .where(eq(videoPurchases.userId, userId));
     return result.map(r => r.movie);
+  }
+
+  async getMoviesWithCreditPurchase(): Promise<Movie[]> {
+    const result = await this.db
+      .select()
+      .from(movies)
+      .where(eq(movies.allowCreditPurchase, 1));
+    return result;
   }
 
   // Analytics methods
@@ -1287,6 +1296,10 @@ export class MemStorage implements IStorage {
 
   async getUserPurchasedVideos(userId: string): Promise<Movie[]> {
     return [];
+  }
+
+  async getMoviesWithCreditPurchase(): Promise<Movie[]> {
+    return Array.from(this.movies.values()).filter(m => m.allowCreditPurchase === 1);
   }
 
   // Analytics methods (stub for in-memory)

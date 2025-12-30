@@ -93,7 +93,7 @@ export default function Header() {
     { label: navLabels.movies[language], path: "/movies" },
     { label: navLabels.newAndPopular[language], path: "/new" },
     { label: navLabels.myList[language], path: "/my-list" },
-    { label: language === 'km' ? 'ភាពយន្តបានទិញ' : 'Purchased Movies', path: "/purchased" },
+    { label: language === 'km' ? 'ភាពយន្តសម្រាប់ក្រេឌីត' : 'Movies for Credit', path: "/credit-movies" },
   ];
 
   return (

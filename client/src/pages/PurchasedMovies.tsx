@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Play, ArrowLeft, CreditCard } from "lucide-react";
+import { Play, ArrowLeft, Wallet } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function PurchasedMovies() {
@@ -12,7 +12,7 @@ export default function PurchasedMovies() {
   const { language } = useLanguage();
 
   const { data, isLoading } = useQuery<{ movies: Movie[] }>({
-    queryKey: ["/api/purchased-movies"],
+    queryKey: ["/api/credit-movies"],
     staleTime: 2 * 60 * 1000,
   });
 
@@ -33,13 +33,13 @@ export default function PurchasedMovies() {
           </Button>
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2">
-              <CreditCard className="h-6 w-6 text-orange-500" />
-              {language === 'km' ? 'ភាពយន្តបានទិញដោយក្រេឌីត' : 'Movies Purchased with Credits'}
+              <Wallet className="h-6 w-6 text-orange-500" />
+              {language === 'km' ? 'ភាពយន្តសម្រាប់ក្រេឌីត' : 'Movies for Credit'}
             </h1>
             <p className="text-muted-foreground text-sm mt-1">
               {language === 'km' 
-                ? 'ភាពយន្តទាំងអស់ដែលអ្នកបានទិញដោយប្រើសមតុល្យក្រេឌីត' 
-                : 'All movies you have purchased using your credit balance'}
+                ? 'ភាពយន្តទាំងអស់ដែលអ្នកអាចទិញដោយប្រើសមតុល្យក្រេឌីត' 
+                : 'All movies available for purchase with your credit balance'}
             </p>
           </div>
         </div>
@@ -52,17 +52,17 @@ export default function PurchasedMovies() {
           </div>
         ) : movies.length === 0 ? (
           <div className="text-center py-16">
-            <CreditCard className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+            <Wallet className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
             <h2 className="text-xl font-semibold mb-2">
-              {language === 'km' ? 'មិនទាន់មានភាពយន្តទេ' : 'No purchased movies yet'}
+              {language === 'km' ? 'មិនមានភាពយន្តទេ' : 'No movies available'}
             </h2>
             <p className="text-muted-foreground mb-6">
               {language === 'km' 
-                ? 'អ្នកមិនទាន់បានទិញភាពយន្តដោយប្រើក្រេឌីតទេ។' 
-                : 'You haven\'t purchased any movies with credits yet.'}
+                ? 'បច្ចុប្បន្នមិនមានភាពយន្តសម្រាប់ទិញដោយក្រេឌីតទេ។' 
+                : 'No movies are currently available for credit purchase.'}
             </p>
             <Button onClick={() => navigate("/")} className="bg-orange-500 hover:bg-orange-600">
-              {language === 'km' ? 'រកមើលភាពយន្ត' : 'Browse Movies'}
+              {language === 'km' ? 'រកមើលភាពយន្តទាំងអស់' : 'Browse All Movies'}
             </Button>
           </div>
         ) : (
@@ -98,7 +98,7 @@ export default function PurchasedMovies() {
                       <div className="flex items-center gap-2 text-xs text-white/70">
                         <span>{movie.year}</span>
                         <span>•</span>
-                        <span className="text-green-400">Purchased</span>
+                        <span className="text-orange-400">{language === 'km' ? 'ក្រេឌីត' : 'Credit'}</span>
                       </div>
                     </div>
                   </div>
