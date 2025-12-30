@@ -1,4 +1,4 @@
-import { Search, User, Menu, X, LogOut, List, LayoutDashboard, CreditCard, CheckCircle2, Wallet } from "lucide-react";
+import { Search, User, Menu, LogOut, List, LayoutDashboard, Wallet } from "lucide-react";
 import { Link, useLocation, useRoute } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,8 +21,6 @@ import {
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useSubscription } from "@/hooks/use-subscription";
-import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { authLabels, searchLabels, navLabels, subscriptionLabels } from "@/lib/translations";
 import logoImage from "@assets/logo Reung_1764364561043.png";
@@ -37,7 +35,6 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const { toast } = useToast();
-  const { isSubscribed, subscription, isLoading: isSubLoading } = useSubscription();
   const { language, setLanguage } = useLanguage();
 
   // Fetch current user
@@ -94,7 +91,6 @@ export default function Header() {
   const navItems = [
     { label: navLabels.home[language], path: "/" },
     { label: navLabels.movies[language], path: "/movies" },
-    { label: navLabels.tvShows[language], path: "/tv-shows" },
     { label: navLabels.newAndPopular[language], path: "/new" },
     { label: navLabels.myList[language], path: "/my-list" },
   ];
@@ -246,30 +242,6 @@ export default function Header() {
                         ))}
                       </nav>
 
-                      {/* Subscription Status */}
-                      {!isSubLoading && (
-                        <div className="mt-4 p-3 rounded-lg bg-card border border-border">
-                          <div className="flex items-center gap-2 mb-2">
-                            {isSubscribed ? (
-                              <>
-                                <CheckCircle2 className="h-4 w-4 text-primary" />
-                                <span className="text-sm font-medium">{subscriptionLabels.subscribed[language]}</span>
-                              </>
-                            ) : (
-                              <>
-                                <CreditCard className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm font-medium">{subscriptionLabels.freePlan[language]}</span>
-                              </>
-                            )}
-                          </div>
-                          {isSubscribed && subscription?.endDate && (
-                            <p className="text-xs text-muted-foreground">
-                              {subscriptionLabels.expires[language]} {new Date(subscription.endDate * 1000).toLocaleDateString()}
-                            </p>
-                          )}
-                        </div>
-                      )}
-
                       <Button
                         variant="ghost"
                         className="w-full justify-start text-destructive hover:text-destructive hover-elevate mt-2"
@@ -321,32 +293,6 @@ export default function Header() {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-
-                    {!isSubLoading && (
-                      <>
-                        <DropdownMenuItem disabled className="flex items-center gap-2">
-                          {isSubscribed ? (
-                            <>
-                              <CheckCircle2 className="h-4 w-4 text-primary" />
-                              <div className="flex flex-col">
-                                <span className="text-sm font-medium">{subscriptionLabels.subscribed[language]}</span>
-                                {subscription?.endDate && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {subscriptionLabels.expires[language]} {new Date(subscription.endDate * 1000).toLocaleDateString()}
-                                  </span>
-                                )}
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <CreditCard className="h-4 w-4 text-muted-foreground" />
-                              <span>{subscriptionLabels.freePlan[language]}</span>
-                            </>
-                          )}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                      </>
-                    )}
 
                     <DropdownMenuItem asChild>
                       <Link href="/my-list">

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useRoute } from "wouter";
+import { useRoute, useLocation } from "wouter";
 import Header from "@/components/Header";
 import MovieCard from "@/components/MovieCard";
 import Footer from "@/components/Footer";
@@ -7,6 +7,7 @@ import type { Movie } from "@shared/schema";
 
 export default function SearchResults() {
   const [, params] = useRoute("/search/:query");
+  const [, navigate] = useLocation();
   const searchQuery = params?.query ? decodeURIComponent(params.query) : "";
 
   const { data: searchData, isLoading } = useQuery<{ movies: Movie[], total: number }>({
@@ -64,9 +65,9 @@ export default function SearchResults() {
                 rating={parseFloat(movie.rating)}
                 year={movie.year}
                 genres={movie.genres}
-                onPlay={() => console.log(`Play ${movie.title}`)}
-                onAddToList={() => console.log(`Add ${movie.title} to list`)}
-                onShowDetails={() => console.log(`Show details for ${movie.title}`)}
+                onPlay={() => navigate(`/movie/${movie.id}`)}
+                onAddToList={() => navigate(`/movie/${movie.id}`)}
+                onShowDetails={() => navigate(`/movie/${movie.id}`)}
               />
             ))}
           </div>
