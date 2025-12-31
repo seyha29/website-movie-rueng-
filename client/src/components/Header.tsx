@@ -196,77 +196,103 @@ export default function Header() {
                       </SheetTitle>
                     </SheetHeader>
                     <div className="flex flex-col gap-4 mt-6">
-                      {/* User Profile Section - Clickable */}
-                      <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)}>
-                        <div className="p-3 rounded-lg bg-card border border-border cursor-pointer hover:bg-accent transition-colors">
-                          <div className="flex items-center gap-3">
-                            {user.avatarUrl ? (
-                              <img 
-                                src={user.avatarUrl} 
-                                alt={user.fullName} 
-                                className="h-10 w-10 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
-                                <User className="h-5 w-5 text-primary" />
-                              </div>
-                            )}
-                            <div className="flex flex-col flex-1">
-                              <span className="font-medium text-sm">{user.fullName}</span>
-                              <span className="text-xs text-muted-foreground">{user.phoneNumber || user.email}</span>
-                            </div>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {language === 'km' ? 'ចុចដើម្បីមើលគណនី' : 'Tap to view profile'}
-                          </p>
-                        </div>
-                      </Link>
-
-                      {/* Credit Balance - Clickable */}
-                      <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)}>
-                        <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/30 cursor-pointer hover:bg-orange-500/20 transition-colors">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Wallet className="h-5 w-5 text-orange-500" />
-                              <span className="font-medium text-sm">
-                                {language === 'km' ? 'សមតុល្យ' : 'Balance'}
+                      {/* User Profile Header Section */}
+                      <div className="p-4 rounded-lg bg-card border border-border">
+                        <div className="flex items-start gap-3">
+                          {user.avatarUrl ? (
+                            <img 
+                              src={user.avatarUrl} 
+                              alt={user.fullName} 
+                              className="h-12 w-12 rounded-full object-cover border-2 border-orange-500/50"
+                            />
+                          ) : (
+                            <div className="h-12 w-12 rounded-full bg-orange-500/20 flex items-center justify-center border-2 border-orange-500/50">
+                              <span className="text-orange-500 font-bold text-lg">
+                                {user.fullName?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'U'}
                               </span>
                             </div>
-                            <span className="text-orange-500 font-bold text-lg">
+                          )}
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-base">{user.fullName}</span>
+                            <span className="text-sm text-muted-foreground">{user.phoneNumber || user.email}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Menu Items */}
+                      <div className="flex flex-col gap-1">
+                        {/* Profile */}
+                        <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start gap-3 hover-elevate">
+                            <User className="h-4 w-4" />
+                            <span>{language === 'km' ? 'គណនី' : 'Profile'}</span>
+                          </Button>
+                        </Link>
+
+                        {/* Credit Balance */}
+                        <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start gap-3 hover-elevate">
+                            <Wallet className="h-4 w-4 text-orange-500" />
+                            <span>{language === 'km' ? 'សមតុល្យ' : 'Balance'}</span>
+                            <span className="text-orange-500 font-bold ml-auto">
                               ${parseFloat(user.balance || "0").toFixed(2)}
                             </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {language === 'km' ? 'ចុចដើម្បីមើលប្រវត្តិ' : 'Tap to view history'}
-                          </p>
-                        </div>
-                      </Link>
+                          </Button>
+                        </Link>
+
+                        {/* My List */}
+                        <Link href="/my-list" onClick={() => setIsMobileMenuOpen(false)}>
+                          <Button
+                            variant={location === '/my-list' ? "secondary" : "ghost"}
+                            className="w-full justify-start gap-3 hover-elevate"
+                          >
+                            <List className="h-4 w-4" />
+                            <span>{navLabels.myList[language]}</span>
+                          </Button>
+                        </Link>
+
+                        {/* Purchased Movies */}
+                        <Link href="/purchased" onClick={() => setIsMobileMenuOpen(false)}>
+                          <Button
+                            variant={location === '/purchased' ? "secondary" : "ghost"}
+                            className="w-full justify-start gap-3 hover-elevate"
+                          >
+                            <CreditCard className="h-4 w-4" />
+                            <span>{language === 'km' ? 'ភាពយន្តបានទិញ' : 'Purchased Movies'}</span>
+                          </Button>
+                        </Link>
+                      </div>
 
                       {/* Navigation */}
-                      <nav className="flex flex-col gap-2">
-                        {navItems.map((item) => (
-                          <Link key={item.path} href={item.path} onClick={() => setIsMobileMenuOpen(false)}>
-                            <Button
-                              variant={location === item.path ? "secondary" : "ghost"}
-                              className="w-full justify-start hover-elevate"
-                            >
-                              {item.label}
-                            </Button>
-                          </Link>
-                        ))}
-                      </nav>
+                      <div className="border-t border-border pt-4">
+                        <nav className="flex flex-col gap-1">
+                          {navItems.filter(item => item.path !== '/my-list').map((item) => (
+                            <Link key={item.path} href={item.path} onClick={() => setIsMobileMenuOpen(false)}>
+                              <Button
+                                variant={location === item.path ? "secondary" : "ghost"}
+                                className="w-full justify-start hover-elevate"
+                              >
+                                {item.label}
+                              </Button>
+                            </Link>
+                          ))}
+                        </nav>
+                      </div>
 
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start text-destructive hover:text-destructive hover-elevate mt-2"
-                        onClick={() => {
-                          logoutMutation.mutate();
-                          setIsMobileMenuOpen(false);
-                        }}
-                      >
-                        <LogOut className="h-4 w-4 mr-2" />
-                        {authLabels.logout[language]}
-                      </Button>
+                      {/* Logout */}
+                      <div className="border-t border-border pt-4">
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start gap-3 text-destructive hover:text-destructive hover-elevate"
+                          onClick={() => {
+                            logoutMutation.mutate();
+                            setIsMobileMenuOpen(false);
+                          }}
+                        >
+                          <LogOut className="h-4 w-4" />
+                          <span>{authLabels.logout[language]}</span>
+                        </Button>
+                      </div>
                     </div>
                   </SheetContent>
                 </Sheet>
@@ -291,71 +317,88 @@ export default function Header() {
                       )}
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel asChild className="cursor-pointer">
-                      <Link href="/profile" className="flex flex-col gap-1 hover:bg-accent rounded-sm transition-colors">
-                        <span className="font-medium">{user.fullName}</span>
-                        <span className="text-xs text-muted-foreground">{user.phoneNumber || user.email}</span>
-                      </Link>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    
-                    {/* Profile Link */}
-                    <DropdownMenuItem asChild className="cursor-pointer">
-                      <Link href="/profile" className="flex items-center gap-2 w-full">
-                        <User className="h-4 w-4" />
-                        <span>{language === 'km' ? 'គណនី' : 'Profile'}</span>
-                      </Link>
-                    </DropdownMenuItem>
-                    
-                    {/* Credit Balance - Clickable */}
-                    <DropdownMenuItem asChild className="cursor-pointer">
-                      <Link href="/profile" className="flex items-center gap-2 w-full">
-                        <Wallet className="h-4 w-4 text-orange-500" />
-                        <div className="flex flex-col flex-1">
-                          <span className="text-sm font-medium">
-                            {language === 'km' ? 'សមតុល្យ' : 'Balance'}
-                          </span>
+                  <DropdownMenuContent align="end" className="w-64 p-0">
+                    {/* Profile Header Section */}
+                    <div className="p-4 border-b border-border">
+                      <div className="flex items-start gap-3">
+                        {user.avatarUrl ? (
+                          <img 
+                            src={user.avatarUrl} 
+                            alt={user.fullName} 
+                            className="h-12 w-12 rounded-full object-cover border-2 border-orange-500/50"
+                          />
+                        ) : (
+                          <div className="h-12 w-12 rounded-full bg-orange-500/20 flex items-center justify-center border-2 border-orange-500/50">
+                            <span className="text-orange-500 font-bold text-lg">
+                              {user.fullName?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'U'}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-base">{user.fullName}</span>
+                          <span className="text-sm text-muted-foreground">{user.phoneNumber || user.email}</span>
                         </div>
-                        <span className="text-orange-500 font-bold">
-                          ${parseFloat(user.balance || "0").toFixed(2)}
-                        </span>
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-
-                    <DropdownMenuItem asChild>
-                      <Link href="/my-list">
-                        <List className="h-4 w-4 mr-2" />
-                        {navLabels.myList[language]}
-                      </Link>
-                    </DropdownMenuItem>
+                      </div>
+                    </div>
                     
-                    <DropdownMenuItem asChild>
-                      <Link href="/purchased">
-                        <CreditCard className="h-4 w-4 mr-2" />
-                        {language === 'km' ? 'ភាពយន្តបានទិញ' : 'Purchased Movies'}
-                      </Link>
-                    </DropdownMenuItem>
-                    
-                    {user.isAdmin && (
-                      <DropdownMenuItem asChild>
-                        <Link href="/admin">
-                          <LayoutDashboard className="h-4 w-4 mr-2" />
-                          {subscriptionLabels.adminPanel[language]}
+                    {/* Menu Items */}
+                    <div className="py-2">
+                      {/* Profile Link */}
+                      <DropdownMenuItem asChild className="cursor-pointer px-4 py-2.5">
+                        <Link href="/profile" className="flex items-center gap-3 w-full">
+                          <User className="h-4 w-4" />
+                          <span>{language === 'km' ? 'គណនី' : 'Profile'}</span>
                         </Link>
                       </DropdownMenuItem>
-                    )}
+                      
+                      {/* Credit Balance */}
+                      <DropdownMenuItem asChild className="cursor-pointer px-4 py-2.5">
+                        <Link href="/profile" className="flex items-center gap-3 w-full">
+                          <Wallet className="h-4 w-4 text-orange-500" />
+                          <span>{language === 'km' ? 'សមតុល្យ' : 'Balance'}</span>
+                          <span className="text-orange-500 font-bold ml-auto">
+                            ${parseFloat(user.balance || "0").toFixed(2)}
+                          </span>
+                        </Link>
+                      </DropdownMenuItem>
+
+                      {/* My List */}
+                      <DropdownMenuItem asChild className="cursor-pointer px-4 py-2.5">
+                        <Link href="/my-list" className="flex items-center gap-3 w-full">
+                          <List className="h-4 w-4" />
+                          <span>{navLabels.myList[language]}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      
+                      {/* Purchased Movies */}
+                      <DropdownMenuItem asChild className="cursor-pointer px-4 py-2.5">
+                        <Link href="/purchased" className="flex items-center gap-3 w-full">
+                          <CreditCard className="h-4 w-4" />
+                          <span>{language === 'km' ? 'ភាពយន្តបានទិញ' : 'Purchased Movies'}</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      
+                      {user.isAdmin && (
+                        <DropdownMenuItem asChild className="cursor-pointer px-4 py-2.5">
+                          <Link href="/admin" className="flex items-center gap-3 w-full">
+                            <LayoutDashboard className="h-4 w-4" />
+                            <span>{subscriptionLabels.adminPanel[language]}</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+                    </div>
                     
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive cursor-pointer"
-                      onClick={() => logoutMutation.mutate()}
-                      data-testid="button-logout"
-                    >
-                      <LogOut className="h-4 w-4 mr-2" />
-                      {authLabels.logout[language]}
-                    </DropdownMenuItem>
+                    {/* Logout Section */}
+                    <div className="border-t border-border py-2">
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive cursor-pointer px-4 py-2.5 flex items-center gap-3"
+                        onClick={() => logoutMutation.mutate()}
+                        data-testid="button-logout"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>{authLabels.logout[language]}</span>
+                      </DropdownMenuItem>
+                    </div>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </>
