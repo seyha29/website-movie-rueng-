@@ -354,7 +354,7 @@ export default function Profile() {
               </Link>
 
               {/* Admin Panel - Only for admins */}
-              {user.isAdmin && (
+              {!!user.isAdmin && (
                 <Link href="/admin">
                   <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer">
                     <div className="flex items-center gap-3">
