@@ -337,8 +337,8 @@ export default function Profile() {
                 </div>
               </Link>
 
-              {/* Purchased Movies */}
-              <Link href="/purchased">
+              {/* Purchased Movies - Hidden on desktop, visible on mobile */}
+              <Link href="/purchased" className="lg:hidden">
                 <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-full bg-green-500/10">
