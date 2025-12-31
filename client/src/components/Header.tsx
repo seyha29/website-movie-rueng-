@@ -212,9 +212,9 @@ export default function Header() {
                               </span>
                             </div>
                           )}
-                          <div className="flex flex-col">
-                            <span className="font-semibold text-base">{user.fullName}</span>
-                            <span className="text-sm text-muted-foreground">{user.phoneNumber || user.email}</span>
+                          <div className="flex flex-col min-w-0 flex-1">
+                            <span className="font-semibold text-base truncate">{user.fullName}</span>
+                            <span className="text-sm text-muted-foreground truncate">{user.phoneNumber || user.email}</span>
                           </div>
                         </div>
                       </div>
