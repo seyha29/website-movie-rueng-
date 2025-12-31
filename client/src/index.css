@@ -301,7 +301,7 @@
 [class*="card"],
 .group,
 .relative.group {
-  border-color: #cc9c00!important;
+  border-color:#cc9c00 !important;
 }
 
 /* Specifically target movie cards */
