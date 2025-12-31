@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Wallet, Gift, ShoppingCart, Clock, User, Settings, CreditCard, Camera, Mail, Phone } from "lucide-react";
+import { ArrowLeft, Wallet, Gift, ShoppingCart, Clock, User, Settings, CreditCard, Camera, Mail, Phone, List, LayoutDashboard, LogOut, ChevronRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useLanguage } from "@/contexts/LanguageContext";
 import Header from "@/components/Header";
@@ -121,6 +121,21 @@ export default function Profile() {
         description: error.message,
         variant: "destructive",
       });
+    },
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      const result = await apiRequest("POST", "/api/auth/logout", {});
+      return await result.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      toast({
+        title: language === 'km' ? "បានចេញពីប្រព័ន្ធ" : "Logged out",
+        description: language === 'km' ? "អ្នកបានចេញពីប្រព័ន្ធដោយជោគជ័យ" : "You have been logged out successfully",
+      });
+      setLocation("/");
     },
   });
 
@@ -301,6 +316,80 @@ export default function Profile() {
             </div>
           </div>
         </div>
+
+        {/* Quick Links Menu */}
+        <Card className="mb-8">
+          <CardContent className="p-0">
+            <div className="divide-y divide-border">
+              {/* My List */}
+              <Link href="/my-list">
+                <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-blue-500/10">
+                      <List className="h-5 w-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{language === 'km' ? 'បញ្ជីរបស់ខ្ញុំ' : 'My List'}</p>
+                      <p className="text-sm text-muted-foreground">{language === 'km' ? 'ភាពយន្តដែលអ្នកបានរក្សាទុក' : 'Movies you have saved'}</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </Link>
+
+              {/* Purchased Movies */}
+              <Link href="/purchased">
+                <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-green-500/10">
+                      <ShoppingCart className="h-5 w-5 text-green-500" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{language === 'km' ? 'ភាពយន្តបានទិញ' : 'Purchased Movies'}</p>
+                      <p className="text-sm text-muted-foreground">{language === 'km' ? 'ភាពយន្តដែលអ្នកបានទិញ' : 'Movies you have purchased'}</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </div>
+              </Link>
+
+              {/* Admin Panel - Only for admins */}
+              {user.isAdmin && (
+                <Link href="/admin">
+                  <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-full bg-purple-500/10">
+                        <LayoutDashboard className="h-5 w-5 text-purple-500" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{language === 'km' ? 'ផ្ទាំងគ្រប់គ្រង' : 'Admin Panel'}</p>
+                        <p className="text-sm text-muted-foreground">{language === 'km' ? 'គ្រប់គ្រងគេហទំព័រ' : 'Manage the website'}</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                </Link>
+              )}
+
+              {/* Logout */}
+              <div 
+                className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                onClick={() => logoutMutation.mutate()}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-red-500/10">
+                    <LogOut className="h-5 w-5 text-red-500" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-red-500">{language === 'km' ? 'ចាកចេញ' : 'Logout'}</p>
+                    <p className="text-sm text-muted-foreground">{language === 'km' ? 'ចេញពីគណនីរបស់អ្នក' : 'Sign out of your account'}</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Tabs */}
         <Tabs defaultValue="profile" className="w-full">

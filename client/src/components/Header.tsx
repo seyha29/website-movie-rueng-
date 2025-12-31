@@ -297,110 +297,25 @@ export default function Header() {
                   </SheetContent>
                 </Sheet>
 
-                {/* Desktop User Menu */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="hidden lg:flex hover-elevate rounded-full overflow-hidden"
-                      data-testid="button-user-menu"
-                    >
-                      {user.avatarUrl ? (
-                        <img 
-                          src={user.avatarUrl} 
-                          alt={user.fullName} 
-                          className="h-8 w-8 rounded-full object-cover"
-                        />
-                      ) : (
-                        <User className="h-5 w-5" />
-                      )}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-64 p-0">
-                    {/* Profile Header Section */}
-                    <div className="p-4 border-b border-border">
-                      <div className="flex items-start gap-3">
-                        {user.avatarUrl ? (
-                          <img 
-                            src={user.avatarUrl} 
-                            alt={user.fullName} 
-                            className="h-12 w-12 rounded-full object-cover border-2 border-orange-500/50"
-                          />
-                        ) : (
-                          <div className="h-12 w-12 rounded-full bg-orange-500/20 flex items-center justify-center border-2 border-orange-500/50">
-                            <span className="text-orange-500 font-bold text-lg">
-                              {user.fullName?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'U'}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex flex-col">
-                          <span className="font-semibold text-base">{user.fullName}</span>
-                          <span className="text-sm text-muted-foreground">{user.phoneNumber || user.email}</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Menu Items */}
-                    <div className="py-2">
-                      {/* Profile Link */}
-                      <DropdownMenuItem asChild className="cursor-pointer px-4 py-2.5">
-                        <Link href="/profile" className="flex items-center gap-3 w-full">
-                          <User className="h-4 w-4" />
-                          <span>{language === 'km' ? 'គណនី' : 'Profile'}</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      
-                      {/* Credit Balance */}
-                      <DropdownMenuItem asChild className="cursor-pointer px-4 py-2.5">
-                        <Link href="/profile" className="flex items-center gap-3 w-full">
-                          <Wallet className="h-4 w-4 text-orange-500" />
-                          <span>{language === 'km' ? 'សមតុល្យ' : 'Balance'}</span>
-                          <span className="text-orange-500 font-bold ml-auto">
-                            ${parseFloat(user.balance || "0").toFixed(2)}
-                          </span>
-                        </Link>
-                      </DropdownMenuItem>
-
-                      {/* My List */}
-                      <DropdownMenuItem asChild className="cursor-pointer px-4 py-2.5">
-                        <Link href="/my-list" className="flex items-center gap-3 w-full">
-                          <List className="h-4 w-4" />
-                          <span>{navLabels.myList[language]}</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      
-                      {/* Purchased Movies */}
-                      <DropdownMenuItem asChild className="cursor-pointer px-4 py-2.5">
-                        <Link href="/purchased" className="flex items-center gap-3 w-full">
-                          <CreditCard className="h-4 w-4" />
-                          <span>{language === 'km' ? 'ភាពយន្តបានទិញ' : 'Purchased Movies'}</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      
-                      {user.isAdmin && (
-                        <DropdownMenuItem asChild className="cursor-pointer px-4 py-2.5">
-                          <Link href="/admin" className="flex items-center gap-3 w-full">
-                            <LayoutDashboard className="h-4 w-4" />
-                            <span>{subscriptionLabels.adminPanel[language]}</span>
-                          </Link>
-                        </DropdownMenuItem>
-                      )}
-                    </div>
-                    
-                    {/* Logout Section */}
-                    <div className="border-t border-border py-2">
-                      <DropdownMenuItem
-                        className="text-destructive focus:text-destructive cursor-pointer px-4 py-2.5 flex items-center gap-3"
-                        onClick={() => logoutMutation.mutate()}
-                        data-testid="button-logout"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        <span>{authLabels.logout[language]}</span>
-                      </DropdownMenuItem>
-                    </div>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {/* Desktop User Profile - Click to go to profile page */}
+                <Link href="/profile">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="hidden lg:flex hover-elevate rounded-full overflow-hidden"
+                    data-testid="button-user-menu"
+                  >
+                    {user.avatarUrl ? (
+                      <img 
+                        src={user.avatarUrl} 
+                        alt={user.fullName} 
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <User className="h-5 w-5" />
+                    )}
+                  </Button>
+                </Link>
               </>
             ) : (
               <>
