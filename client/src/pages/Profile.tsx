@@ -370,29 +370,11 @@ export default function Profile() {
                   </div>
                 </Link>
               )}
-
-              {/* Logout */}
-              <div 
-                className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer"
-                onClick={() => logoutMutation.mutate()}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-full bg-red-500/10">
-                    <LogOut className="h-5 w-5 text-red-500" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-red-500">{language === 'km' ? 'ចាកចេញ' : 'Logout'}</p>
-                    <p className="text-sm text-muted-foreground">{language === 'km' ? 'ចេញពីគណនីរបស់អ្នក' : 'Sign out of your account'}</p>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Tabs */}
-        <Tabs defaultValue="profile" className="w-full">
+            {/* Tabs Section */}
+            <div className="p-4 border-t border-border">
+              <Tabs defaultValue="profile" className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -615,7 +597,29 @@ export default function Profile() {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
+              </Tabs>
+            </div>
+
+            {/* Logout - At the bottom */}
+            <div className="border-t border-border">
+              <div 
+                className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer"
+                onClick={() => logoutMutation.mutate()}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-red-500/10">
+                    <LogOut className="h-5 w-5 text-red-500" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-red-500">{language === 'km' ? 'ចាកចេញ' : 'Logout'}</p>
+                    <p className="text-sm text-muted-foreground">{language === 'km' ? 'ចេញពីគណនីរបស់អ្នក' : 'Sign out of your account'}</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
