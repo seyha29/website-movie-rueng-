@@ -114,6 +114,7 @@ export default function VideoPlayer({
   onClose, 
   hasPurchased = false,
   userId,
+  user,
   isTrusted = false,
   noWatermark = false,
   movieId
@@ -401,7 +402,7 @@ export default function VideoPlayer({
                 data-testid="iframe-video"
               />
               
-              {!noWatermark && userId && (
+              {!noWatermark && user && (
                 <div 
                   className="absolute pointer-events-none text-white/20 text-xs font-mono transition-all duration-1000 z-20"
                   style={{
@@ -411,7 +412,7 @@ export default function VideoPlayer({
                     textShadow: '0 0 2px rgba(0,0,0,0.5)'
                   }}
                 >
-                  <div>{userId.substring(0, 8)}</div>
+                  <div>{user.fullName || 'User'}</div>
                   <div>{new Date().toISOString().split('T')[0]}</div>
                 </div>
               )}
