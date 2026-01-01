@@ -9,6 +9,7 @@ import MovieDetailModal from "@/components/MovieDetailModal";
 import AuthModal from "@/components/AuthModal";
 import { Badge } from "@/components/ui/badge";
 import { useMyList } from "@/hooks/use-my-list";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { Movie } from "@shared/schema";
 
 export default function Browse() {
@@ -20,6 +21,7 @@ export default function Browse() {
   const [pendingPlayMovie, setPendingPlayMovie] = useState<string | null>(null);
   const [pendingAddMovie, setPendingAddMovie] = useState<string | null>(null);
   const { toggleMyList } = useMyList();
+  const { language } = useLanguage();
 
   // Check if user is authenticated
   const { data: user } = useQuery({
@@ -126,7 +128,11 @@ export default function Browse() {
     ? allMovies
     : allMovies.filter(movie => movie.genres.includes(selectedGenre));
 
-  const pageTitle = isMyList ? "My List" : isNewAndPopular ? "New & Popular" : "Browse Movies";
+  const pageTitle = isMyList 
+    ? (language === 'km' ? 'បញ្ជីរបស់ខ្ញុំ' : 'My List')
+    : isNewAndPopular 
+    ? (language === 'km' ? 'ថ្មី និង ពេញនិយម' : 'New & Popular')
+    : (language === 'km' ? 'រកមើលភាពយន្ត' : 'Browse Movies');
 
   return (
     <div className="min-h-screen bg-background">
@@ -156,8 +162,8 @@ export default function Browse() {
           <div className="text-center py-16">
             <p className="text-xl text-muted-foreground">
               {isMyList 
-                ? "Your list is empty. Add movies to start building your collection!"
-                : "No movies found"}
+                ? (language === 'km' ? 'បញ្ជីរបស់អ្នកទទេ។ បន្ថែមភាពយន្តដើម្បីចាប់ផ្តើមបង្កើតបណ្តុំរបស់អ្នក!' : 'Your list is empty. Add movies to start building your collection!')
+                : (language === 'km' ? 'រកមិនឃើញភាពយន្ត' : 'No movies found')}
             </p>
           </div>
         )}
