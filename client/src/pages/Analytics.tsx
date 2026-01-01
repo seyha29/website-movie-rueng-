@@ -37,9 +37,10 @@ export default function Analytics() {
   const { viewers: activeViewers, total: totalActiveViewers, stats: viewerStats, isLoading: viewersLoading } = useActiveViewers(true, 5000);
 
   // Fetch movie titles for active viewer display
-  const { data: allMovies } = useQuery<any[]>({
+  const { data: moviesData } = useQuery<{ movies: any[] }>({
     queryKey: ["/api/movies"],
   });
+  const allMovies = moviesData?.movies || [];
 
   const COLORS = ['#f97316', '#fb923c', '#fdba74', '#fed7aa', '#ffedd5', '#fb923c', '#ea580c', '#c2410c'];
 
