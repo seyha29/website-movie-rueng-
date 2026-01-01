@@ -318,7 +318,8 @@ export const navLabels = {
   movies: { km: "ភាពយន្ត", en: "Movies" },
   tvShows: { km: "រឿងភាគ", en: "TV Shows" },
   newAndPopular: { km: "ថ្មី និងពេញនិយម", en: "New & Popular" },
-  myList: { km: "បញ្ជីរបស់ខ្ញុំ", en: "My List" }
+  myList: { km: "បញ្ជីរបស់ខ្ញុំ", en: "My List" },
+  MyList:{km: "បញ្ជីរបស់ខ្ញុំ", en: "My List"}
 };
 
 export const subscriptionLabels = {
