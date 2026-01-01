@@ -12,6 +12,7 @@ import { PaymentService } from "./payment-service";
 import { securityService, type ViolationType } from "./security-service";
 import { generateOTP, sendOTPEmail } from "./email";
 import { smsService } from "./sms";
+import { activeViewerService } from "./active-viewer-service";
 
 // Configure multer for avatar uploads
 const avatarStorage = multer.diskStorage({
@@ -2619,6 +2620,96 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden}
     } catch (error) {
       console.error("Failed to unban user:", error);
       res.status(500).json({ error: "Failed to unban user" });
+    }
+  });
+
+  // ============================================
+  // ACTIVE VIEWERS / HEARTBEAT ENDPOINTS
+  // Real-time tracking of users watching movies
+  // ============================================
+
+  /**
+   * POST /api/heartbeat
+   * Frontend sends this every 5 seconds while a user is watching a movie
+   * Body: { movieId: string }
+   * Requires authentication to track userId
+   */
+  app.post("/api/heartbeat", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const { movieId } = req.body;
+      
+      if (!movieId || typeof movieId !== 'string') {
+        return res.status(400).json({ error: "movieId is required" });
+      }
+      
+      activeViewerService.registerHeartbeat(userId, movieId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to register heartbeat:", error);
+      res.status(500).json({ error: "Failed to register heartbeat" });
+    }
+  });
+
+  /**
+   * POST /api/heartbeat/stop
+   * Called when user stops watching (closes player or navigates away)
+   * Body: { movieId: string }
+   */
+  app.post("/api/heartbeat/stop", requireAuth, async (req, res) => {
+    try {
+      const userId = req.session.userId!;
+      const { movieId } = req.body;
+      
+      if (!movieId || typeof movieId !== 'string') {
+        return res.status(400).json({ error: "movieId is required" });
+      }
+      
+      activeViewerService.removeViewer(userId, movieId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to stop heartbeat:", error);
+      res.status(500).json({ error: "Failed to stop heartbeat" });
+    }
+  });
+
+  /**
+   * GET /api/active-viewers
+   * Returns count of active viewers per movie
+   * Admin only - used for the admin dashboard
+   * Response: { [movieId]: viewerCount, _total: totalViewers }
+   */
+  app.get("/api/active-viewers", requireAdmin, async (req, res) => {
+    try {
+      const viewers = activeViewerService.getActiveViewers();
+      const total = activeViewerService.getTotalActiveViewers();
+      const stats = activeViewerService.getStats();
+      
+      res.json({
+        viewers,
+        total,
+        stats
+      });
+    } catch (error) {
+      console.error("Failed to get active viewers:", error);
+      res.status(500).json({ error: "Failed to get active viewers" });
+    }
+  });
+
+  /**
+   * GET /api/active-viewers/:movieId
+   * Returns count of active viewers for a specific movie
+   * Admin only - protects viewer analytics data
+   */
+  app.get("/api/active-viewers/:movieId", requireAdmin, async (req, res) => {
+    try {
+      const { movieId } = req.params;
+      const count = activeViewerService.getMovieViewerCount(movieId);
+      
+      res.json({ movieId, viewers: count });
+    } catch (error) {
+      console.error("Failed to get movie viewers:", error);
+      res.status(500).json({ error: "Failed to get movie viewers" });
     }
   });
 

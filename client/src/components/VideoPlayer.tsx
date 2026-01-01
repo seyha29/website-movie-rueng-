@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { videoWarningLabels } from "@/lib/translations";
+import { useHeartbeat } from "@/hooks/useHeartbeat";
 
 interface VideoPlayerProps {
   title: string;
@@ -139,6 +140,11 @@ export default function VideoPlayer({
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockReason, setBlockReason] = useState('');
   const embedUrl = videoUrl ? getEmbedUrl(videoUrl) : "";
+  
+  // Send heartbeat every 5 seconds while video player is open
+  // This tracks active viewers for the admin dashboard
+  // Sends heartbeat when: user is logged in, video URL exists, and player is not blocked
+  useHeartbeat(movieId, userId, !!videoUrl && !!userId && !isBlocked);
 
   const acknowledgeWarning = () => {
     localStorage.setItem('video_warning_acknowledged', 'true');

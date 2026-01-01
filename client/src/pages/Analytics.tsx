@@ -4,8 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, DollarSign, TrendingUp, TrendingDown, Eye, Clock, Film, AlertCircle, Activity, ChevronUp, ChevronDown } from "lucide-react";
+import { Users, DollarSign, TrendingUp, TrendingDown, Eye, Clock, Film, AlertCircle, Activity, ChevronUp, ChevronDown, Radio } from "lucide-react";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { useActiveViewers } from "@/hooks/useHeartbeat";
 
 export default function Analytics() {
   const { data: overview } = useQuery<any>({
@@ -30,6 +31,14 @@ export default function Analytics() {
 
   const { data: recentActivity } = useQuery<any[]>({
     queryKey: ["/api/admin/analytics/recent-activity"],
+  });
+
+  // Real-time active viewers - updates every 5 seconds
+  const { viewers: activeViewers, total: totalActiveViewers, stats: viewerStats, isLoading: viewersLoading } = useActiveViewers(true, 5000);
+
+  // Fetch movie titles for active viewer display
+  const { data: allMovies } = useQuery<any[]>({
+    queryKey: ["/api/movies"],
   });
 
   const COLORS = ['#f97316', '#fb923c', '#fdba74', '#fed7aa', '#ffedd5', '#fb923c', '#ea580c', '#c2410c'];
@@ -65,8 +74,12 @@ export default function Analytics() {
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5" data-testid="tabs-admin">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6" data-testid="tabs-admin">
             <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
+            <TabsTrigger value="live" data-testid="tab-live" className="flex items-center gap-1">
+              <Radio className="h-3 w-3 animate-pulse text-red-500" />
+              Live
+            </TabsTrigger>
             <TabsTrigger value="revenue" data-testid="tab-revenue">Revenue</TabsTrigger>
             <TabsTrigger value="content" data-testid="tab-content">Content</TabsTrigger>
             <TabsTrigger value="issues" data-testid="tab-issues">Issues</TabsTrigger>
@@ -200,6 +213,125 @@ export default function Analytics() {
                     <p className="text-sm text-muted-foreground">No recent activity</p>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* LIVE VIEWERS TAB - Real-time tracking of users watching movies */}
+          <TabsContent value="live" className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-3">
+              <Card data-testid="card-total-watching">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Currently Watching</CardTitle>
+                  <Radio className="h-4 w-4 text-red-500 animate-pulse" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold text-primary" data-testid="text-total-watching">
+                    {totalActiveViewers}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Active viewers right now
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card data-testid="card-movies-streaming">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Movies Being Watched</CardTitle>
+                  <Film className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold" data-testid="text-movies-streaming">
+                    {viewerStats?.totalMovies || 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Different movies streaming
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card data-testid="card-server-load">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Memory Entries</CardTitle>
+                  <Activity className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-4xl font-bold" data-testid="text-memory-entries">
+                    {viewerStats?.memoryEntries || 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Active tracking entries
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card data-testid="card-active-viewers-table">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5" />
+                  Live Viewer Details
+                </CardTitle>
+                <CardDescription>
+                  Real-time breakdown of viewers by movie (updates every 5 seconds)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {viewersLoading ? (
+                  <p className="text-muted-foreground">Loading active viewers...</p>
+                ) : Object.keys(activeViewers).length === 0 ? (
+                  <div className="text-center py-8">
+                    <Eye className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No one is watching right now</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Viewer counts will appear here when users start watching movies
+                    </p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Movie</TableHead>
+                        <TableHead className="text-right">Viewers</TableHead>
+                        <TableHead className="text-right">% of Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {Object.entries(activeViewers)
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([movieId, count]) => {
+                          const movie = allMovies?.find((m: any) => m.id === movieId);
+                          const percentage = totalActiveViewers > 0 
+                            ? ((count / totalActiveViewers) * 100).toFixed(1) 
+                            : "0";
+                          return (
+                            <TableRow key={movieId} data-testid={`viewer-row-${movieId}`}>
+                              <TableCell className="font-medium">
+                                <div className="flex items-center gap-2">
+                                  {movie?.posterImage && (
+                                    <img 
+                                      src={movie.posterImage} 
+                                      alt={movie?.title || 'Movie'} 
+                                      className="w-8 h-12 object-cover rounded"
+                                    />
+                                  )}
+                                  <span>{movie?.title || `Movie ID: ${movieId.slice(0, 8)}...`}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Badge variant="default" className="text-lg px-3 py-1">
+                                  {count}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-right text-muted-foreground">
+                                {percentage}%
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
