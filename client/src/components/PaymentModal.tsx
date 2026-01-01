@@ -354,7 +354,7 @@ export function PaymentModal({
         }
       };
     }
-  }, [checkoutUrl, paymentSuccess, isVideoMode, movieId]);
+  }, [khqrString, checkoutUrl, paymentSuccess, isVideoMode, movieId]);
 
   // Listen for payment callback (when user returns from RaksemeyPay)
   useEffect(() => {
